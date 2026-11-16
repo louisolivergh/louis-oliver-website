@@ -49,6 +49,12 @@ export const siteSettings = defineType({
     defineField({ name: 'showMark', title: 'Show the small blue “LO” square next to the logo text', type: 'boolean', initialValue: true }),
     defineField({ name: 'logo', title: 'Logo image', type: 'image', description: 'Replaces the logo text when added.' }),
     defineField({ name: 'logoFooter', title: 'Footer logo image', type: 'image', description: 'Optional — e.g. a white version for the dark footer.' }),
+    defineField({
+      name: 'favicon',
+      title: 'Favicon',
+      type: 'image',
+      description: 'The small icon in the browser tab. Use a square image, ideally 512 × 512 px (PNG or SVG). If empty, your logo image is used, then the blue LO mark.',
+    }),
     defineField({ name: 'logoHeight', title: 'Logo height', type: 'number', initialValue: 40, description: 'In pixels. 40 is a good starting point.' }),
     t('footerText', 'Footer description', 2),
     defineField({
