@@ -16,7 +16,7 @@ export function BackArrow() {
 
 export function Plus() {
   return (
-    <svg className="plus" width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+    <svg className="plus" width="40" height="40" viewBox="0 0 22 22" fill="none" aria-hidden="true">
       <path d="M11 3v16M3 11h16" stroke="currentColor" strokeWidth="1.8" />
     </svg>
   );

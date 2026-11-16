@@ -21,6 +21,8 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; }
+/* no grey tap boxes on iPhone — every tappable thing has its own designed press effect */
+* { -webkit-tap-highlight-color: transparent; }
 html { scroll-behavior: smooth; }
 html, body { background: #ffffff; }
 body { margin: 0; color: var(--ink); font-family: var(--body); -webkit-font-smoothing: antialiased; }
@@ -90,6 +92,9 @@ button { font: inherit; }
 .btn-white::before { background: var(--tint); }
 .btn-white:hover { color: var(--blue-dark); transform: translateY(-2px); box-shadow: 0 18px 36px -18px rgba(11,18,32,.45); }
 .btn:disabled { opacity: .6; cursor: default; }
+.btn:active { transform: scale(.97); }
+.card:active, .shoot-card:active, .row-link:active, .step-cell:active { transform: scale(.985); }
+.inc > summary:active { transform: scale(.985); }
 .text-link { font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; }
 
 /* ---------- load-in animations ---------- */
@@ -306,12 +311,19 @@ textarea.input { resize: vertical; }
 .step-big { font-family: var(--display); font-size: clamp(64px, 7vw, 112px); line-height: .9; font-weight: 300; color: var(--blue); letter-spacing: -0.04em; }
 .chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 999px; background: var(--tint); color: var(--blue); font-size: 14px; font-weight: 600; }
 .chips { display: flex; flex-wrap: wrap; gap: 10px; }
-.faq summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 28px 0; min-height: 44px; }
+.faq summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 28px 18px; margin: 0 -18px; min-height: 44px; border-radius: 18px; transition: background .4s ease, transform .35s var(--ease-out); }
+.faq summary:active { background: rgba(255,255,255,.12); transform: scale(.985); }
+.faq[open] summary { background: rgba(255,255,255,.08); }
+.faq summary:focus-visible { outline: 2px solid rgba(255,255,255,.7); outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) { .faq summary:hover { background: rgba(255,255,255,.08); } }
+.faq .plus { width: 40px; height: 40px; padding: 9px; border-radius: 50%; border: 1px solid rgba(255,255,255,.3); transition: transform .5s var(--ease-out), background .4s ease, border-color .4s ease; }
+.faq[open] .plus { background: #fff; color: var(--blue); border-color: #fff; }
+.faq[open] .faq-a { animation: loIncIn .6s var(--ease-out); }
 .faq summary::-webkit-details-marker { display: none; }
 .faq .plus { transition: transform .5s var(--ease-out); flex: none; }
 .faq[open] .plus { transform: rotate(45deg); }
 .faq-q { font-family: var(--display); font-size: 22px; font-weight: 500; letter-spacing: -0.02em; }
-.faq-a { margin: 0 0 28px; max-width: 760px; font-size: 17px; line-height: 1.7; }
+.faq-a { margin: 0; padding: 4px 0 28px; max-width: 760px; font-size: 17px; line-height: 1.7; }
 
 /* ---------- work library ---------- */
 .pills { display: flex; flex-wrap: wrap; gap: 10px; }
