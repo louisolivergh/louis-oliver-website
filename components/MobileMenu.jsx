@@ -59,7 +59,7 @@ export default function MobileMenu({ items }) {
                   router.prefetch(it.href);
                   setTimeout(() => {
                     if (active) { setOpen(false); setGoing(null); } else router.push(it.href);
-                  }, 420);
+                  }, 820);
                 }}
               >
                 <span className="go-dot" aria-hidden="true" />
@@ -81,7 +81,7 @@ export default function MobileMenu({ items }) {
             setGoing('cta');
             setTimeout(() => {
               if (path === '/contact') { setOpen(false); setGoing(null); } else router.push('/contact');
-            }, 380);
+            }, 760);
           }}
         >
           Book a call <Arrow />
