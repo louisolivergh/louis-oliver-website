@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-export default function SetupCheckClient({ projectId, dataset, hasToken }) {
+export default function SetupCheckClient({ projectId, problem, dataset, hasToken }) {
   const [origin, setOrigin] = useState('');
   const [cors, setCors] = useState('checking…');
 
@@ -15,7 +15,8 @@ export default function SetupCheckClient({ projectId, dataset, hasToken }) {
   }, [projectId]);
 
   const rows = [
-    ['Project ID the site is using', projectId || '— missing —'],
+    ['Project ID the site is using', projectId || (problem === 'invalid' ? '✗ The value in Vercel is not a valid Project ID — paste just the short code (letters and numbers only)' : '— missing —')],
+    ['Project ID note', problem === 'cleaned' ? 'The value in Vercel had extra spaces or capitals — fixed automatically, but worth re-pasting cleanly' : problem ? 'Needs fixing in Vercel' : 'Looks good ✓'],
     ['Dataset', dataset],
     ['This page’s address (add exactly this to CORS)', origin],
     ['CORS test', cors],

@@ -1,5 +1,5 @@
 import SetupCheckClient from './SetupCheckClient';
-import { dataset, projectId } from '@/sanity/env';
+import { dataset, projectId, projectIdProblem } from '@/sanity/env';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Setup check', robots: { index: false } };
@@ -12,6 +12,7 @@ export default function SetupCheck() {
         <h1 className="h2">Is the dashboard connected?</h1>
         <SetupCheckClient
           projectId={projectId}
+          problem={projectIdProblem}
           dataset={dataset}
           hasToken={Boolean(process.env.SANITY_API_WRITE_TOKEN)}
         />
