@@ -26,15 +26,15 @@ export function StudioLogo() {
      so it looks larger yet takes the same space — the title text never moves. */
   const style = {
     display: 'block',
-    width: '1.5em',
-    height: '1.5em',
-    margin: '-0.25em',
+    width: '1.65em',
+    height: '1.65em',
+    margin: '-0.325em',
     position: 'relative',
-    left: '0.32em',
+    left: '0.395em',
     top: '0.26em',
     maxWidth: 'none',
     objectFit: 'contain',
-    borderRadius: '0.39em',
+    borderRadius: '0.43em',
     imageRendering: 'auto',
   };
   const src = !url
