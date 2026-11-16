@@ -1,5 +1,6 @@
 import { defineArrayMember, defineField, defineType } from 'sanity';
 import { EquipmentTickInput } from '../components/EquipmentTickInput';
+import { CategoryInput } from '../components/CategoryInput';
 
 /* ---------- reusable pieces ---------- */
 
@@ -184,7 +185,8 @@ export const shoot = defineType({
       title: 'Category',
       type: 'string',
       group: 'details',
-      description: 'Used for the filters on the Work page. Use the same spelling each time (e.g. “Retail”).',
+      description: 'Pick from the list, or choose “Add a custom category” for something new. Used for the filters on the Work page.',
+      components: { input: CategoryInput },
     }),
     defineField({ name: 'year', title: 'Year', type: 'string', group: 'details' }),
     defineField({
