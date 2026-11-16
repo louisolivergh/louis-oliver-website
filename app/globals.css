@@ -185,10 +185,16 @@ button { font: inherit; }
 .quote { margin: 0; font-family: var(--display); letter-spacing: -0.02em; font-size: clamp(24px, 2.6vw, 36px); line-height: 1.25; font-weight: 500; }
 .avatar { width: 52px; height: 52px; border-radius: 50%; background: var(--blue); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 600; }
 .dark-card { border-radius: 28px; background: var(--ink); color: #fff; padding: clamp(32px, 5vw, 64px); display: flex; flex-direction: column; gap: 8px; min-height: 420px; }
-.row-link { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 24px 0; border-top: 1px solid rgba(255,255,255,.15); color: #fff; text-decoration: none; border-radius: 12px; transition: background .4s ease, padding .5s var(--ease-out); }
-.row-link:hover { background: rgba(255,255,255,.08); padding-left: 20px; color: #fff; }
-.row-title { font-family: var(--display); font-size: 24px; font-weight: 500; letter-spacing: -0.02em; }
-.row-meta { font-size: 14px; color: rgba(255,255,255,.7); }
+.row-link { position: relative; display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 22px 20px; margin: 0 -20px; color: #fff; text-decoration: none; border-radius: 18px; transition: background .4s ease; }
+.row-link::before { content: ""; position: absolute; top: 0; left: 20px; right: 20px; height: 1px; background: rgba(255,255,255,.15); transition: opacity .3s ease; }
+.row-link:hover { background: rgba(255,255,255,.08); color: #fff; }
+.row-link:hover::before, .row-link:hover + .row-link::before { opacity: 0; }
+.row-title { font-family: var(--display); font-size: 24px; font-weight: 500; letter-spacing: -0.02em; min-width: 0; transition: transform .5s var(--ease-out); }
+.row-link:hover .row-title { transform: translateX(6px); }
+.row-meta { display: inline-flex; align-items: center; gap: 14px; flex: none; font-size: 14px; color: rgba(255,255,255,.7); }
+.row-arrow { width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(255,255,255,.25); display: flex; align-items: center; justify-content: center; color: #fff; transition: background .4s ease, border-color .4s ease, transform .5s var(--ease-out); }
+.row-link:hover .row-arrow { background: var(--blue); border-color: var(--blue); transform: translateX(2px); }
+@media (max-width: 520px) { .row-link { flex-direction: column; align-items: flex-start; gap: 10px; } }
 
 /* forms */
 .form { display: flex; flex-direction: column; gap: 28px; }

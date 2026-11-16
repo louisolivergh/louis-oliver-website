@@ -207,10 +207,13 @@ export default async function HomePage() {
           {featuredList.map((f, i) => (
             <Link key={i} href={f.href} className="row-link">
               <span className="row-title">{f.title}</span>
-              <span className="row-meta">{f.meta} ↗</span>
+              <span className="row-meta">
+                {f.meta}
+                <span className="row-arrow" aria-hidden="true"><Arrow className="" size={12} /></span>
+              </span>
             </Link>
           ))}
-          <div style={{ borderTop: '1px solid rgba(255,255,255,0.15)' }} />
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.15)' }} />
         </div>
       </section>
 
