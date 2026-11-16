@@ -69,19 +69,43 @@ const card = { background: '#fff', border: `1px solid ${LINE}`, borderRadius: 24
 const h2 = { margin: 0, fontFamily: DISPLAY, fontSize: 20, fontWeight: 600, letterSpacing: '-0.02em', color: INK };
 const eyebrow = { fontSize: 12, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: BLUE };
 
-function Stat({ icon: I, label, value, sub, accent }) {
-  return (
-    <div style={{ ...card, padding: 22, display: 'flex', flexDirection: 'column', gap: 14, background: accent ? BLUE : '#fff', borderColor: accent ? BLUE : LINE, color: accent ? '#fff' : INK }}>
-      <span style={{ width: 40, height: 40, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, background: accent ? 'rgba(255,255,255,0.16)' : TINT, color: accent ? '#fff' : BLUE }}>
+function Stat({ icon: I, label, value, sub, accent, href, onClick }) {
+  const style = {
+    ...card,
+    padding: '20px 22px',
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+    background: accent ? BLUE : '#fff',
+    borderColor: accent ? BLUE : LINE,
+    color: accent ? '#fff' : INK,
+    textDecoration: 'none',
+    cursor: href || onClick ? 'pointer' : 'default',
+    textAlign: 'left',
+    font: 'inherit',
+    width: '100%',
+    transition: 'transform .3s ease, box-shadow .3s ease, border-color .3s ease',
+  };
+  const inner = (
+    <>
+      <span style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: accent ? 'rgba(255,255,255,0.85)' : MUTED }}>{label}</span>
+        <span style={{ fontFamily: DISPLAY, fontSize: 34, fontWeight: 600, letterSpacing: '-0.04em', lineHeight: 1 }}>{value ?? '–'}</span>
+        {sub ? <span style={{ fontSize: 12, color: accent ? 'rgba(255,255,255,0.8)' : MUTED, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub}</span> : null}
+      </span>
+      <span style={{ flex: 'none', width: 36, height: 36, borderRadius: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, background: accent ? 'rgba(255,255,255,0.16)' : TINT, color: accent ? '#fff' : BLUE }}>
         <I />
       </span>
-      <span style={{ fontFamily: DISPLAY, fontSize: 36, fontWeight: 600, letterSpacing: '-0.04em', lineHeight: 1 }}>{value ?? '–'}</span>
-      <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <span style={{ fontSize: 14, fontWeight: 600 }}>{label}</span>
-        {sub ? <span style={{ fontSize: 12, color: accent ? 'rgba(255,255,255,0.8)' : MUTED }}>{sub}</span> : null}
-      </span>
-    </div>
+    </>
   );
+  const hover = {
+    onMouseEnter: (e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 16px 32px -20px rgba(16,77,230,0.45)'; },
+    onMouseLeave: (e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; },
+  };
+  if (onClick) return <button type="button" onClick={onClick} style={style} {...hover}>{inner}</button>;
+  if (href) return <a href={href} style={style} {...hover}>{inner}</a>;
+  return <div style={style}>{inner}</div>;
 }
 
 function Quick({ icon: I, label, intent, params, primary }) {
@@ -146,6 +170,7 @@ export function Overview() {
   };
 
   const site = typeof window !== 'undefined' ? window.location.origin : '';
+  const base = typeof window !== 'undefined' && window.location.pathname.startsWith('/studio') ? '/studio' : '';
   const first = OWNER_NAME;
   const enquiries = data ? data.latest.filter((e) => (filter === 'new' ? !e.replied : filter === 'replied' ? e.replied : true)) : [];
 
@@ -153,14 +178,14 @@ export function Overview() {
     <div style={{ height: '100%', overflow: 'auto', background: SOFT, fontFamily: BODY, color: INK }}>
       <div style={{ maxWidth: 1240, margin: '0 auto', padding: 'clamp(20px, 3vw, 40px)', display: 'flex', flexDirection: 'column', gap: 24 }}>
         {/* header */}
-        <div style={{ ...card, padding: 'clamp(24px, 3vw, 36px)', background: BLUE, borderColor: BLUE, color: '#fff', position: 'relative', overflow: 'hidden', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-end', gap: 20 }}>
+        <div style={{ ...card, padding: 'clamp(22px, 2.6vw, 32px)', background: BLUE, borderColor: BLUE, color: '#fff', position: 'relative', overflow: 'hidden', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-end', gap: 20 }}>
           <svg viewBox="0 0 400 400" style={{ position: 'absolute', right: -120, top: -140, width: 420, height: 420, opacity: 0.35 }} aria-hidden="true">
             <circle cx="200" cy="200" r="180" fill="none" stroke="#fff" strokeDasharray="2 8" />
             <circle cx="200" cy="200" r="120" fill="none" stroke="#fff" strokeOpacity="0.6" />
           </svg>
           <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <span style={{ ...eyebrow, color: 'rgba(255,255,255,0.8)' }}>Louis Oliver dashboard</span>
-            <h1 style={{ margin: 0, fontFamily: DISPLAY, fontSize: 'clamp(28px, 3.4vw, 44px)', fontWeight: 600, letterSpacing: '-0.035em', lineHeight: 1.05 }}>
+            <span style={{ ...eyebrow, color: 'rgba(255,255,255,0.8)' }}>{new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+            <h1 style={{ margin: 0, fontFamily: DISPLAY, fontSize: 'clamp(26px, 3vw, 38px)', fontWeight: 600, letterSpacing: '-0.035em', lineHeight: 1.05 }}>
               {greeting()}{first ? `, ${first}` : ''}.
             </h1>
             <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.88)' }}>
@@ -175,26 +200,23 @@ export function Overview() {
             <a href={site || '/'} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '12px 18px', borderRadius: 999, background: '#fff', color: BLUE, fontWeight: 600, fontSize: 14, textDecoration: 'none' }}>
               <span style={{ fontSize: 18, display: 'flex' }}><EyeIcon /></span> View website ↗
             </a>
-            <button type="button" onClick={load} style={{ padding: '12px 18px', borderRadius: 999, background: 'rgba(255,255,255,0.14)', color: '#fff', border: '1px solid rgba(255,255,255,0.35)', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
-              Refresh
-            </button>
           </div>
         </div>
 
         {error ? <div style={{ ...card, color: '#b42318', fontWeight: 600 }}>{error}</div> : null}
 
         {/* stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16 }}>
-          <Stat icon={InboxIcon} label="New enquiries" value={data && data.newEnquiries} sub={data ? `${data.enquiries} in total` : ''} accent />
-          <Stat icon={CameraIcon} label="Shoots" value={data && data.shoots} sub={data ? `${data.featured} on homepage${data.unpublished ? ` · ${data.unpublished} unpublished` : ''}` : ''} />
-          <Stat icon={PhotoIcon} label="Photos" value={data && data.photos} sub="across all shoots" />
-          <Stat icon={PlayIcon} label="Videos" value={data && data.videos} sub="across all shoots" />
-          <Stat icon={KitIcon} label="Equipment" value={data && data.equipment} sub="items in your kit" />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 14 }}>
+          <Stat icon={InboxIcon} label="To reply" value={data && data.newEnquiries} sub={data ? `${data.enquiries} enquiries in total` : ''} accent onClick={() => { setFilter('new'); const el = document.getElementById('lo-enquiries'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} />
+          <Stat icon={CameraIcon} label="Shoots" value={data && data.shoots} sub={data ? `${data.featured} on homepage${data.unpublished ? ` · ${data.unpublished} unpublished` : ''}` : ''} href={`${base}/structure/regular;shoot`} />
+          <Stat icon={PhotoIcon} label="Photos" value={data && data.photos} sub="across all shoots" href={`${base}/structure/regular;shoot`} />
+          <Stat icon={PlayIcon} label="Videos" value={data && data.videos} sub="across all shoots" href={`${base}/structure/regular;shoot`} />
+          <Stat icon={KitIcon} label="Equipment" value={data && data.equipment} sub="items in your kit" href={`${base}/structure/regular;equipment`} />
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 420px), 1fr))', gap: 24, alignItems: 'start' }}>
           {/* enquiries */}
-          <div style={{ ...card, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div id="lo-enquiries" style={{ ...card, display: 'flex', flexDirection: 'column', gap: 16, scrollMarginTop: 16 }}>
             <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
               <h2 style={h2}>Enquiries</h2>
               <div style={{ display: 'flex', gap: 6, background: SOFT, padding: 4, borderRadius: 999 }}>

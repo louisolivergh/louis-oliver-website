@@ -51,10 +51,11 @@ const structure = (S) =>
           S.list()
             .title('Regular updates')
             .items([
-              S.documentTypeListItem('shoot').title('Shoots & portfolio').icon(CameraIcon),
-              S.documentTypeListItem('equipment').title('Equipment list').icon(KitIcon),
+              S.documentTypeListItem('shoot').id('shoot').title('Shoots & portfolio').icon(CameraIcon),
+              S.documentTypeListItem('equipment').id('equipment').title('Equipment list').icon(KitIcon),
               S.divider(),
               S.listItem()
+                .id('enquiries')
                 .title('Enquiries')
                 .icon(InboxIcon)
                 .child(
