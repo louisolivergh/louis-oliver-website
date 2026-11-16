@@ -418,6 +418,8 @@ textarea.input { resize: vertical; }
   .menu-btn { display: flex; }
   .nav { display: flex; justify-content: space-between; padding-top: 12px; padding-bottom: 12px; }
   .site-header .logo { position: relative; z-index: 61; }
+  /* solid white on phones so Safari tints the status bar / Dynamic Island area white */
+  .site-header { background: #ffffff; backdrop-filter: none; -webkit-backdrop-filter: none; }
 }
 
 /* ---------- tighter spacing on phones ---------- */
