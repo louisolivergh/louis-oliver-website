@@ -270,10 +270,17 @@ textarea.input { resize: vertical; }
 .bar { position: absolute; height: 2px; margin-top: -1px; border-radius: 2px; background: currentColor; transform-origin: 1px 50%; transition: left .5s var(--ease-io), top .5s var(--ease-io), width .5s var(--ease-io), transform .5s var(--ease-io); }
 .bar-a { left: 4.5px; top: 10.5px; width: 5px; transform: rotate(225deg); }
 .bar-b { left: 4.5px; top: 10.5px; width: 10px; transform: rotate(-48deg); }
-.inc > summary:hover, .inc[open] > summary { color: var(--inc-on-text); padding-left: 12px; background: var(--inc-row); }
-.inc > summary:hover .inc-dot, .inc[open] > summary .inc-dot { background: var(--inc-on-bg); color: var(--inc-on-fg); transform: scale(1.12); }
-.inc > summary:hover .bar-a, .inc[open] > summary .bar-a { left: 6px; top: 9.5px; width: 6.5px; transform: rotate(225deg); }
-.inc > summary:hover .bar-b, .inc[open] > summary .bar-b { left: 6px; top: 9.5px; width: 6.5px; transform: rotate(-45deg); }
+.inc[open] > summary { color: var(--inc-on-text); padding-left: 12px; background: var(--inc-row); }
+.inc[open] > summary .inc-dot { background: var(--inc-on-bg); color: var(--inc-on-fg); transform: scale(1.12); }
+.inc[open] > summary .bar-a { left: 6px; top: 9.5px; width: 6.5px; transform: rotate(225deg); }
+.inc[open] > summary .bar-b { left: 6px; top: 9.5px; width: 6.5px; transform: rotate(-45deg); }
+/* hover preview only on devices with a real mouse — on phones a tap would otherwise 'stick' */
+@media (hover: hover) and (pointer: fine) {
+  .inc > summary:hover { color: var(--inc-on-text); padding-left: 12px; background: var(--inc-row); }
+  .inc > summary:hover .inc-dot { background: var(--inc-on-bg); color: var(--inc-on-fg); transform: scale(1.12); }
+  .inc > summary:hover .bar-a { left: 6px; top: 9.5px; width: 6.5px; transform: rotate(225deg); }
+  .inc > summary:hover .bar-b { left: 6px; top: 9.5px; width: 6.5px; transform: rotate(-45deg); }
+}
 .inc[open] > summary .inc-ico { transform: rotate(180deg); }
 .inc-body { margin: 0; padding: 0 12px 20px 54px; font-size: 15px; line-height: 1.65; color: var(--sv-muted); }
 .inc[open] .inc-body { animation: loIncIn .6s var(--ease-out); }
