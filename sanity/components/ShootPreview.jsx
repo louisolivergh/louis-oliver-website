@@ -156,8 +156,8 @@ export function ShootPreview(props) {
                 <section key={s._key}>
                   {heading}
                   {(s.videos || []).length ? (
-                    <div style={{ columns: '3 180px', columnGap: 14 }}>
-                      {s.videos.map((v, i) => <div key={v._key || i} style={{ breakInside: 'avoid', marginBottom: 14 }}><Video v={v} inGrid /></div>)}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 14, alignItems: 'start' }}>
+                      {s.videos.map((v, i) => <div key={v._key || i} style={{ minWidth: 0 }}><Video v={v} inGrid /></div>)}
                     </div>
                   ) : <Empty>Add videos to this grid</Empty>}
                 </section>
