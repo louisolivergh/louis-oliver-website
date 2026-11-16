@@ -6,7 +6,7 @@ import { LogoMark } from './DashIcons';
 
 let cached; // remember the logo between renders so it doesn't flicker
 
-/** Dashboard icon: uses the logo from "Logo & footer", or the LO mark if none is set. */
+/** Dashboard icon: "Dashboard logo" from Logo & footer, else the site logo, else the LO mark. */
 export function StudioLogo() {
   const client = useClient({ apiVersion: '2024-10-01' });
   const [url, setUrl] = useState(cached);
@@ -15,7 +15,7 @@ export function StudioLogo() {
     let alive = true;
     const load = () =>
       client
-        .fetch('*[_id == "siteSettings"][0].logo.asset->url')
+        .fetch('*[_id == "siteSettings"][0]{ "u": coalesce(dashboardLogo.asset->url, logo.asset->url) }.u')
         .then((u) => { cached = u || null; if (alive) setUrl(cached); })
         .catch(() => {});
     load();

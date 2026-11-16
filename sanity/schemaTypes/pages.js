@@ -50,6 +50,12 @@ export const siteSettings = defineType({
     defineField({ name: 'logo', title: 'Logo image', type: 'image', description: 'Replaces the logo text when added.' }),
     defineField({ name: 'logoFooter', title: 'Footer logo image', type: 'image', description: 'Optional — e.g. a white version for the dark footer.' }),
     defineField({
+      name: 'dashboardLogo',
+      title: 'Dashboard logo',
+      type: 'image',
+      description: 'Shown in the top-left of this dashboard. A square image works best. If empty, your logo image is used, then the blue LO mark.',
+    }),
+    defineField({
       name: 'favicon',
       title: 'Favicon',
       type: 'image',
