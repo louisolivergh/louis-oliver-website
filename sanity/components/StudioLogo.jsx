@@ -26,7 +26,7 @@ export function StudioLogo() {
   if (!url) return <LogoMark />;
   return (
     <img
-      src={`${url}?h=96&fit=max&auto=format`}
+      src={url.toLowerCase().endsWith('.svg') ? url : `${url}?h=160&fit=max&q=100`}
       alt=""
       style={{ width: '1em', height: '1em', objectFit: 'contain', borderRadius: '0.26em', display: 'block' }}
     />

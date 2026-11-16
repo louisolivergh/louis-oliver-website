@@ -3,7 +3,7 @@ import ContactForm from '@/components/ContactForm';
 import FeaturedWork from '@/components/FeaturedWork';
 import { Arrow, Icon, Rings } from '@/components/Icons';
 import { two } from '@/lib/content';
-import { Q, focus, img, pick, sanityFetch } from '@/lib/sanity';
+import { Q, focus, img, logoSrc, pick, sanityFetch } from '@/lib/sanity';
 
 export const revalidate = 30;
 
@@ -39,7 +39,7 @@ export default async function HomePage() {
   ]);
   const logoItems = (home.clientLogos || [])
     .filter((c) => c && c.show !== false && (c.logoUrl || c.name))
-    .map((c) => ({ name: c.name || '', logo: c.logoUrl ? (c.logoUrl.endsWith('.svg') ? c.logoUrl : `${c.logoUrl}?h=160&fit=max&auto=format`) : '' }));
+    .map((c) => ({ name: c.name || '', logo: c.logoUrl ? logoSrc(c.logoUrl, 60) : '' }));
   const hasLogoList = (home.clientLogos || []).length > 0;
   const fallbackNames = pick(home.clients, ['[CLIENT]', '[CLIENT]', '[CLIENT]', '[CLIENT]', '[CLIENT]', '[CLIENT]']).map((n) => ({ name: n, logo: '' }));
   const clientItems = hasLogoList ? logoItems : fallbackNames;
