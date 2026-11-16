@@ -22,7 +22,8 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-body { margin: 0; background: #0b1220; color: var(--ink); font-family: var(--body); -webkit-font-smoothing: antialiased; }
+html, body { background: #ffffff; }
+body { margin: 0; color: var(--ink); font-family: var(--body); -webkit-font-smoothing: antialiased; }
 img, video { display: block; max-width: 100%; }
 a { color: var(--blue); }
 a:hover { color: var(--blue-dark); }

@@ -7,6 +7,12 @@ const inter = Inter({ subsets: ['latin'], weight: ['400', '500', '600', '700'], 
 
 export const revalidate = 30;
 
+/* White behind the iPhone status bar / Dynamic Island, matching the header */
+export const viewport = {
+  themeColor: '#ffffff',
+  colorScheme: 'light',
+};
+
 /* fit=fill keeps the whole image (never cropped), padding any leftover space transparently */
 const iconUrl = (url, size) => (url.toLowerCase().endsWith('.svg') ? url : `${url}?w=${size}&h=${size}&fit=fill&bg=00000000&q=100`);
 
