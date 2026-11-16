@@ -169,7 +169,7 @@ export const shoot = defineType({
     { name: 'page', title: 'Page sections' },
   ],
   fields: [
-    defineField({ name: 'title', title: 'Shoot title', type: 'string', group: 'details', validation: (r) => r.required() }),
+    defineField({ name: 'title', title: 'Client', type: 'string', group: 'details', description: 'Shown as the big heading on the shoot page and on its card.', validation: (r) => r.required() }),
     defineField({
       name: 'slug',
       title: 'Web address',
@@ -179,7 +179,7 @@ export const shoot = defineType({
       description: 'Click “Generate”. This becomes yoursite.com/work/…',
       validation: (r) => r.required(),
     }),
-    defineField({ name: 'client', title: 'Client / store', type: 'string', group: 'details' }),
+    defineField({ name: 'client', title: 'Location', type: 'string', group: 'details', description: 'Where the shoot took place, e.g. Manchester or the store’s branch.' }),
     defineField({
       name: 'category',
       title: 'Category',
@@ -222,7 +222,7 @@ export const shoot = defineType({
   preview: {
     select: { title: 'title', client: 'client', category: 'category', media: 'thumbnail', featured: 'featured' },
     prepare: ({ title, client, category, media, featured }) => ({
-      title: (featured ? '★ ' : '') + (title || 'Untitled shoot'),
+      title: (featured ? '★ ' : '') + (title || 'Untitled client'),
       subtitle: [client, category].filter(Boolean).join(' · '),
       media,
     }),
