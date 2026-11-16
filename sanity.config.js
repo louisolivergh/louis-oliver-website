@@ -12,19 +12,37 @@ const structure = (S) =>
   S.list()
     .title('Louis Oliver')
     .items([
-      S.documentTypeListItem('shoot').title('Shoots (Work page)'),
-      S.documentTypeListItem('equipment').title('Equipment'),
-      S.documentTypeListItem('processStep').title('Process steps'),
-      S.divider(),
-      singleton(S, 'homePage', 'Home page'),
-      singleton(S, 'servicesPage', 'Services page'),
-      singleton(S, 'aboutPage', 'About page'),
-      singleton(S, 'processPage', 'Process page'),
-      singleton(S, 'workPage', 'Work page'),
-      singleton(S, 'contactPage', 'Contact page'),
-      singleton(S, 'siteSettings', 'Site settings (logo, footer)'),
-      S.divider(),
-      S.documentTypeListItem('enquiry').title('Enquiries (from the contact form)'),
+      S.listItem()
+        .title('Regular updates')
+        .id('regular')
+        .child(
+          S.list()
+            .title('Regular updates')
+            .items([
+              S.documentTypeListItem('shoot').title('Shoots & portfolio (Work page)'),
+              S.documentTypeListItem('equipment').title('Equipment list'),
+              S.divider(),
+              S.documentTypeListItem('enquiry').title('Enquiries (from the contact form)'),
+            ])
+        ),
+      S.listItem()
+        .title('Website pages & setup')
+        .id('website')
+        .child(
+          S.list()
+            .title('Website pages & setup')
+            .items([
+              singleton(S, 'homePage', 'Home page'),
+              singleton(S, 'servicesPage', 'Services page'),
+              singleton(S, 'aboutPage', 'About page'),
+              singleton(S, 'processPage', 'Process page'),
+              S.documentTypeListItem('processStep').title('Process steps'),
+              singleton(S, 'workPage', 'Work page (headline & layout)'),
+              singleton(S, 'contactPage', 'Contact page'),
+              S.divider(),
+              singleton(S, 'siteSettings', 'Site settings (logo, footer)'),
+            ])
+        ),
     ]);
 
 export default defineConfig({
