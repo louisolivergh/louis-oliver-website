@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useClient } from 'sanity';
 
 let cached; // remember the logo between renders so it doesn't flicker
@@ -9,6 +9,20 @@ let cached; // remember the logo between renders so it doesn't flicker
 export function StudioLogo() {
   const client = useClient({ apiVersion: '2024-10-01' });
   const [url, setUrl] = useState(cached);
+  const ref = useRef(null);
+
+  /* The dashboard puts this icon in a small box that crops anything bigger.
+     Let the few boxes around it show overflow so the larger logo is never cut off. */
+  useEffect(() => {
+    let el = ref.current && ref.current.parentElement;
+    for (let i = 0; el && i < 4; i += 1, el = el.parentElement) {
+      const cs = window.getComputedStyle(el);
+      if (cs.overflow !== 'visible' || cs.overflowX !== 'visible' || cs.overflowY !== 'visible') {
+        el.style.overflow = 'visible';
+      }
+      if (cs.contain && cs.contain !== 'none') el.style.contain = 'none';
+    }
+  });
 
   useEffect(() => {
     let alive = true;
@@ -42,7 +56,7 @@ export function StudioLogo() {
     : url.toLowerCase().endsWith('.svg')
       ? url
       : `${url}?h=256&fit=max&q=100`;
-  return <img src={src} alt="" decoding="async" style={style} />;
+  return <img ref={ref} src={src} alt="" decoding="async" style={style} />;
 }
 
 /**
