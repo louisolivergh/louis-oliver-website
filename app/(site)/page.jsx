@@ -39,7 +39,7 @@ export default async function HomePage() {
   ]);
   const logoItems = (home.clientLogos || [])
     .filter((c) => c && c.show !== false && (c.logoUrl || c.name))
-    .map((c) => ({ name: c.name || '', logo: c.logoUrl ? img(c.logoUrl, 400) : '' }));
+    .map((c) => ({ name: c.name || '', logo: c.logoUrl ? (c.logoUrl.endsWith('.svg') ? c.logoUrl : `${c.logoUrl}?h=160&fit=max&auto=format`) : '' }));
   const hasLogoList = (home.clientLogos || []).length > 0;
   const fallbackNames = pick(home.clients, ['[CLIENT]', '[CLIENT]', '[CLIENT]', '[CLIENT]', '[CLIENT]', '[CLIENT]']).map((n) => ({ name: n, logo: '' }));
   const clientItems = hasLogoList ? logoItems : fallbackNames;

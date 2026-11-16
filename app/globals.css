@@ -147,8 +147,9 @@ button { font: inherit; }
 .marquee { display: flex; width: max-content; animation: loMarquee 38s linear infinite; }
 .marquee-wrap:hover .marquee { animation-play-state: paused; }
 .marquee .client { display: flex; align-items: center; padding: 0 48px; font-family: var(--display); letter-spacing: -0.035em; font-size: 28px; font-weight: 600; color: #b3bccb; white-space: nowrap; }
-.marquee .client img { height: 44px; width: auto; max-width: 180px; object-fit: contain; filter: grayscale(1); opacity: .55; transition: filter .4s ease, opacity .4s ease; }
-.marquee .client img:hover { filter: none; opacity: 1; }
+.marquee .client { padding-top: 8px; padding-bottom: 8px; }
+.marquee .client img { display: block; height: 52px; width: auto; max-width: 200px; object-fit: contain; overflow: visible; transition: transform .5s var(--ease-out); }
+.marquee .client img:hover { transform: scale(1.06); }
 @keyframes loMarquee { to { transform: translateX(-50%); } }
 
 /* ---------- sections & cards ---------- */
