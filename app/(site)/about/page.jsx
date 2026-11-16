@@ -51,7 +51,7 @@ export default async function AboutPage() {
       </section>
 
       <section className="panel-wrap" style={{ paddingTop: 0 }}>
-        <div className="panel grow" style={{ display: 'flex', flexDirection: 'column', gap: 64 }}>
+        <div className="panel grow" style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(29px, 5.3vw, 64px)' }}>
           <Rings variant="panel" />
           <div className="reveal" style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 760 }}>
             <span className="eyebrow eyebrow-white">02 — Values</span>
@@ -71,7 +71,7 @@ export default async function AboutPage() {
         </div>
       </section>
 
-      <section className="container" style={{ paddingTop: 120, paddingBottom: 96, display: 'flex', flexDirection: 'column', gap: 56 }}>
+      <section className="container" style={{ paddingTop: 'clamp(54px, 10.0vw, 120px)', paddingBottom: 'clamp(43px, 8.0vw, 96px)', display: 'flex', flexDirection: 'column', gap: 'clamp(25px, 4.7vw, 56px)' }}>
         <div className="section-head reveal" style={{ marginBottom: 0 }}>
           <div className="section-head-copy">
             <span className="eyebrow">03 — Equipment</span>

@@ -3,7 +3,7 @@ import { Arrow, Rings } from './Icons';
 
 export default function CtaBand({ settings, title }) {
   return (
-    <section className="panel-wrap" style={{ paddingBottom: 96 }}>
+    <section className="panel-wrap" style={{ paddingBottom: 'clamp(43px, 8.0vw, 96px)' }}>
       <div className="panel grow cta-panel">
         <Rings variant="panel" />
         <div className="reveal" style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 760 }}>

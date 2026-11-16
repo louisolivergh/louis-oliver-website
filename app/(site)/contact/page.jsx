@@ -13,7 +13,7 @@ export default async function ContactPage() {
 
   return (
     <>
-      <section className="container" style={{ paddingTop: 112, paddingBottom: 112, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 440px), 1fr))', gap: 72 }}>
+      <section className="container" style={{ paddingTop: 'clamp(50px, 9.3vw, 112px)', paddingBottom: 'clamp(50px, 9.3vw, 112px)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 440px), 1fr))', gap: 'clamp(32px, 6.0vw, 72px)' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
           <div className="fade f1"><span className="eyebrow">Contact</span></div>
           <h1 className="h1 h1-home">
@@ -44,8 +44,8 @@ export default async function ContactPage() {
         </div>
       </section>
 
-      <section className="panel-wrap" style={{ paddingTop: 0, paddingBottom: 96 }}>
-        <div className="panel grow" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 380px), 1fr))', gap: '48px 80px' }}>
+      <section className="panel-wrap" style={{ paddingTop: 0, paddingBottom: 'clamp(43px, 8.0vw, 96px)' }}>
+        <div className="panel grow" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 380px), 1fr))', gap: 'clamp(28px, 5vw, 48px) clamp(32px, 6vw, 80px)' }}>
           <div className="reveal" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <span className="eyebrow eyebrow-white">Before you reach out</span>
             <h2 className="display" style={{ margin: 0, fontSize: 'clamp(36px, 4.2vw, 60px)', lineHeight: 1.02, fontWeight: 600 }}>

@@ -41,7 +41,7 @@ export default function WorkLibrary({ shoots, ratio }) {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 48 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(24px, 4.0vw, 48px)' }}>
       <div className="fade f3" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
         <div className="pills" role="group" aria-label="Filter shoots by category">
           {options.map((o) => (

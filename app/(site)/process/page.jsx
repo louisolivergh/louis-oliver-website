@@ -24,7 +24,7 @@ export default async function ProcessPage() {
         intro={pick(page.intro, '[Explain how you work with clients and why your process gets results.]')}
       />
 
-      <section className="container" style={{ paddingTop: 24, paddingBottom: 96 }}>
+      <section className="container" style={{ paddingTop: 24, paddingBottom: 'clamp(43px, 8.0vw, 96px)' }}>
         {list.map((s, i) => (
           <article key={s._id || i} className="step-row reveal">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -46,7 +46,7 @@ export default async function ProcessPage() {
       </section>
 
       <section className="panel-wrap" style={{ paddingTop: 0 }}>
-        <div className="panel grow" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 380px), 1fr))', gap: '48px 80px' }}>
+        <div className="panel grow" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 380px), 1fr))', gap: 'clamp(28px, 5vw, 48px) clamp(32px, 6vw, 80px)' }}>
           <div className="reveal" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <span className="eyebrow eyebrow-white">Questions</span>
             <h2 className="display" style={{ margin: 0, fontSize: 'clamp(36px, 4.2vw, 60px)', lineHeight: 1.02, fontWeight: 600 }}>

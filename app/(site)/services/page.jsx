@@ -41,7 +41,7 @@ export default async function ServicesPage() {
         intro={pick(page.intro, '[Introduce your services and the kind of clients you serve.]')}
       />
 
-      <section className="container" style={{ paddingBottom: 40 }}>
+      <section className="container" style={{ paddingBottom: 'clamp(24px, 3.3vw, 40px)' }}>
         <div className="svc-jump fade f3">
           {services.map((s, i) => (
             <a key={i} href={`#service-${i + 1}`} className="card">
@@ -111,7 +111,7 @@ export default async function ServicesPage() {
         })}
       </section>
 
-      <section className="container" style={{ paddingBottom: 96, display: 'flex', flexDirection: 'column', gap: 48 }}>
+      <section className="container" style={{ paddingBottom: 'clamp(43px, 8.0vw, 96px)', display: 'flex', flexDirection: 'column', gap: 'clamp(24px, 4.0vw, 48px)' }}>
         <div className="reveal section-head-copy">
           <span className="eyebrow">The difference</span>
           <h2 className="h2">{pick(page.whyTitle, '[Why the biggest clients work with me.]')}</h2>

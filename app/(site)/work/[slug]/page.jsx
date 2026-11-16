@@ -38,7 +38,7 @@ export default async function ShootPage({ params }) {
   const sections = (shoot.sections || []).map((s) => ({ ...s, equipmentList: equipList(s.equipment, s.extraEquipment) }));
 
   return (
-    <article className="container" style={{ paddingTop: 48, paddingBottom: 120, display: 'flex', flexDirection: 'column', gap: 56 }}>
+    <article className="container" style={{ paddingTop: 'clamp(24px, 4.0vw, 48px)', paddingBottom: 'clamp(54px, 10.0vw, 120px)', display: 'flex', flexDirection: 'column', gap: 'clamp(25px, 4.7vw, 56px)' }}>
       <div className="fade f1">
         <Link href="/work" className="back"><BackArrow /> All work</Link>
       </div>

@@ -31,7 +31,7 @@ export default async function WorkPage() {
         line2={pick(page.heroLine2, 'ambitious clients.]')}
         intro={pick(page.intro, '[A library of shoots. Use the filters to browse by category.]')}
       />
-      <section className="container" style={{ paddingBottom: 120 }}>
+      <section className="container" style={{ paddingBottom: 'clamp(54px, 10.0vw, 120px)' }}>
         <WorkLibrary shoots={cards} ratio={SHAPES[page.thumbShape] || SHAPES.landscape} />
       </section>
       <CtaBand settings={settings} title="[Your project could be next.]" />

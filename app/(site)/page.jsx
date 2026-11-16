@@ -213,7 +213,7 @@ export default async function HomePage() {
       </section>
 
       {/* PROCESS */}
-      <section className="container" style={{ paddingTop: 120, paddingBottom: 96 }}>
+      <section className="container" style={{ paddingTop: 'clamp(54px, 10.0vw, 120px)', paddingBottom: 'clamp(43px, 8.0vw, 96px)' }}>
         <div className="reveal" style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 720, marginBottom: 64 }}>
           <span className="eyebrow">03 — How it works</span>
           <h2 className="h2">{pick(home.processTitle, '[A clear process from first call to results.]')}</h2>
@@ -235,7 +235,7 @@ export default async function HomePage() {
 
       {/* CONTACT */}
       <section style={{ borderTop: '1px solid var(--line-soft)' }}>
-        <div className="container" style={{ paddingTop: 120, paddingBottom: 120, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 440px), 1fr))', gap: 64 }}>
+        <div className="container" style={{ paddingTop: 'clamp(54px, 10.0vw, 120px)', paddingBottom: 'clamp(54px, 10.0vw, 120px)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 440px), 1fr))', gap: 'clamp(29px, 5.3vw, 64px)' }}>
           <div className="reveal" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             <span className="eyebrow">05 — Contact</span>
             <h2 className="display" style={{ margin: 0, fontSize: 'clamp(44px, 5.6vw, 84px)', lineHeight: 0.98, fontWeight: 600 }}>
