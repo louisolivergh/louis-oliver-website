@@ -7,7 +7,7 @@ export default function Logo({ settings, footer = false }) {
     <Link href="/" className="logo" aria-label={`${settings.logoName} home`}>
       {src ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img className="logo-img" src={`${src}?h=${settings.logoHeight * 2}&auto=format`} alt={settings.logoName} style={{ height: settings.logoHeight }} />
+        <img className="logo-img" src={`${src}?h=${settings.logoHeight * 2}&auto=format`} alt={settings.logoName} style={{ height: settings.logoHeight, borderRadius: Math.round(settings.logoHeight * 0.26) }} />
       ) : (
         <>
           {settings.showMark ? (
