@@ -7,11 +7,13 @@ const inter = Inter({ subsets: ['latin'], weight: ['400', '500', '600', '700'], 
 
 export const revalidate = 30;
 
-const iconUrl = (url, size) => (url.toLowerCase().endsWith('.svg') ? url : `${url}?w=${size}&h=${size}&fit=crop&q=100`);
+/* fit=fill keeps the whole image (never cropped), padding any leftover space transparently */
+const iconUrl = (url, size) => (url.toLowerCase().endsWith('.svg') ? url : `${url}?w=${size}&h=${size}&fit=fill&bg=00000000&q=100`);
 
 export async function generateMetadata() {
   const s = (await sanityFetch(Q.settings, {}, {})) || {};
-  const src = s.faviconUrl || s.logoUrl || '';
+  // Favicon → square dashboard logo → blue LO mark (the wide website logo is never squeezed into the tab)
+  const src = s.faviconUrl || s.dashboardLogoUrl || '';
   const icons = src
     ? {
         icon: [
