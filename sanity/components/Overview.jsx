@@ -72,7 +72,7 @@ const CSS = `
 .lo-ov-quick:hover .lo-ov-plus { transform: scale(1.25); }
 .lo-ov-plus { transition: transform .45s cubic-bezier(.16,1,.3,1); display: inline-block; }
 .lo-ov-row { animation: loOvUp .6s cubic-bezier(.16,1,.3,1) backwards; animation-delay: var(--d, 0ms); }
-.lo-ov-check { transition: background .25s ease, border-color .25s ease, transform .25s ease; }
+.lo-ov-check { flex: none; transition: background .25s ease, border-color .25s ease, transform .25s ease; }
 .lo-ov-check:hover { transform: scale(1.08); border-color: #104de6 !important; }
 .lo-ov-open { animation: loOvUp .45s cubic-bezier(.16,1,.3,1) backwards; }
 .lo-ov-shoot { transition: background .3s ease, transform .4s cubic-bezier(.16,1,.3,1); }
@@ -88,8 +88,8 @@ const CSS = `
 @keyframes loOvBump { 0% { transform: scale(1); } 40% { transform: scale(1.14); } 100% { transform: scale(1); } }
 @keyframes loOvRing { 0% { box-shadow: 0 0 0 0 rgba(16,77,230,.45); } 100% { box-shadow: 0 0 0 10px rgba(16,77,230,0); } }
 @keyframes loOvChip { 0% { opacity: 0; transform: translateX(-8px) scale(.9); } 100% { opacity: 1; transform: none; } }
-.lo-ov-leave-r { overflow: hidden; animation: loOvLeaveR .7s cubic-bezier(.7,0,.2,1) forwards !important; }
-.lo-ov-leave-l { overflow: hidden; animation: loOvLeaveL .7s cubic-bezier(.7,0,.2,1) forwards !important; }
+.lo-ov-leave-r { overflow: clip; overflow-clip-margin: 12px; animation: loOvLeaveR .7s cubic-bezier(.7,0,.2,1) forwards !important; }
+.lo-ov-leave-l { overflow: clip; overflow-clip-margin: 12px; animation: loOvLeaveL .7s cubic-bezier(.7,0,.2,1) forwards !important; }
 .lo-ov-flash { animation: loOvFlash .9s ease-out !important; border-radius: 12px; }
 .lo-ov-bump { animation: loOvBump .6s cubic-bezier(.16,1,.3,1); }
 .lo-ov-count { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px; margin-left: 6px; border-radius: 999px; font-size: 11px; font-weight: 700; transition: background .3s ease, color .3s ease; }
@@ -355,7 +355,7 @@ export function Overview() {
                 const done = leave ? leave === 'replied' : !!e.replied;
                 const rowCls = `lo-ov-row${leave ? (leave === 'replied' ? ' lo-ov-leave-r' : ' lo-ov-leave-l') : ''}${flash === e._id ? ' lo-ov-flash' : ''}`;
                 return (
-                  <div key={`${filter}-${e._id}`} className={rowCls} style={{ '--d': `${i * 60}ms`, borderTop: `1px solid ${LINE}`, padding: '14px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div key={`${filter}-${e._id}`} className={rowCls} style={{ '--d': `${i * 60}ms`, borderTop: `1px solid ${LINE}`, padding: '14px 12px', margin: '0 -12px', borderRadius: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                       <button
                         type="button"
@@ -385,7 +385,7 @@ export function Overview() {
                       )}
                     </div>
                     {isOpen ? (
-                      <div className="lo-ov-open" style={{ marginLeft: 38, padding: 16, borderRadius: 16, background: SOFT, display: 'flex', flexDirection: 'column', gap: 10, fontSize: 14 }}>
+                      <div className="lo-ov-open" style={{ marginLeft: 40, padding: 16, borderRadius: 16, background: SOFT, display: 'flex', flexDirection: 'column', gap: 10, fontSize: 14 }}>
                         {e.details ? <p style={{ margin: 0, lineHeight: 1.6, whiteSpace: 'pre-line' }}>{e.details}</p> : <p style={{ margin: 0, color: MUTED }}>No project details given.</p>}
                         {e.budget ? <span style={{ color: MUTED }}>Budget: <strong style={{ color: INK }}>{e.budget}</strong></span> : null}
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
