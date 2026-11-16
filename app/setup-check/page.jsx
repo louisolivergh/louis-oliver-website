@@ -15,6 +15,12 @@ export default function SetupCheck() {
           problem={projectIdProblem}
           dataset={dataset}
           hasToken={Boolean(process.env.SANITY_API_WRITE_TOKEN)}
+          email={{
+            hasKey: Boolean(process.env.RESEND_API_KEY),
+            to: process.env.NOTIFY_EMAIL || 'contact@louisoliver.co.uk (default)',
+            from: process.env.NOTIFY_FROM || 'onboarding@resend.dev (default — set NOTIFY_FROM)',
+            site: process.env.SITE_URL || '(not set — uses this address)',
+          }}
         />
       </div>
     </div>

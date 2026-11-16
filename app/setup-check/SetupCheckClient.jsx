@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react';
 
-export default function SetupCheckClient({ projectId, problem, dataset, hasToken }) {
+export default function SetupCheckClient({ projectId, problem, dataset, hasToken, email }) {
   const [origin, setOrigin] = useState('');
   const [cors, setCors] = useState('checking…');
+  const [test, setTest] = useState('');
 
   useEffect(() => {
     setOrigin(window.location.origin);
@@ -20,9 +21,25 @@ export default function SetupCheckClient({ projectId, problem, dataset, hasToken
     ['Dataset', dataset],
     ['This page’s address (add exactly this to CORS)', origin],
     ['CORS test', cors],
-    ['Contact-form token set', hasToken ? 'Yes ✓' : 'No'],
+    ['Contact-form token set (needed for enquiries to save)', hasToken ? 'Yes ✓' : 'No ✗ — add SANITY_API_WRITE_TOKEN'],
+    ['Resend key set', email.hasKey ? 'Yes ✓' : 'No ✗ — add RESEND_API_KEY, then redeploy'],
+    ['Emails go to', email.to],
+    ['Emails come from', email.from],
+    ['Dashboard link in emails', email.site],
   ];
+  const sendTest = async () => {
+    setTest('Sending…');
+    try {
+      const r = await fetch('/api/test-email', { method: 'POST' });
+      const j = await r.json();
+      setTest(j.ok ? `Sent ✓ — check ${j.to} (and junk). It should also appear in Resend → Emails.` : `Not sent ✗ — ${j.reason}`);
+    } catch (e) {
+      setTest('Not sent ✗ — the test could not reach the website.');
+    }
+  };
+
   return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
     <div style={{ display: 'flex', flexDirection: 'column', border: '1px solid var(--line)', borderRadius: 20, overflow: 'hidden' }}>
       {rows.map(([k, v]) => (
         <div key={k} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.4fr)', gap: 16, padding: '16px 20px', borderTop: '1px solid var(--line)' }}>
@@ -30,6 +47,11 @@ export default function SetupCheckClient({ projectId, problem, dataset, hasToken
           <span style={{ fontWeight: 600, fontSize: 15, wordBreak: 'break-all' }}>{v}</span>
         </div>
       ))}
+    </div>
+    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 16 }}>
+      <button type="button" className="btn btn-primary btn-sm" onClick={sendTest}>Send a test enquiry email</button>
+      {test ? <span style={{ fontWeight: 600, fontSize: 15 }}>{test}</span> : null}
+    </div>
     </div>
   );
 }
