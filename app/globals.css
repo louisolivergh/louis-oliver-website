@@ -109,15 +109,14 @@ button { font: inherit; }
 .dot-pulse { animation: loDot 2.4s ease-out infinite; }
 @keyframes loDot { 0% { box-shadow: 0 0 0 0 rgba(16,77,230,.5); } 100% { box-shadow: 0 0 0 10px rgba(16,77,230,0); } }
 
-/* scroll reveal */
-@supports (animation-timeline: view()) {
-  .reveal { animation: loReveal linear both; animation-timeline: view(); animation-range: entry 0% cover 28%; }
-  .reveal-2 { animation: loReveal linear both; animation-timeline: view(); animation-range: entry 8% cover 34%; }
-  .reveal-3 { animation: loReveal linear both; animation-timeline: view(); animation-range: entry 16% cover 40%; }
-  .grow { animation: loGrow linear both; animation-timeline: view(); animation-range: entry 10% cover 45%; }
-  @keyframes loReveal { from { opacity: 0; transform: translateY(60px); } to { opacity: 1; transform: none; } }
-  @keyframes loGrow { from { transform: scale(.92); border-radius: 64px; } to { transform: none; border-radius: 32px; } }
-}
+/* scroll reveal — sections ease in as they enter the screen (see components/RevealObserver.jsx).
+   Only applied once the script is running, so nothing is ever hidden without it. */
+.reveal-ready .reveal, .reveal-ready .reveal-2, .reveal-ready .reveal-3 { opacity: 0; transform: translateY(48px); transition: opacity .9s var(--ease-out), transform 1.1s var(--ease-out); }
+.reveal-ready .reveal-2 { transition-delay: .1s; }
+.reveal-ready .reveal-3 { transition-delay: .2s; }
+.reveal-ready .grow { transform: scale(.94); transition: transform 1.2s var(--ease-out), border-radius 1.2s var(--ease-out); }
+.reveal-ready .is-in { opacity: 1; transform: none; }
+.reveal-ready .grow.is-in { transform: none; }
 
 /* ---------- hero ---------- */
 .hero { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 480px), 1fr)); gap: 64px; align-items: center; padding-top: 96px; padding-bottom: 80px; }
@@ -186,6 +185,19 @@ button { font: inherit; }
 .quote-card { border-radius: 28px; background: var(--soft); padding: clamp(32px, 5vw, 64px); display: flex; flex-direction: column; gap: 32px; justify-content: space-between; min-height: 420px; }
 .quote { margin: 0; font-family: var(--display); letter-spacing: -0.02em; font-size: clamp(24px, 2.6vw, 36px); line-height: 1.25; font-weight: 500; }
 .avatar { width: 52px; height: 52px; border-radius: 50%; background: var(--blue); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 600; }
+.quote-card { transition: box-shadow .6s var(--ease-out), background .6s ease; }
+.quote-linked { background: var(--tint); box-shadow: inset 0 0 0 1.5px rgba(16,77,230,.25); }
+.quote-swap { animation: loQuote .7s var(--ease-out) both; }
+@keyframes loQuote { from { opacity: 0; transform: translateY(14px); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } }
+.quote-tag { font-size: 13px; font-weight: 600; color: var(--blue); background: #fff; padding: 6px 12px; border-radius: 999px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%; animation: loQuote .5s var(--ease-out) both; }
+.quote-dots { display: flex; gap: 8px; align-items: center; }
+.quote-dot { position: relative; width: 10px; height: 10px; padding: 0; border: 0; border-radius: 999px; background: #c9d3e6; cursor: pointer; overflow: hidden; transition: width .5s var(--ease-out), background .3s ease; }
+.quote-dot.on { width: 36px; background: #d7e1f7; }
+.quote-dot-fill { position: absolute; inset: 0; background: var(--blue); transform-origin: left; animation: loDotFill linear forwards; }
+@keyframes loDotFill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.row-review { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.85); border: 1px solid rgba(255,255,255,.25); padding: 4px 8px; border-radius: 999px; }
+.row-active { background: rgba(255,255,255,.08); }
+.row-active .row-arrow { background: var(--blue); border-color: var(--blue); }
 .dark-card { border-radius: 28px; background: var(--ink); color: #fff; padding: clamp(32px, 5vw, 64px); display: flex; flex-direction: column; gap: 8px; min-height: 420px; }
 .row-link { position: relative; display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 22px 20px; margin: 0 -20px; color: #fff; text-decoration: none; border-radius: 18px; transition: background .4s ease; }
 .row-link::before { content: ""; position: absolute; top: 0; left: 20px; right: 20px; height: 1px; background: rgba(255,255,255,.15); transition: opacity .3s ease; }
@@ -367,4 +379,5 @@ textarea.input { resize: vertical; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
   .line > span, .fade, .pop, .lb { transform: none; opacity: 1; }
+  .reveal-ready .reveal, .reveal-ready .reveal-2, .reveal-ready .reveal-3, .reveal-ready .grow { opacity: 1; transform: none; }
 }

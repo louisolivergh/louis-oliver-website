@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import ContactForm from '@/components/ContactForm';
+import FeaturedWork from '@/components/FeaturedWork';
 import { Arrow, Icon, Rings } from '@/components/Icons';
 import { two } from '@/lib/content';
 import { Q, focus, img, pick, sanityFetch } from '@/lib/sanity';
@@ -14,12 +15,13 @@ const DEFAULT_SERVICES = [
 const ICONS = ['box', 'target', 'chart'];
 
 export default async function HomePage() {
-  const [h, svc, steps, featured, contact] = await Promise.all([
+  const [h, svc, steps, featured, contact, reviews] = await Promise.all([
     sanityFetch(Q.home, {}, {}),
     sanityFetch(Q.services, {}, {}),
     sanityFetch(Q.steps, {}, []),
     sanityFetch(Q.featured, {}, []),
     sanityFetch(Q.contact, {}, {}),
+    sanityFetch(Q.reviews, {}, []),
   ]);
   const home = h || {};
   const heroStats = pick(home.heroStats, [
@@ -49,9 +51,22 @@ export default async function HomePage() {
   const stepList = (steps || []).length
     ? steps
     : [{ _id: 'p', title: '[Step name]', description: '[Short description of this step.]' }];
+  const toReview = (r, slug, title) =>
+    r && r.quote ? { quote: r.quote, name: r.name || '', role: r.role || '', photo: r.photo ? img(r.photo, 200) : '', slug: slug || '', shoot: title || '' } : null;
   const featuredList = (featured || []).length
-    ? featured.map((f) => ({ title: f.title, meta: [f.client, f.category].filter(Boolean).join(' · ') || 'View shoot', href: `/work/${f.slug}` }))
-    : [1, 2, 3, 4].map((n) => ({ title: `[Project / client ${['one', 'two', 'three', 'four'][n - 1]}]`, meta: '[Category]', href: '/work' }));
+    ? featured.map((f) => ({ title: f.title, meta: [f.client, f.category].filter(Boolean).join(' · ') || 'View shoot', href: `/work/${f.slug}`, slug: f.slug, review: toReview(f.review, f.slug, f.title) }))
+    : [1, 2, 3, 4].map((n) => ({ title: `[Project / client ${['one', 'two', 'three', 'four'][n - 1]}]`, meta: '[Category]', href: '/work', slug: '', review: null }));
+  let reviewList = (reviews || []).map((r) => toReview(r.review, r.slug, r.title)).filter(Boolean);
+  if (!reviewList.length) {
+    reviewList = [{
+      quote: pick(home.testimonialQuote, '[Client testimonial goes here. A short, powerful quote about the results Louis Oliver delivered.]'),
+      name: pick(home.testimonialName, '[Client name]'),
+      role: pick(home.testimonialRole, '[Title, Company]'),
+      photo: '',
+      slug: '',
+      shoot: '',
+    }];
+  }
   const c = contact || {};
   const rv = ['reveal', 'reveal-2', 'reveal-3'];
 
@@ -216,32 +231,7 @@ export default async function HomePage() {
       </section>
 
       {/* WORK + TESTIMONIAL */}
-      <section className="container split">
-        <div className="quote-card reveal">
-          <span className="eyebrow">04 — Client results</span>
-          <blockquote className="quote">“{pick(home.testimonialQuote, '[Client testimonial goes here. A short, powerful quote about the results Louis Oliver delivered.]')}”</blockquote>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <span className="avatar" aria-hidden="true">{initials(pick(home.testimonialName, 'A B'))}</span>
-            <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <span style={{ fontWeight: 600 }}>{pick(home.testimonialName, '[Client name]')}</span>
-              <span style={{ fontSize: 14, color: 'var(--muted)' }}>{pick(home.testimonialRole, '[Title, Company]')}</span>
-            </span>
-          </div>
-        </div>
-        <div className="dark-card reveal-2">
-          <span className="eyebrow" style={{ color: 'rgba(255,255,255,0.7)', marginBottom: 24 }}>Featured work</span>
-          {featuredList.map((f, i) => (
-            <Link key={i} href={f.href} className="row-link">
-              <span className="row-title">{f.title}</span>
-              <span className="row-meta">
-                {f.meta}
-                <span className="row-arrow" aria-hidden="true"><Arrow className="" size={12} /></span>
-              </span>
-            </Link>
-          ))}
-          <div style={{ height: 1, background: 'rgba(255,255,255,0.15)' }} />
-        </div>
-      </section>
+      <FeaturedWork featured={featuredList} reviews={reviewList} />
 
       {/* CONTACT */}
       <section style={{ borderTop: '1px solid var(--line-soft)' }}>
@@ -272,12 +262,3 @@ function shorten(text) {
   return t.slice(0, 137).replace(/\s+\S*$/, '') + '…';
 }
 
-function initials(name) {
-  return String(name)
-    .replace(/[^\p{L}\s]/gu, '')
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0].toUpperCase())
-    .join('') || 'LO';
-}
