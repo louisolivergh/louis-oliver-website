@@ -417,35 +417,53 @@ textarea.input { resize: vertical; }
 }
 
 /* ---------- mobile menu ---------- */
-.menu-btn { display: none; width: 46px; height: 46px; border-radius: 14px; border: 1px solid var(--line); background: #fff; align-items: center; justify-content: center; cursor: pointer; position: relative; z-index: 70; }
+.menu-btn { display: none; width: 46px; height: 46px; border-radius: 14px; border: 1px solid var(--line); background: #fff; align-items: center; justify-content: center; cursor: pointer; position: relative; z-index: 70; transition: background .45s ease, border-color .45s ease, transform .3s var(--ease-out); }
+.menu-btn:active { transform: scale(.94); }
 .menu-lines { position: relative; width: 18px; height: 12px; }
-.menu-lines span { position: absolute; left: 0; right: 0; height: 2px; border-radius: 2px; background: var(--ink); transition: transform .45s var(--ease-io), top .45s var(--ease-io); }
+.menu-lines span { position: absolute; left: 0; right: 0; height: 2px; border-radius: 2px; background: var(--ink); transition: transform .5s var(--ease-io), top .5s var(--ease-io), background .45s ease; }
 .menu-lines span:first-child { top: 1px; }
 .menu-lines span:last-child { top: 9px; }
 .menu-btn.open { background: var(--blue); border-color: var(--blue); }
 .menu-btn.open .menu-lines span { background: #fff; top: 5px; }
 .menu-btn.open .menu-lines span:first-child { transform: rotate(45deg); }
 .menu-btn.open .menu-lines span:last-child { transform: rotate(-45deg); }
-.mobile-menu { position: fixed; left: 0; right: 0; top: 0; bottom: 0; z-index: 45; background: #fff; padding: 96px 20px 32px; display: flex; flex-direction: column; gap: 24px; overflow-y: auto; clip-path: inset(0 0 100% 0); visibility: hidden; transition: clip-path .6s var(--ease-io), visibility 0s linear .6s; }
-.mobile-menu.open { clip-path: inset(0 0 0 0); visibility: visible; transition: clip-path .6s var(--ease-io), visibility 0s; }
+
+/* While the menu fades away, the newly opened page waits; then its entrance animations play from the start */
+.menu-leaving main, .menu-leaving main * { animation-play-state: paused !important; }
+
+/* Panel phases (see components/MobileMenu.jsx):
+   closed  = folded away, hidden
+   open    = unfolds from the top, links rise in one after another
+   closing = the whole panel fades out in one piece over the new page — nothing shifts or snaps */
+.mobile-menu { position: fixed; inset: 0; z-index: 45; background: #fff; padding: 96px 20px 32px; overflow-y: auto; overscroll-behavior: contain; clip-path: inset(0 0 100% 0); visibility: hidden; opacity: 1; }
+.mobile-menu.open { clip-path: inset(0 0 0 0); visibility: visible; transition: clip-path .7s var(--ease-io); }
+.mobile-menu.closing { clip-path: inset(0 0 0 0); visibility: visible; opacity: 0; pointer-events: none; transition: opacity .52s cubic-bezier(.4, 0, .2, 1); }
+.mobile-inner { display: flex; flex-direction: column; gap: 24px; }
+.mobile-menu.closing .mobile-inner { transform: translateY(-10px); transition: transform .52s cubic-bezier(.4, 0, .2, 1); }
+
 .mobile-links { display: flex; flex-direction: column; }
-.mobile-link { position: relative; display: flex; justify-content: space-between; align-items: center; padding: 18px 16px; margin: 0 -16px; border-radius: 20px; color: var(--ink); text-decoration: none; font-family: var(--display); font-size: 30px; font-weight: 600; letter-spacing: -0.03em; opacity: 0; transform: translateY(16px); transition: opacity .5s ease, transform .6s var(--ease-out), color .5s ease, background .6s ease; }
-.mobile-link::after { content: ""; position: absolute; left: 16px; right: 16px; bottom: 0; height: 1px; background: var(--line); transition: opacity .3s ease; }
+.mobile-link { position: relative; display: flex; justify-content: space-between; align-items: center; padding: 18px 16px; margin: 0 -16px; border-radius: 20px; color: var(--ink); text-decoration: none; font-family: var(--display); font-size: 30px; font-weight: 600; letter-spacing: -0.03em; opacity: 0; transform: translateY(14px); transition: opacity .55s ease, transform .7s var(--ease-out), color .5s ease, background .6s ease; }
+.mobile-link::after { content: ""; position: absolute; left: 16px; right: 16px; bottom: 0; height: 1px; background: var(--line); transition: opacity .4s ease; }
 .mobile-link.active { color: var(--blue); }
-.mobile-link > span { transition: transform .8s cubic-bezier(.22,1,.36,1); }
-.mobile-link svg { color: var(--blue); transition: transform .8s cubic-bezier(.22,1,.36,1); }
-.mobile-link .go-dot { position: absolute; left: 0; top: 50%; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: var(--blue); opacity: 0; transform: scale(0); transition: opacity .5s ease, transform .7s cubic-bezier(.34,1.56,.64,1), left .8s cubic-bezier(.22,1,.36,1); }
-/* press: a soft rounded highlight, the word slides in, the arrow nudges forward */
+.mobile-label { transition: transform .8s cubic-bezier(.22, 1, .36, 1); }
+.mobile-arrow { color: var(--blue); transition: transform .8s cubic-bezier(.22, 1, .36, 1); }
+.go-dot { position: absolute; left: 4px; top: 50%; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: var(--blue); opacity: 0; transform: scale(0); transition: opacity .5s ease, transform .7s cubic-bezier(.34, 1.56, .64, 1), left .8s cubic-bezier(.22, 1, .36, 1); }
+.mobile-cta { align-self: stretch; opacity: 0; transform: translateY(14px); transition: opacity .55s ease, transform .7s var(--ease-out); }
+
+/* opening: links rise in one after another */
+.mobile-menu.open .mobile-link, .mobile-menu.open .mobile-cta { opacity: 1; transform: none; transition-delay: calc(.2s + var(--i) * .055s); }
+/* closing: everything holds perfectly still while the panel fades */
+.mobile-menu.closing .mobile-link, .mobile-menu.closing .mobile-cta { opacity: 1; transform: none; transition: none; }
+
+/* press: soft rounded highlight → dot pops in → word glides → arrow drifts. It stays until the menu has faded. */
 .mobile-menu.open .mobile-link:active, .mobile-menu.open .mobile-link.going { background: var(--tint); color: var(--blue); transform: scale(.98); transition-delay: 0s; transition-duration: .5s, .7s, .5s, .6s; }
-.mobile-link:active::after, .mobile-link.going::after, .mobile-link:active + .mobile-link::after { opacity: 0; }
-.mobile-link:active > span, .mobile-link.going > span { transform: translateX(16px); transition-delay: .06s; }
-.mobile-link:active svg, .mobile-link.going svg { transform: translateX(8px); transition-delay: .12s; }
+.mobile-menu.closing .mobile-link.going { background: var(--tint); color: var(--blue); transform: scale(.98); }
+.mobile-link:active::after, .mobile-link.going::after, .mobile-link:has(+ .mobile-link:active)::after, .mobile-link:has(+ .mobile-link.going)::after { opacity: 0; }
+.mobile-link:active .mobile-label, .mobile-link.going .mobile-label { transform: translateX(16px); transition-delay: .06s; }
+.mobile-link:active .mobile-arrow, .mobile-link.going .mobile-arrow { transform: translateX(8px); transition-delay: .12s; }
 .mobile-link:active .go-dot, .mobile-link.going .go-dot { opacity: 1; transform: scale(1); left: 16px; transition-delay: .1s; }
-.mobile-cta { align-self: stretch; opacity: 0; transform: translateY(16px); transition: opacity .5s ease, transform .6s var(--ease-out); }
-.mobile-menu.open .mobile-link, .mobile-menu.open .mobile-cta { opacity: 1; transform: none; transition-delay: calc(.18s + var(--i) * .05s); }
-.mobile-menu.open .mobile-cta:active, .mobile-menu.open .mobile-cta.going { transform: scale(.96); transition-delay: 0s; transition-duration: .5s, .7s; }
-.mobile-cta.going::before { transition-duration: .7s; }
-.mobile-cta.going::before { transform: translateY(0); }
+.mobile-menu.open .mobile-cta:active, .mobile-menu.open .mobile-cta.going, .mobile-menu.closing .mobile-cta.going { transform: scale(.97); transition-delay: 0s; transition-duration: .5s, .7s; }
+.mobile-cta.going::before { transform: translateY(0); transition-duration: .7s; }
 .mobile-cta.going .arrow { transform: translateX(8px); transition-duration: .8s; transition-delay: .1s; }
 
 @media (max-width: 860px) {

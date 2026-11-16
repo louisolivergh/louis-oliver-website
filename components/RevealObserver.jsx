@@ -27,6 +27,8 @@ export default function RevealObserver() {
     );
 
     const scan = () => {
+      // wait while the mobile menu is still fading over a freshly opened page
+      if (document.documentElement.classList.contains('menu-leaving')) return;
       document.querySelectorAll(SELECTOR).forEach((el) => {
         if (el.classList.contains('is-in')) return;
         const r = el.getBoundingClientRect();
@@ -37,16 +39,18 @@ export default function RevealObserver() {
     };
 
     scan();
+    window.addEventListener('lo:page-in', scan);
     // catch content that appears later (filters, galleries, load more)
     const mo = new MutationObserver(() => scan());
     mo.observe(document.querySelector('main') || root, { childList: true, subtree: true });
     // safety net: never leave anything hidden
-    const safety = setTimeout(() => document.querySelectorAll(SELECTOR).forEach((el) => {
+    const safety = setTimeout(() => !document.documentElement.classList.contains('menu-leaving') && document.querySelectorAll(SELECTOR).forEach((el) => {
       const r = el.getBoundingClientRect();
       if (r.bottom > 0 && r.top < window.innerHeight) el.classList.add('is-in');
     }), 2500);
 
     return () => {
+      window.removeEventListener('lo:page-in', scan);
       io.disconnect();
       mo.disconnect();
       clearTimeout(safety);
