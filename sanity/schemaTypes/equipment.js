@@ -9,7 +9,7 @@ export const equipment = defineType({
   type: 'document',
   fields: [
     defineField({ name: 'name', title: 'Item name', type: 'string', validation: (r) => r.required() }),
-    defineField({ name: 'spec', title: 'Spec (optional)', type: 'string', description: 'e.g. 6K, full frame' }),
+    defineField({ name: 'spec', title: 'Spec', type: 'string', description: 'e.g. 6K, full frame' }),
     defineField({
       name: 'category',
       title: 'Category',

@@ -14,7 +14,8 @@ const equipmentField = (title = 'Equipment used — tick from your kit') =>
 
 const extraEquipmentField = defineField({
   name: 'extraEquipment',
-  title: 'Anything else (not in your kit list)',
+  title: 'Anything else',
+  description: 'Kit that isn’t in your equipment list. Type and press Enter.',
   type: 'array',
   of: [defineArrayMember({ type: 'string' })],
   options: { layout: 'tags' },
@@ -40,7 +41,8 @@ export const videoItem = defineType({
     }),
     defineField({
       name: 'shape',
-      title: 'Shape (only needed for Vimeo / YouTube links)',
+      title: 'Shape',
+      description: 'Only needed for Vimeo / YouTube links — uploaded videos size themselves.',
       type: 'string',
       initialValue: 'landscape',
       options: {
@@ -64,14 +66,15 @@ export const videoItem = defineType({
 const photo = defineArrayMember({
   type: 'image',
   options: { hotspot: true },
-  fields: [defineField({ name: 'alt', title: 'Description (for accessibility)', type: 'string' })],
+  fields: [defineField({ name: 'alt', title: 'Description', type: 'string' })],
 });
 
 /* ---------- section types ---------- */
 
 const featureVideo = defineArrayMember({
   name: 'featureVideo',
-  title: 'Feature video (video + its own info & equipment)',
+  title: 'Feature video',
+  description: 'One video beside its own shoot info and equipment.',
   type: 'object',
   fields: [
     defineField({ name: 'video', title: 'Video', type: 'videoItem' }),
@@ -88,19 +91,20 @@ const fullVideo = defineArrayMember({
   title: 'Full-width video',
   type: 'object',
   fields: [
-    defineField({ name: 'heading', title: 'Heading (optional)', type: 'string' }),
+    defineField({ name: 'heading', title: 'Heading', type: 'string' }),
     defineField({ name: 'video', title: 'Video', type: 'videoItem' }),
-    defineField({ name: 'caption', title: 'Caption (optional)', type: 'text', rows: 3 }),
+    defineField({ name: 'caption', title: 'Caption', type: 'text', rows: 3 }),
   ],
   preview: { select: { t: 'heading' }, prepare: ({ t }) => ({ title: t || 'Full-width video', subtitle: 'Full-width video' }) },
 });
 
 const videoGrid = defineArrayMember({
   name: 'videoGrid',
-  title: 'Video grid (several videos, e.g. vertical social clips)',
+  title: 'Video grid',
+  description: 'Several videos side by side — great for vertical social clips.',
   type: 'object',
   fields: [
-    defineField({ name: 'heading', title: 'Heading (optional)', type: 'string' }),
+    defineField({ name: 'heading', title: 'Heading', type: 'string' }),
     defineField({ name: 'videos', title: 'Videos', type: 'array', of: [defineArrayMember({ type: 'videoItem' })] }),
   ],
   preview: {
@@ -111,10 +115,10 @@ const videoGrid = defineArrayMember({
 
 const gallery = defineArrayMember({
   name: 'gallery',
-  title: 'Photo gallery (any number of photos, any shapes)',
+  title: 'Photo gallery',
   type: 'object',
   fields: [
-    defineField({ name: 'heading', title: 'Heading (optional)', type: 'string' }),
+    defineField({ name: 'heading', title: 'Heading', type: 'string' }),
     defineField({
       name: 'images',
       title: 'Photos',
@@ -135,16 +139,16 @@ const fullPhoto = defineArrayMember({
   title: 'Full-width photo',
   type: 'object',
   fields: [
-    defineField({ name: 'heading', title: 'Heading (optional)', type: 'string' }),
+    defineField({ name: 'heading', title: 'Heading', type: 'string' }),
     defineField({ name: 'image', title: 'Photo', type: 'image', options: { hotspot: true }, fields: [defineField({ name: 'alt', title: 'Description', type: 'string' })] }),
-    defineField({ name: 'caption', title: 'Caption (optional)', type: 'text', rows: 3 }),
+    defineField({ name: 'caption', title: 'Caption', type: 'text', rows: 3 }),
   ],
   preview: { select: { t: 'heading', m: 'image' }, prepare: ({ t, m }) => ({ title: t || 'Full-width photo', subtitle: 'Full-width photo', media: m }) },
 });
 
 const textBlock = defineArrayMember({
   name: 'textBlock',
-  title: 'Text block (heading + paragraph)',
+  title: 'Text block',
   type: 'object',
   fields: [
     defineField({ name: 'heading', title: 'Heading', type: 'string' }),
@@ -185,7 +189,8 @@ export const shoot = defineType({
     defineField({ name: 'year', title: 'Year', type: 'string', group: 'details' }),
     defineField({
       name: 'date',
-      title: 'Date (sets the order on the Work page — newest first)',
+      title: 'Date',
+      description: 'Sets the order on the Work page — newest first.',
       type: 'date',
       group: 'details',
       initialValue: () => new Date().toISOString().slice(0, 10),
@@ -199,7 +204,7 @@ export const shoot = defineType({
       description: 'Shown on the Work page. Use the crop/hotspot tool to choose which part stays in view.',
     }),
     defineField({ name: 'featured', title: 'Feature on homepage', type: 'boolean', group: 'details', initialValue: false }),
-    defineField({ name: 'info', title: 'Shoot info (always shown at the top)', type: 'text', rows: 5, group: 'details' }),
+    defineField({ name: 'info', title: 'Shoot info', type: 'text', rows: 5, group: 'details', description: 'Always shown at the top of the shoot page.' }),
     defineField({ ...equipmentField(), group: 'details' }),
     defineField({ ...extraEquipmentField, group: 'details' }),
     defineField({
