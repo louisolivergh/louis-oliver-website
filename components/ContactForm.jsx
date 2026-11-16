@@ -23,7 +23,7 @@ export default function ContactForm({ compact = false, services = [], budgets = 
       });
       if (!res.ok) throw new Error('failed');
       form.reset();
-      setState({ status: 'sent', msg: 'Thanks — I’ll be in touch shortly.' });
+      setState({ status: 'sent', msg: 'Thanks, I’ll be in touch shortly!' });
     } catch {
       setState({
         status: 'error',
