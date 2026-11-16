@@ -320,7 +320,7 @@ textarea.input { resize: vertical; }
 .faq[open] .plus { background: #fff; color: var(--blue); border-color: #fff; }
 .faq[open] .faq-a { animation: loIncIn .6s var(--ease-out); }
 .faq summary::-webkit-details-marker { display: none; }
-.faq .plus { transition: transform .5s var(--ease-out); flex: none; }
+.faq .plus { flex: none; }
 .faq[open] .plus { transform: rotate(45deg); }
 .faq-q { font-family: var(--display); font-size: 22px; font-weight: 500; letter-spacing: -0.02em; }
 .faq-a { margin: 0; padding: 4px 0 28px; max-width: 760px; font-size: 17px; line-height: 1.7; }
