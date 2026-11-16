@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useClient, useCurrentUser } from 'sanity';
+import { useClient } from 'sanity';
 import { IntentLink } from 'sanity/router';
 import {
   CameraIcon,
@@ -18,6 +18,9 @@ import {
   StarIcon,
   StepsIcon,
 } from './DashIcons';
+
+/* Name shown in the greeting */
+const OWNER_NAME = 'Louis Jones';
 
 const BLUE = '#104de6';
 const INK = '#0b1220';
@@ -36,7 +39,6 @@ const QUERY = `{
   "photos": count(*[_type == "shoot" && ${PUB}].sections[_type == "gallery"].images[]) + count(*[_type == "shoot" && ${PUB}].sections[_type == "fullPhoto"]),
   "videos": count(*[_type == "shoot" && ${PUB}].sections[_type in ["featureVideo", "fullVideo"]]) + count(*[_type == "shoot" && ${PUB}].sections[_type == "videoGrid"].videos[]),
   "equipment": count(*[_type == "equipment" && ${PUB}]),
-  "steps": count(*[_type == "processStep" && ${PUB}]),
   "enquiries": count(*[_type == "enquiry" && ${PUB}]),
   "newEnquiries": count(*[_type == "enquiry" && ${PUB} && replied != true]),
   "latest": *[_type == "enquiry" && ${PUB}] | order(receivedAt desc)[0...8]{ _id, name, company, email, phone, service, budget, details, receivedAt, replied },
@@ -91,7 +93,10 @@ function Quick({ icon: I, label, intent, params, primary }) {
         display: 'flex',
         alignItems: 'center',
         gap: 12,
-        padding: '14px 16px',
+        height: 56,
+        padding: '0 16px',
+        minWidth: 0,
+        whiteSpace: 'nowrap',
         borderRadius: 16,
         textDecoration: 'none',
         fontWeight: 600,
@@ -101,16 +106,15 @@ function Quick({ icon: I, label, intent, params, primary }) {
         border: `1px solid ${primary ? BLUE : LINE}`,
       }}
     >
-      <span style={{ fontSize: 18, display: 'flex' }}><I /></span>
-      {label}
-      <span style={{ marginLeft: 'auto', opacity: 0.7 }}>{intent === 'create' ? '+' : '→'}</span>
+      <span style={{ fontSize: 18, display: 'flex', flex: 'none' }}><I /></span>
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
+      <span style={{ marginLeft: 'auto', opacity: 0.7, flex: 'none' }}>{intent === 'create' ? '+' : '→'}</span>
     </IntentLink>
   );
 }
 
 export function Overview() {
   const client = useClient({ apiVersion: '2024-10-01' });
-  const user = useCurrentUser();
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [open, setOpen] = useState(null);
@@ -142,7 +146,7 @@ export function Overview() {
   };
 
   const site = typeof window !== 'undefined' ? window.location.origin : '';
-  const first = user && user.name ? user.name.split(' ')[0] : '';
+  const first = OWNER_NAME;
   const enquiries = data ? data.latest.filter((e) => (filter === 'new' ? !e.replied : filter === 'replied' ? e.replied : true)) : [];
 
   return (
@@ -186,7 +190,6 @@ export function Overview() {
           <Stat icon={PhotoIcon} label="Photos" value={data && data.photos} sub="across all shoots" />
           <Stat icon={PlayIcon} label="Videos" value={data && data.videos} sub="across all shoots" />
           <Stat icon={KitIcon} label="Equipment" value={data && data.equipment} sub="items in your kit" />
-          <Stat icon={StepsIcon} label="Process steps" value={data && data.steps} sub="on the Process page" />
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 420px), 1fr))', gap: 24, alignItems: 'start' }}>
@@ -260,18 +263,15 @@ export function Overview() {
             <div style={{ ...card, display: 'flex', flexDirection: 'column', gap: 12 }}>
               <h2 style={h2}>Quick add</h2>
               <Quick icon={CameraIcon} label="New shoot" intent="create" params={{ type: 'shoot' }} primary />
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
-                <Quick icon={KitIcon} label="Add equipment" intent="create" params={{ type: 'equipment' }} />
-                <Quick icon={StepsIcon} label="Add process step" intent="create" params={{ type: 'processStep' }} />
-              </div>
+              <Quick icon={KitIcon} label="Add equipment" intent="create" params={{ type: 'equipment' }} />
               <span style={{ ...eyebrow, color: MUTED, marginTop: 8 }}>Edit pages</span>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 10 }}>
                 <Quick icon={HomeIcon} label="Home" intent="edit" params={{ id: 'homePage', type: 'homePage' }} />
                 <Quick icon={StarIcon} label="Services" intent="edit" params={{ id: 'servicesPage', type: 'servicesPage' }} />
                 <Quick icon={PageIcon} label="About" intent="edit" params={{ id: 'aboutPage', type: 'aboutPage' }} />
                 <Quick icon={StepsIcon} label="Process" intent="edit" params={{ id: 'processPage', type: 'processPage' }} />
                 <Quick icon={MailIcon} label="Contact" intent="edit" params={{ id: 'contactPage', type: 'contactPage' }} />
-                <Quick icon={SettingsIcon} label="Logo & footer" intent="edit" params={{ id: 'siteSettings', type: 'siteSettings' }} />
+                <Quick icon={SettingsIcon} label="Logo" intent="edit" params={{ id: 'siteSettings', type: 'siteSettings' }} />
               </div>
             </div>
 
