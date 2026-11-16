@@ -147,7 +147,9 @@ button { font: inherit; }
 .marquee-wrap { overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); }
 .marquee { display: flex; width: max-content; animation: loMarquee 38s linear infinite; }
 .marquee-wrap:hover .marquee { animation-play-state: paused; }
-.marquee span { padding: 0 48px; font-family: var(--display); letter-spacing: -0.035em; font-size: 28px; font-weight: 600; color: #b3bccb; white-space: nowrap; }
+.marquee .client { display: flex; align-items: center; padding: 0 48px; font-family: var(--display); letter-spacing: -0.035em; font-size: 28px; font-weight: 600; color: #b3bccb; white-space: nowrap; }
+.marquee .client img { height: 44px; width: auto; max-width: 180px; object-fit: contain; filter: grayscale(1); opacity: .55; transition: filter .4s ease, opacity .4s ease; }
+.marquee .client img:hover { filter: none; opacity: 1; }
 @keyframes loMarquee { to { transform: translateX(-50%); } }
 
 /* ---------- sections & cards ---------- */

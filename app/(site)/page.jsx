@@ -26,14 +26,25 @@ export default async function HomePage() {
     { value: '[00+]', label: '[Stat label]' },
     { value: '[$0M]', label: '[Stat label]' },
     { value: '[00%]', label: '[Stat label]' },
-  ]);
+  ]).filter((x) => x && x.show !== false);
+  const showMetric = home.showMetric !== false;
+  const showStatus = home.showStatus !== false;
   const aboutStats = pick(home.aboutStats, [
     { value: '[00+]', label: '[Years of experience]' },
     { value: '[000+]', label: '[Clients served]' },
     { value: '[$00M]', label: '[Value delivered]' },
     { value: '[00%]', label: '[Client retention]' },
   ]);
-  const clients = pick(home.clients, ['[CLIENT]', '[CLIENT]', '[CLIENT]', '[CLIENT]', '[CLIENT]', '[CLIENT]']);
+  const logoItems = (home.clientLogos || [])
+    .filter((c) => c && c.show !== false && (c.logoUrl || c.name))
+    .map((c) => ({ name: c.name || '', logo: c.logoUrl ? img(c.logoUrl, 400) : '' }));
+  const hasLogoList = (home.clientLogos || []).length > 0;
+  const fallbackNames = pick(home.clients, ['[CLIENT]', '[CLIENT]', '[CLIENT]', '[CLIENT]', '[CLIENT]', '[CLIENT]']).map((n) => ({ name: n, logo: '' }));
+  const clientItems = hasLogoList ? logoItems : fallbackNames;
+  const showClients = home.showClients !== false && clientItems.length > 0;
+  /* repeat short lists so the scrolling strip never shows a gap */
+  let loop = clientItems.slice();
+  while (loop.length && loop.length < 8) loop = loop.concat(clientItems);
   const services = pick((svc || {}).services, DEFAULT_SERVICES).slice(0, 3);
   const stepList = (steps || []).length
     ? steps
@@ -69,14 +80,16 @@ export default async function HomePage() {
               {pick(home.secondaryButton, '[Secondary action]')}
             </Link>
           </div>
-          <div className="hero-stats fade f4">
-            {heroStats.map((s, i) => (
-              <div className="stat" key={i}>
-                <span className="stat-value">{s.value}</span>
-                <span className="stat-label">{s.label}</span>
-              </div>
-            ))}
-          </div>
+          {heroStats.length ? (
+            <div className="hero-stats fade f4">
+              {heroStats.map((s, i) => (
+                <div className="stat" key={i}>
+                  <span className="stat-value">{s.value}</span>
+                  <span className="stat-label">{s.label}</span>
+                </div>
+              ))}
+            </div>
+          ) : null}
         </div>
 
         <div className="visual pop">
@@ -89,6 +102,7 @@ export default async function HomePage() {
               <span className="visual-lo">LO</span>
             )}
           </div>
+          {showMetric ? (
           <div className="metric-card float">
             <span className="metric-icon"><Icon name="trend" size={18} /></span>
             <span style={{ display: 'flex', flexDirection: 'column' }}>
@@ -96,24 +110,36 @@ export default async function HomePage() {
               <span className="metric-value">{pick(home.metricValue, '[+000%]')}</span>
             </span>
           </div>
-          <div className="status-pill float-2">
-            <span className="status-dot pulse" />
-            {pick(home.statusLine, '[Status line — e.g. now booking]')}
-          </div>
+          ) : null}
+          {showStatus ? (
+            <div className="status-pill float-2">
+              <span className="status-dot pulse" />
+              {pick(home.statusLine, '[Status line — e.g. now booking]')}
+            </div>
+          ) : null}
         </div>
       </section>
 
       {/* CLIENTS */}
-      <section className="clients" aria-label="Clients">
-        <p className="clients-title">{pick(home.clientsTitle, '[Trusted by industry leaders]')}</p>
-        <div className="marquee-wrap">
-          <div className="marquee">
-            {[...clients, ...clients].map((n, i) => (
-              <span key={i} aria-hidden={i >= clients.length ? 'true' : undefined}>{n}</span>
-            ))}
+      {showClients ? (
+        <section className="clients" aria-label="Clients">
+          <p className="clients-title">{pick(home.clientsTitle, '[Trusted by industry leaders]')}</p>
+          <div className="marquee-wrap">
+            <div className="marquee">
+              {[...loop, ...loop].map((c, i) => (
+                <span key={i} className="client" aria-hidden={i >= clientItems.length ? 'true' : undefined}>
+                  {c.logo ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={c.logo} alt={i >= clientItems.length ? '' : c.name} loading="lazy" />
+                  ) : (
+                    c.name
+                  )}
+                </span>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
 
       {/* SERVICES */}
       <section className="container section">

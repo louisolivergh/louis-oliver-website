@@ -5,11 +5,31 @@ const s = (name, title, extra = {}) => defineField({ name, title, type: 'string'
 const t = (name, title, rows = 3, extra = {}) => defineField({ name, title, type: 'text', rows, ...extra });
 const img = (name, title, extra = {}) => defineField({ name, title, type: 'image', options: { hotspot: true }, ...extra });
 
+const show = (title = 'Show on website') => defineField({ name: 'show', title, type: 'boolean', initialValue: true });
+
 const stat = defineArrayMember({
   type: 'object',
   name: 'stat',
-  fields: [s('value', 'Number'), s('label', 'Label')],
-  preview: { select: { title: 'value', subtitle: 'label' } },
+  fields: [s('value', 'Number'), s('label', 'Label'), show()],
+  preview: {
+    select: { value: 'value', label: 'label', show: 'show' },
+    prepare: ({ value, label, show: on }) => ({ title: `${on === false ? '◌ Hidden — ' : ''}${value || 'Stat'}`, subtitle: label }),
+  },
+});
+
+const clientLogo = defineArrayMember({
+  type: 'object',
+  name: 'clientLogo',
+  title: 'Client',
+  fields: [
+    defineField({ name: 'logo', title: 'Logo', type: 'image', description: 'A PNG or SVG with a transparent background works best.' }),
+    s('name', 'Client name', { description: 'Shown if there’s no logo, and read out to screen readers.' }),
+    show(),
+  ],
+  preview: {
+    select: { name: 'name', media: 'logo', show: 'show' },
+    prepare: ({ name, media, show: on }) => ({ title: `${on === false ? '◌ Hidden — ' : ''}${name || 'Client'}`, media }),
+  },
 });
 
 const faq = defineArrayMember({
@@ -62,13 +82,25 @@ export const homePage = defineType({
     t('heroText', 'Text under the headline', 3, { group: 'hero' }),
     s('primaryButton', 'Main button text', { group: 'hero' }),
     s('secondaryButton', 'Second button text', { group: 'hero' }),
-    defineField({ name: 'heroStats', title: 'Stats under the buttons', type: 'array', of: [stat], group: 'hero', validation: (r) => r.max(3) }),
-    s('metricLabel', 'Floating card — label', { group: 'hero' }),
-    s('metricValue', 'Floating card — number', { group: 'hero' }),
-    s('statusLine', 'Floating status line', { group: 'hero' }),
+    defineField({ name: 'heroStats', title: 'Stats under the buttons', type: 'array', of: [stat], group: 'hero', validation: (r) => r.max(3), description: 'Untick “Show on website” to hide one. If all are hidden, the row disappears.' }),
+    defineField({ name: 'showMetric', title: 'Show the white floating card', type: 'boolean', initialValue: true, group: 'hero' }),
+    s('metricLabel', 'Floating card — label', { group: 'hero', hidden: ({ document }) => document && document.showMetric === false }),
+    s('metricValue', 'Floating card — number', { group: 'hero', hidden: ({ document }) => document && document.showMetric === false }),
+    defineField({ name: 'showStatus', title: 'Show the floating status line', type: 'boolean', initialValue: true, group: 'hero' }),
+    s('statusLine', 'Floating status line', { group: 'hero', hidden: ({ document }) => document && document.showStatus === false }),
 
-    s('clientsTitle', 'Client strip heading', { group: 'rest' }),
-    defineField({ name: 'clients', title: 'Client names', type: 'array', of: [defineArrayMember({ type: 'string' })], options: { layout: 'tags' }, group: 'rest' }),
+    defineField({ name: 'showClients', title: 'Show the client logo strip', type: 'boolean', initialValue: true, group: 'rest' }),
+    s('clientsTitle', 'Client strip heading', { group: 'rest', hidden: ({ document }) => document && document.showClients === false }),
+    defineField({
+      name: 'clientLogos',
+      title: 'Client logos',
+      type: 'array',
+      of: [clientLogo],
+      group: 'rest',
+      description: 'Add each client’s logo. Untick “Show on website” to hide one. If all are hidden, the strip disappears.',
+      hidden: ({ document }) => document && document.showClients === false,
+    }),
+    defineField({ name: 'clients', title: 'Client names (old)', type: 'array', of: [defineArrayMember({ type: 'string' })], options: { layout: 'tags' }, group: 'rest', hidden: true }),
     s('servicesTitle', 'Services heading', { group: 'rest' }),
     t('servicesIntro', 'Services intro', 2, { group: 'rest' }),
     s('aboutTitle', 'Blue section heading', { group: 'rest' }),
