@@ -38,7 +38,8 @@ function Video({ v, inGrid }) {
   if (!v) return <Empty dark>Add a video</Empty>;
   const fileUrl = v.file && v.file.asset ? fileFromRef(v.file.asset._ref) : null;
   if (fileUrl) {
-    return <video src={fileUrl} controls playsInline preload="metadata" style={{ display: 'block', width: inGrid ? '100%' : 'auto', maxWidth: '100%', maxHeight: 480, margin: '0 auto', borderRadius: 12, background: '#000' }} />;
+    const poster = v.poster && v.poster.asset ? imageFromRef(v.poster.asset._ref, 1000) : null;
+    return <video src={`${fileUrl}#t=0.1`} poster={poster ? poster.url : undefined} controls playsInline preload="metadata" style={{ display: 'block', width: inGrid ? '100%' : 'auto', maxWidth: '100%', maxHeight: 480, margin: '0 auto', borderRadius: 12, background: '#000' }} />;
   }
   const embed = embedUrl(v.url);
   if (embed) {

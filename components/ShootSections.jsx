@@ -45,9 +45,12 @@ function Video({ video, title, inGrid = false }) {
       </div>
     );
   }
+  /* "#t=0.1" makes every browser (including Safari / iPhone) show a frame as the thumbnail */
+  const src = video.url.includes('#') ? video.url : `${video.url}#t=0.1`;
+  const poster = video.poster ? `${video.poster}?w=1600&auto=format&fit=max&q=80` : undefined;
   return (
     <div className="vbox" style={{ margin: inGrid ? undefined : '0 auto' }}>
-      <video src={video.url} controls playsInline preload="metadata" aria-label={title || 'Video'} />
+      <video src={src} poster={poster} controls playsInline preload="metadata" aria-label={title || 'Video'} />
     </div>
   );
 }
@@ -87,6 +90,19 @@ export default function ShootSections({ sections, cols = 3, title = '' }) {
       document.body.style.overflow = prev;
     };
   }, [open, close, step]);
+
+  /* only one video plays at a time — starting one pauses the others */
+  useEffect(() => {
+    const onPlay = (e) => {
+      const t = e.target;
+      if (!(t instanceof HTMLVideoElement)) return;
+      document.querySelectorAll('video').forEach((v) => {
+        if (v !== t && !v.paused) v.pause();
+      });
+    };
+    document.addEventListener('play', onPlay, true);
+    return () => document.removeEventListener('play', onPlay, true);
+  }, []);
 
   const current = open >= 0 ? photos[open] : null;
 

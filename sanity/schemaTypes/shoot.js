@@ -35,6 +35,13 @@ export const videoItem = defineType({
       description: 'MP4 or MOV. For long or very large videos, use a Vimeo/YouTube link below instead.',
     }),
     defineField({
+      name: 'poster',
+      title: 'Cover image',
+      type: 'image',
+      options: { hotspot: true },
+      description: 'Optional. Shown before the video plays. If left empty, a frame from the start of the video is used.',
+    }),
+    defineField({
       name: 'url',
       title: '…or paste a Vimeo / YouTube link',
       type: 'url',
