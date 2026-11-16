@@ -32,3 +32,19 @@ export function StudioLogo() {
     />
   );
 }
+
+/**
+ * Full brand block in the dashboard's top-left: your logo at a proper size,
+ * vertically centred with the "Louis Oliver" title.
+ */
+export function StudioBrand(props) {
+  const title = (props && props.title) || 'Louis Oliver';
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10, height: '100%', padding: '0 4px', lineHeight: 1 }}>
+      <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, fontSize: 30, flex: 'none' }}>
+        <StudioLogo />
+      </span>
+      <span style={{ fontWeight: 600, fontSize: 15, letterSpacing: '-0.01em', whiteSpace: 'nowrap' }}>{title}</span>
+    </span>
+  );
+}

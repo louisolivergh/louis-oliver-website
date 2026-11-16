@@ -7,7 +7,7 @@ import { SINGLETONS, schemaTypes } from './sanity/schemaTypes';
 import { theme } from './sanity/theme';
 import { Overview } from './sanity/components/Overview';
 import { ShootPreview } from './sanity/components/ShootPreview';
-import { StudioLogo } from './sanity/components/StudioLogo';
+import { StudioBrand, StudioLogo } from './sanity/components/StudioLogo';
 import {
   CameraIcon,
   CheckIcon,
@@ -122,4 +122,5 @@ export default defineConfig({
   },
   plugins: [structureTool({ title: 'Content', structure, defaultDocumentNode })],
   tools: (prev) => [overviewTool, ...prev],
+  studio: { components: { logo: StudioBrand } },
 });
