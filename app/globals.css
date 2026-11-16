@@ -29,7 +29,7 @@ a { color: var(--blue); }
 a:hover { color: var(--blue-dark); }
 button { font: inherit; }
 
-.site { background: #fff; overflow-x: hidden; }
+.site { background: #fff; overflow-x: clip; }
 .container { max-width: 1320px; margin: 0 auto; padding-left: 32px; padding-right: 32px; }
 @media (max-width: 640px) { .container { padding-left: 20px; padding-right: 20px; } }
 
@@ -393,6 +393,16 @@ textarea.input { resize: vertical; }
 .lb-prev, .lb-next { position: absolute; top: 50%; margin-top: -26px; }
 .lb-prev { left: 24px; } .lb-next { right: 24px; }
 @media (max-width: 640px) { .lb-stage { inset: 88px 16px 96px; } .lb-prev, .lb-next { top: auto; bottom: 24px; margin: 0; } }
+
+/* ---------- contact page layout ---------- */
+.contact-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: "head form" "info form"; gap: clamp(28px, 4vw, 40px) clamp(32px, 6vw, 72px); align-items: start; }
+.contact-head { grid-area: head; }
+.contact-info { grid-area: info; }
+.contact-form { grid-area: form; }
+@media (max-width: 900px) {
+  /* phones & tablets: headline → form → contact details */
+  .contact-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "form" "info"; }
+}
 
 /* ---------- mobile menu ---------- */
 .menu-btn { display: none; width: 46px; height: 46px; border-radius: 14px; border: 1px solid var(--line); background: #fff; align-items: center; justify-content: center; cursor: pointer; position: relative; z-index: 70; }

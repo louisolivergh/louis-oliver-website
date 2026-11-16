@@ -13,8 +13,8 @@ export default async function ContactPage() {
 
   return (
     <>
-      <section className="container" style={{ paddingTop: 'clamp(50px, 9.3vw, 112px)', paddingBottom: 'clamp(50px, 9.3vw, 112px)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 440px), 1fr))', gap: 'clamp(32px, 6.0vw, 72px)' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+      <section className="container contact-grid" style={{ paddingTop: 'clamp(50px, 9.3vw, 112px)', paddingBottom: 'clamp(50px, 9.3vw, 112px)' }}>
+        <div className="contact-head" style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
           <div className="fade f1"><span className="eyebrow">Contact</span></div>
           <h1 className="h1 h1-home">
             <span className="line d1"><span>{pick(page.heroLine1, '[Let’s talk about')}</span></span>
@@ -23,7 +23,8 @@ export default async function ContactPage() {
           <p className="lead fade f2" style={{ maxWidth: 480, fontSize: 19 }}>
             {pick(page.intro, '[Tell prospective clients what happens after they get in touch, and how quickly you reply.]')}
           </p>
-          <div className="fade f3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: 32, paddingTop: 32, borderTop: '1px solid var(--line-soft)' }}>
+        </div>
+        <div className="contact-info fade f3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: 32, paddingTop: 32, borderTop: '1px solid var(--line-soft)', alignSelf: 'start' }}>
             <Detail label="Email">
               {page.email ? <a href={`mailto:${page.email}`} style={{ textDecoration: 'none' }}>{page.email}</a> : '[hello@yourdomain.com]'}
             </Detail>
@@ -32,9 +33,8 @@ export default async function ContactPage() {
             </Detail>
             <Detail label="Based in"><span className="pre">{pick(page.address, '[City, Postcode]')}</span></Detail>
             <Detail label="Hours">{pick(page.hours, '[Mon–Fri, 9:00–18:00]')}</Detail>
-          </div>
         </div>
-        <div className="pop" style={{ background: 'var(--soft)', borderRadius: 32, padding: 'clamp(28px, 4vw, 56px)', alignSelf: 'start' }}>
+        <div className="contact-form pop" style={{ background: 'var(--soft)', borderRadius: 32, padding: 'clamp(28px, 4vw, 56px)', alignSelf: 'start' }}>
           <ContactForm
             title={pick(page.formTitle, 'Start a project')}
             services={serviceNames}
