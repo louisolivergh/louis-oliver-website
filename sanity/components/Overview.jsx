@@ -62,14 +62,14 @@ const CSS = `
 .lo-ov-stat { position: relative; overflow: hidden; transition: transform .5s cubic-bezier(.16,1,.3,1), box-shadow .5s cubic-bezier(.16,1,.3,1), border-color .3s ease; }
 .lo-ov-stat:hover { transform: translateY(-4px); box-shadow: 0 22px 40px -24px rgba(16,77,230,.55); border-color: #104de6 !important; }
 .lo-ov-stat .lo-ov-ic { transition: transform .6s cubic-bezier(.16,1,.3,1), background .3s ease, color .3s ease; }
-.lo-ov-stat:hover .lo-ov-ic { transform: rotate(-8deg) scale(1.08); }
+.lo-ov-stat:hover .lo-ov-ic { transform: scale(1.08); }
 .lo-ov-stat:not(.lo-ov-accent):hover .lo-ov-ic { background: #104de6 !important; color: #fff !important; }
 .lo-ov-accent::after { content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 40%; background: linear-gradient(90deg, transparent, rgba(255,255,255,.18), transparent); transform: translateX(-120%) skewX(-20deg); animation: loOvShine 1.4s cubic-bezier(.16,1,.3,1) 1.1s 1 forwards; pointer-events: none; }
 .lo-ov-quick { transition: transform .4s cubic-bezier(.16,1,.3,1), box-shadow .4s cubic-bezier(.16,1,.3,1), background .3s ease, border-color .3s ease, color .3s ease; }
 .lo-ov-quick:hover { transform: translateY(-2px); box-shadow: 0 14px 28px -18px rgba(16,77,230,.55); border-color: #104de6 !important; }
 .lo-ov-quick .lo-ov-arrow { transition: transform .45s cubic-bezier(.7,0,.2,1); }
 .lo-ov-quick:hover .lo-ov-arrow { transform: translateX(4px); }
-.lo-ov-quick:hover .lo-ov-plus { transform: rotate(90deg); }
+.lo-ov-quick:hover .lo-ov-plus { transform: scale(1.25); }
 .lo-ov-plus { transition: transform .45s cubic-bezier(.16,1,.3,1); display: inline-block; }
 .lo-ov-row { animation: loOvUp .6s cubic-bezier(.16,1,.3,1) backwards; animation-delay: var(--d, 0ms); }
 .lo-ov-check { transition: background .25s ease, border-color .25s ease, transform .25s ease; }
