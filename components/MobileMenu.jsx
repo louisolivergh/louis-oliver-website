@@ -9,10 +9,11 @@ import { Arrow } from './Icons';
 export default function MobileMenu({ items }) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [going, setGoing] = useState(null);
   useEffect(() => setMounted(true), []);
   const path = usePathname() || '/';
 
-  useEffect(() => { setOpen(false); }, [path]);
+  useEffect(() => { setOpen(false); setGoing(null); }, [path]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -41,7 +42,16 @@ export default function MobileMenu({ items }) {
           {items.map((it, i) => {
             const active = path === it.href || path.startsWith(it.href + '/');
             return (
-              <Link key={it.href} href={it.href} className={`mobile-link${active ? ' active' : ''}`} style={{ '--i': i }} tabIndex={open ? 0 : -1}>
+              <Link
+                key={it.href}
+                href={it.href}
+                className={`mobile-link${active ? ' active' : ''}${going === it.href ? ' going' : ''}`}
+                style={{ '--i': i }}
+                tabIndex={open ? 0 : -1}
+                onTouchStart={() => {}}
+                onClick={() => { setGoing(it.href); if (active) setTimeout(() => setOpen(false), 260); }}
+              >
+                <span className="go-dot" aria-hidden="true" />
                 <span>{it.label}</span>
                 <Arrow className="" size={16} />
               </Link>
