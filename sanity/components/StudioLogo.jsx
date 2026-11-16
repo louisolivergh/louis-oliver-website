@@ -22,18 +22,27 @@ export function StudioLogo() {
     return () => { alive = false; sub.unsubscribe(); };
   }, [client]);
 
-  /* The dashboard draws this icon in a small, top-aligned slot: scale it up and nudge it down so it
-     sits larger and centred beside the title without changing the toolbar's layout. */
-  /* transform only changes how it's drawn, never the layout, so the title text doesn't move */
-  const boost = { display: 'block', transform: 'translate(32%, 26%) scale(1.5)', transformOrigin: 'center' };
-  if (!url) return <img src="/favicon-192.png" alt="" style={{ ...boost, width: '1em', height: '1em' }} />;
-  return (
-    <img
-      src={url.toLowerCase().endsWith('.svg') ? url : `${url}?h=200&fit=max&q=100`}
-      alt=""
-      style={{ ...boost, width: '1em', height: '1em', objectFit: 'contain', borderRadius: '0.26em' }}
-    />
-  );
+  /* Drawn at its real size (not scaled up afterwards, which blurs it) but with negative margins,
+     so it looks larger yet takes the same space — the title text never moves. */
+  const style = {
+    display: 'block',
+    width: '1.5em',
+    height: '1.5em',
+    margin: '-0.25em',
+    position: 'relative',
+    left: '0.32em',
+    top: '0.26em',
+    maxWidth: 'none',
+    objectFit: 'contain',
+    borderRadius: '0.39em',
+    imageRendering: 'auto',
+  };
+  const src = !url
+    ? '/favicon-512.png'
+    : url.toLowerCase().endsWith('.svg')
+      ? url
+      : `${url}?h=256&fit=max&q=100`;
+  return <img src={src} alt="" decoding="async" style={style} />;
 }
 
 /**
