@@ -12,8 +12,8 @@ const iconUrl = (url, size) => (url.toLowerCase().endsWith('.svg') ? url : `${ur
 
 export async function generateMetadata() {
   const s = (await sanityFetch(Q.settings, {}, {})) || {};
-  // Favicon → square dashboard logo → blue LO mark (the wide website logo is never squeezed into the tab)
-  const src = s.faviconUrl || s.dashboardLogoUrl || '';
+  // An uploaded Favicon wins; otherwise the rounded Louis Oliver icon built into the site is used
+  const src = s.faviconUrl || '';
   const icons = src
     ? {
         icon: [
@@ -23,7 +23,14 @@ export async function generateMetadata() {
         apple: [{ url: iconUrl(src, 180), sizes: '180x180' }],
         shortcut: [iconUrl(src, 32)],
       }
-    : { icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }], apple: [{ url: '/favicon.svg' }] };
+    : {
+        icon: [
+          { url: '/favicon.ico', sizes: 'any' },
+          { url: '/favicon-32.png', sizes: '32x32', type: 'image/png' },
+          { url: '/favicon-192.png', sizes: '192x192', type: 'image/png' },
+        ],
+        apple: [{ url: '/apple-touch-icon.png', sizes: '180x180' }],
+      };
   return {
     title: { default: 'Louis Oliver — Photo & Video', template: '%s — Louis Oliver' },
     description: 'Premium photo and video production for brands and retailers.',

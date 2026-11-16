@@ -59,7 +59,7 @@ export const siteSettings = defineType({
       name: 'favicon',
       title: 'Favicon',
       type: 'image',
-      description: 'The small icon in the browser tab. Use a square image, ideally 512 × 512 px (PNG or SVG). If empty, your dashboard logo is used, then the blue LO mark.',
+      description: 'The small icon in the browser tab. Use a square image, ideally 512 × 512 px (PNG or SVG). Optional — the rounded Louis Oliver icon is already built in. Upload here only to replace it.',
     }),
     defineField({ name: 'logoHeight', title: 'Logo height', type: 'number', initialValue: 40, description: 'In pixels. 40 is a good starting point.' }),
     t('footerText', 'Footer description', 2),

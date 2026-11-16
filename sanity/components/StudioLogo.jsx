@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useClient } from 'sanity';
-import { LogoMark } from './DashIcons';
 
 let cached; // remember the logo between renders so it doesn't flicker
 
@@ -26,7 +25,7 @@ export function StudioLogo() {
   /* The dashboard draws this icon in a small, top-aligned slot: scale it up and nudge it down so it
      sits larger and centred beside the title without changing the toolbar's layout. */
   const boost = { display: 'block', transform: 'translateY(28%) scale(1.45)', transformOrigin: 'center' };
-  if (!url) return <span style={boost}><LogoMark /></span>;
+  if (!url) return <img src="/favicon-192.png" alt="" style={{ ...boost, width: '1em', height: '1em' }} />;
   return (
     <img
       src={url.toLowerCase().endsWith('.svg') ? url : `${url}?h=200&fit=max&q=100`}
