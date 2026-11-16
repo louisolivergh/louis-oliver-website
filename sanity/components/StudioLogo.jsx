@@ -24,7 +24,7 @@ export function StudioLogo() {
 
   /* The dashboard draws this icon in a small, top-aligned slot: scale it up and nudge it down so it
      sits larger and centred beside the title without changing the toolbar's layout. */
-  const boost = { display: 'block', transform: 'translateY(28%) scale(1.45)', transformOrigin: 'center' };
+  const boost = { display: 'block', transform: 'translate(30%, 26%) scale(1.3)', transformOrigin: 'center' };
   if (!url) return <img src="/favicon-192.png" alt="" style={{ ...boost, width: '1em', height: '1em' }} />;
   return (
     <img
