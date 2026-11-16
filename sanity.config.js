@@ -7,6 +7,7 @@ import { SINGLETONS, schemaTypes } from './sanity/schemaTypes';
 import { theme } from './sanity/theme';
 import { Overview } from './sanity/components/Overview';
 import { ShootPreview } from './sanity/components/ShootPreview';
+import { StudioLogo } from './sanity/components/StudioLogo';
 import {
   CameraIcon,
   CheckIcon,
@@ -103,7 +104,7 @@ const overviewTool = { name: 'overview', title: 'Overview', icon: OverviewIcon, 
 export default defineConfig({
   name: 'louis-oliver',
   title: 'Louis Oliver',
-  icon: LogoMark,
+  icon: StudioLogo,
   basePath: '/studio',
   projectId: projectId || 'missing-project-id',
   dataset,
