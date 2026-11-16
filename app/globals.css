@@ -443,6 +443,8 @@ textarea.input { resize: vertical; }
 
 .mobile-links { display: flex; flex-direction: column; }
 .mobile-link { position: relative; display: flex; justify-content: space-between; align-items: center; padding: 18px 16px; margin: 0 -16px; border-radius: 20px; color: var(--ink); text-decoration: none; font-family: var(--display); font-size: 30px; font-weight: 600; letter-spacing: -0.03em; opacity: 0; transform: translateY(14px); transition: opacity .55s ease, transform .7s var(--ease-out), color .5s ease, background .6s ease; }
+/* app-like taps: register instantly, no long-press link preview, no text selection */
+.mobile-link, .mobile-cta { touch-action: manipulation; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 .mobile-link::after { content: ""; position: absolute; left: 16px; right: 16px; bottom: 0; height: 1px; background: var(--line); transition: opacity .4s ease; }
 .mobile-link.active { color: var(--blue); }
 .mobile-label { transition: transform .8s cubic-bezier(.22, 1, .36, 1); }
@@ -452,19 +454,24 @@ textarea.input { resize: vertical; }
 
 /* opening: links rise in one after another */
 .mobile-menu.open .mobile-link, .mobile-menu.open .mobile-cta { opacity: 1; transform: none; transition-delay: calc(.2s + var(--i) * .055s); }
+/* once they've risen in, a press responds instantly (and eases straight back if the finger slides away) */
+.mobile-menu.open.settled .mobile-link, .mobile-menu.open.settled .mobile-cta { transition-delay: 0s; }
 /* closing: everything holds perfectly still while the panel fades */
 .mobile-menu.closing .mobile-link, .mobile-menu.closing .mobile-cta { opacity: 1; transform: none; transition: none; }
 
-/* press: soft rounded highlight → dot pops in → word glides → arrow drifts. It stays until the menu has faded. */
-.mobile-menu.open .mobile-link:active, .mobile-menu.open .mobile-link.going { background: var(--tint); color: var(--blue); transform: scale(.98); transition-delay: 0s; transition-duration: .5s, .7s, .5s, .6s; }
-.mobile-menu.closing .mobile-link.going { background: var(--tint); color: var(--blue); transform: scale(.98); }
-.mobile-link:active::after, .mobile-link.going::after, .mobile-link:has(+ .mobile-link:active)::after, .mobile-link:has(+ .mobile-link.going)::after { opacity: 0; }
-.mobile-link:active .mobile-label, .mobile-link.going .mobile-label { transform: translateX(16px); transition-delay: .06s; }
-.mobile-link:active .mobile-arrow, .mobile-link.going .mobile-arrow { transform: translateX(8px); transition-delay: .12s; }
-.mobile-link:active .go-dot, .mobile-link.going .go-dot { opacity: 1; transform: scale(1); left: 16px; transition-delay: .1s; }
-.mobile-menu.open .mobile-cta:active, .mobile-menu.open .mobile-cta.going, .mobile-menu.closing .mobile-cta.going { transform: scale(.97); transition-delay: 0s; transition-duration: .5s, .7s; }
-.mobile-cta.going::before { transform: translateY(0); transition-duration: .7s; }
-.mobile-cta.going .arrow { transform: translateX(8px); transition-duration: .8s; transition-delay: .1s; }
+/* press ("lit" — set from components/MobileMenu.jsx the instant a finger touches, kept on through the
+   page change): soft rounded highlight → dot pops in → word glides → arrow drifts. It runs in one
+   unbroken go and stays until the menu has faded. (Not :active — phones drop that as the finger lifts,
+   just before the tap registers, which made the start stall and spring back.) */
+.mobile-menu.open .mobile-link.lit { background: var(--tint); color: var(--blue); transform: scale(.98); transition-delay: 0s; transition-duration: .5s, .7s, .5s, .6s; }
+.mobile-menu.closing .mobile-link.lit { background: var(--tint); color: var(--blue); transform: scale(.98); }
+.mobile-link.lit::after, .mobile-link:has(+ .mobile-link.lit)::after { opacity: 0; }
+.mobile-link.lit .mobile-label { transform: translateX(16px); transition-delay: .06s; }
+.mobile-link.lit .mobile-arrow { transform: translateX(8px); transition-delay: .12s; }
+.mobile-link.lit .go-dot { opacity: 1; transform: scale(1); left: 16px; transition-delay: .1s; }
+.mobile-menu.open .mobile-cta.lit, .mobile-menu.closing .mobile-cta.lit { transform: scale(.97); transition-delay: 0s; transition-duration: .5s, .7s; }
+.mobile-cta.lit::before { transform: translateY(0); transition-duration: .7s; }
+.mobile-cta.lit .arrow { transform: translateX(8px); transition-duration: .8s; transition-delay: .1s; }
 
 @media (max-width: 860px) {
   .nav-desktop, .nav-cta { display: none !important; }
