@@ -74,7 +74,6 @@ const CSS = `
 .lo-ov-row { animation: loOvUp .6s cubic-bezier(.16,1,.3,1) backwards; animation-delay: var(--d, 0ms); }
 .lo-ov-check { transition: background .25s ease, border-color .25s ease, transform .25s ease; }
 .lo-ov-check:hover { transform: scale(1.08); border-color: #104de6 !important; }
-.lo-ov-check[aria-pressed="true"] span { animation: loOvPop .4s cubic-bezier(.16,1,.3,1); display: inline-block; }
 .lo-ov-open { animation: loOvUp .45s cubic-bezier(.16,1,.3,1) backwards; }
 .lo-ov-shoot { transition: background .3s ease, transform .4s cubic-bezier(.16,1,.3,1); }
 .lo-ov-shoot:hover { background: #f4f7fd; transform: translateX(4px); }
@@ -83,7 +82,25 @@ const CSS = `
 .lo-ov-tab { transition: background .3s ease, color .3s ease; }
 .lo-ov-btn { transition: transform .4s cubic-bezier(.16,1,.3,1), box-shadow .4s ease; }
 .lo-ov-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 24px -14px rgba(11,18,32,.45); }
+@keyframes loOvLeaveR { 0% { opacity: 1; transform: none; max-height: 420px; } 45% { opacity: 1; transform: translateX(0); max-height: 420px; } 100% { opacity: 0; transform: translateX(48px); max-height: 0; padding-top: 0; padding-bottom: 0; border-top-color: transparent; } }
+@keyframes loOvLeaveL { 0% { opacity: 1; transform: none; max-height: 420px; } 45% { opacity: 1; transform: translateX(0); max-height: 420px; } 100% { opacity: 0; transform: translateX(-48px); max-height: 0; padding-top: 0; padding-bottom: 0; border-top-color: transparent; } }
+@keyframes loOvFlash { 0% { background: rgba(16,77,230,.10); } 100% { background: transparent; } }
+@keyframes loOvBump { 0% { transform: scale(1); } 40% { transform: scale(1.14); } 100% { transform: scale(1); } }
+@keyframes loOvRing { 0% { box-shadow: 0 0 0 0 rgba(16,77,230,.45); } 100% { box-shadow: 0 0 0 10px rgba(16,77,230,0); } }
+@keyframes loOvChip { 0% { opacity: 0; transform: translateX(-8px) scale(.9); } 100% { opacity: 1; transform: none; } }
+.lo-ov-leave-r { overflow: hidden; animation: loOvLeaveR .7s cubic-bezier(.7,0,.2,1) forwards !important; }
+.lo-ov-leave-l { overflow: hidden; animation: loOvLeaveL .7s cubic-bezier(.7,0,.2,1) forwards !important; }
+.lo-ov-flash { animation: loOvFlash .9s ease-out !important; border-radius: 12px; }
+.lo-ov-bump { animation: loOvBump .6s cubic-bezier(.16,1,.3,1); }
+.lo-ov-count { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px; margin-left: 6px; border-radius: 999px; font-size: 11px; font-weight: 700; transition: background .3s ease, color .3s ease; }
+.lo-ov-check svg path { stroke-dasharray: 16; stroke-dashoffset: 16; transition: stroke-dashoffset .35s cubic-bezier(.7,0,.2,1); }
+.lo-ov-check[aria-pressed="true"] svg path { stroke-dashoffset: 0; transition-delay: .08s; }
+.lo-ov-check[aria-pressed="true"] { animation: loOvRing .6s ease-out; }
+.lo-ov-name { position: relative; display: inline; transition: opacity .4s ease; background-image: linear-gradient(currentColor, currentColor); background-repeat: no-repeat; background-position: 0 58%; background-size: 0% 1.5px; transition: background-size .5s cubic-bezier(.7,0,.2,1), opacity .4s ease; }
+.lo-ov-name[data-done="true"] { background-size: 100% 1.5px; opacity: .55; }
+.lo-ov-chip { animation: loOvChip .4s cubic-bezier(.16,1,.3,1) both; }
 @media (prefers-reduced-motion: reduce) {
+  .lo-ov-leave-r, .lo-ov-leave-l, .lo-ov-flash, .lo-ov-bump, .lo-ov-chip, .lo-ov-check { animation: none !important; }
   .lo-ov-in, .lo-ov-hero, .lo-ov-row, .lo-ov-open { animation: none !important; }
   .lo-ov-spin, .lo-ov-spin-rev, .lo-ov-dot, .lo-ov-accent::after { animation: none !important; }
 }
@@ -210,6 +227,9 @@ export function Overview() {
   const [error, setError] = useState('');
   const [open, setOpen] = useState(null);
   const [filter, setFilter] = useState('new');
+  const [leaving, setLeaving] = useState({});
+  const [flash, setFlash] = useState(null);
+  const [bump, setBump] = useState(null);
 
   const load = useCallback(() => {
     client
@@ -227,13 +247,34 @@ export function Overview() {
   }, [client, load]);
 
   const toggleReplied = (e) => {
+    if (leaving[e._id]) return;
     const next = !e.replied;
-    setData((d) => ({
-      ...d,
-      newEnquiries: Math.max(0, d.newEnquiries + (next ? -1 : 1)),
-      latest: d.latest.map((x) => (x._id === e._id ? { ...x, replied: next } : x)),
-    }));
     client.patch(e._id).set({ replied: next }).commit().catch(() => load());
+    const apply = () =>
+      setData((d) => ({
+        ...d,
+        newEnquiries: Math.max(0, d.newEnquiries + (next ? -1 : 1)),
+        latest: d.latest.map((x) => (x._id === e._id ? { ...x, replied: next } : x)),
+      }));
+    setBump(next ? 'replied' : 'new');
+    setTimeout(() => setBump(null), 650);
+    const reduce = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const hides = (filter === 'new' && next) || (filter === 'replied' && !next);
+    if (hides && !reduce) {
+      setLeaving((l) => ({ ...l, [e._id]: next ? 'replied' : 'new' }));
+      setTimeout(() => {
+        apply();
+        setLeaving((l) => {
+          const n = { ...l };
+          delete n[e._id];
+          return n;
+        });
+      }, 760);
+    } else {
+      apply();
+      setFlash(e._id);
+      setTimeout(() => setFlash((f) => (f === e._id ? null : f)), 900);
+    }
   };
 
   const site = typeof window !== 'undefined' ? window.location.origin : '';
@@ -288,15 +329,16 @@ export function Overview() {
             <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
               <h2 style={h2}>Enquiries</h2>
               <div style={{ display: 'flex', gap: 6, background: SOFT, padding: 4, borderRadius: 999 }}>
-                {[['new', 'To reply'], ['replied', 'Replied'], ['all', 'All']].map(([id, label]) => (
+                {[['new', 'To reply', data ? data.newEnquiries : 0], ['replied', 'Replied', data ? data.enquiries - data.newEnquiries : 0], ['all', 'All', data ? data.enquiries : 0]].map(([id, label, n]) => (
                   <button
                     key={id}
                     type="button"
                     onClick={() => setFilter(id)}
-                    className="lo-ov-tab"
-                    style={{ border: 0, cursor: 'pointer', padding: '7px 14px', borderRadius: 999, fontSize: 13, fontWeight: 600, background: filter === id ? BLUE : 'transparent', color: filter === id ? '#fff' : INK }}
+                    className={`lo-ov-tab${bump === id ? ' lo-ov-bump' : ''}`}
+                    style={{ border: 0, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', padding: '7px 10px 7px 14px', borderRadius: 999, fontSize: 13, fontWeight: 600, background: filter === id ? BLUE : 'transparent', color: filter === id ? '#fff' : INK }}
                   >
                     {label}
+                    <span className="lo-ov-count" style={{ background: filter === id ? 'rgba(255,255,255,0.22)' : '#e3e9f4', color: filter === id ? '#fff' : MUTED }}>{n}</span>
                   </button>
                 ))}
               </div>
@@ -309,26 +351,38 @@ export function Overview() {
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               {enquiries.map((e, i) => {
                 const isOpen = open === e._id;
+                const leave = leaving[e._id];
+                const done = leave ? leave === 'replied' : !!e.replied;
+                const rowCls = `lo-ov-row${leave ? (leave === 'replied' ? ' lo-ov-leave-r' : ' lo-ov-leave-l') : ''}${flash === e._id ? ' lo-ov-flash' : ''}`;
                 return (
-                  <div key={`${filter}-${e._id}`} className="lo-ov-row" style={{ '--d': `${i * 60}ms`, borderTop: `1px solid ${LINE}`, padding: '14px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div key={`${filter}-${e._id}`} className={rowCls} style={{ '--d': `${i * 60}ms`, borderTop: `1px solid ${LINE}`, padding: '14px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                       <button
                         type="button"
                         onClick={() => toggleReplied(e)}
-                        aria-pressed={!!e.replied}
-                        title={e.replied ? 'Mark as not replied' : 'Mark as replied'}
+                        aria-pressed={done}
+                        aria-label={done ? 'Mark as not replied' : 'Mark as replied'}
+                        title={done ? 'Mark as not replied' : 'Mark as replied'}
                         className="lo-ov-check"
-                        style={{ flex: 'none', width: 26, height: 26, borderRadius: 8, border: `1.5px solid ${e.replied ? BLUE : '#c9d3e6'}`, background: e.replied ? BLUE : '#fff', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, padding: 0 }}
+                        style={{ flex: 'none', width: 26, height: 26, borderRadius: 8, border: `1.5px solid ${done ? BLUE : '#c9d3e6'}`, background: done ? BLUE : '#fff', color: '#fff', transition: 'background .3s ease, border-color .3s ease, transform .25s ease', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, padding: 0 }}
                       >
-                        {e.replied ? <span>✓</span> : ''}
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M2.5 7.4l3 3 6-6.4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
                       </button>
                       <button type="button" onClick={() => setOpen(isOpen ? null : e._id)} style={{ flex: 1, minWidth: 0, textAlign: 'left', border: 0, background: 'none', padding: 0, cursor: 'pointer', color: INK }}>
-                        <span style={{ display: 'block', fontWeight: 600, fontSize: 15, textDecoration: e.replied ? 'line-through' : 'none', opacity: e.replied ? 0.6 : 1 }}>
-                          {e.name || 'Unknown'}{e.company ? ` · ${e.company}` : ''}
+                        <span style={{ display: 'block', fontWeight: 600, fontSize: 15 }}>
+                          <span className="lo-ov-name" data-done={done ? 'true' : 'false'}>{e.name || 'Unknown'}{e.company ? ` · ${e.company}` : ''}</span>
                         </span>
                         <span style={{ display: 'block', fontSize: 13, color: MUTED }}>{[e.service, ago(e.receivedAt)].filter(Boolean).join(' · ')}</span>
                       </button>
-                      {!e.replied ? <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: BLUE, background: TINT, padding: '5px 9px', borderRadius: 999 }}>New</span> : null}
+                      {leave ? (
+                        <span className="lo-ov-chip" style={{ flex: 'none', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: leave === 'replied' ? '#fff' : BLUE, background: leave === 'replied' ? BLUE : TINT, padding: '5px 10px', borderRadius: 999 }}>
+                          {leave === 'replied' ? 'Moved to Replied →' : '← Back to To reply'}
+                        </span>
+                      ) : !done ? (
+                        <span className="lo-ov-chip" style={{ flex: 'none', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: BLUE, background: TINT, padding: '5px 9px', borderRadius: 999 }}>New</span>
+                      ) : (
+                        <span className="lo-ov-chip" style={{ flex: 'none', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: MUTED, background: SOFT, padding: '5px 9px', borderRadius: 999 }}>Replied</span>
+                      )}
                     </div>
                     {isOpen ? (
                       <div className="lo-ov-open" style={{ marginLeft: 38, padding: 16, borderRadius: 16, background: SOFT, display: 'flex', flexDirection: 'column', gap: 10, fontSize: 14 }}>
