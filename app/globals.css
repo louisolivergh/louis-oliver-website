@@ -443,6 +443,9 @@ textarea.input { resize: vertical; }
 .mobile-link:active .go-dot, .mobile-link.going .go-dot { opacity: 1; transform: scale(1); left: 16px; }
 .mobile-cta { align-self: stretch; opacity: 0; transform: translateY(16px); transition: opacity .5s ease, transform .6s var(--ease-out); }
 .mobile-menu.open .mobile-link, .mobile-menu.open .mobile-cta { opacity: 1; transform: none; transition-delay: calc(.18s + var(--i) * .05s); }
+.mobile-menu.open .mobile-cta:active, .mobile-menu.open .mobile-cta.going { transform: scale(.96); transition-delay: 0s; }
+.mobile-cta.going::before { transform: translateY(0); }
+.mobile-cta.going .arrow { transform: translateX(6px); }
 
 @media (max-width: 860px) {
   .nav-desktop, .nav-cta { display: none !important; }

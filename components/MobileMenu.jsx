@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Arrow } from './Icons';
@@ -12,6 +12,7 @@ export default function MobileMenu({ items }) {
   const [going, setGoing] = useState(null);
   useEffect(() => setMounted(true), []);
   const path = usePathname() || '/';
+  const router = useRouter();
 
   useEffect(() => { setOpen(false); setGoing(null); }, [path]);
 
@@ -49,7 +50,17 @@ export default function MobileMenu({ items }) {
                 style={{ '--i': i }}
                 tabIndex={open ? 0 : -1}
                 onTouchStart={() => {}}
-                onClick={() => { setGoing(it.href); if (active) setTimeout(() => setOpen(false), 260); }}
+                onClick={(e) => {
+                  // let the press animation play before moving to the page
+                  if (e.metaKey || e.ctrlKey || e.shiftKey) return;
+                  e.preventDefault();
+                  if (going) return;
+                  setGoing(it.href);
+                  router.prefetch(it.href);
+                  setTimeout(() => {
+                    if (active) { setOpen(false); setGoing(null); } else router.push(it.href);
+                  }, 420);
+                }}
               >
                 <span className="go-dot" aria-hidden="true" />
                 <span>{it.label}</span>
@@ -58,7 +69,21 @@ export default function MobileMenu({ items }) {
             );
           })}
         </nav>
-        <Link href="/contact" className="btn btn-primary mobile-cta" style={{ '--i': items.length }} tabIndex={open ? 0 : -1}>
+        <Link
+          href="/contact"
+          className={`btn btn-primary mobile-cta${going === 'cta' ? ' going' : ''}`}
+          style={{ '--i': items.length }}
+          tabIndex={open ? 0 : -1}
+          onTouchStart={() => {}}
+          onClick={(e) => {
+            e.preventDefault();
+            if (going) return;
+            setGoing('cta');
+            setTimeout(() => {
+              if (path === '/contact') { setOpen(false); setGoing(null); } else router.push('/contact');
+            }, 380);
+          }}
+        >
           Book a call <Arrow />
         </Link>
       </div>,
