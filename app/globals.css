@@ -55,7 +55,12 @@ button { font: inherit; }
 
 /* ---------- header ---------- */
 .site-header { position: sticky; top: 0; z-index: 50; background: rgba(255,255,255,.86); backdrop-filter: saturate(180%) blur(16px); -webkit-backdrop-filter: saturate(180%) blur(16px); border-bottom: 1px solid var(--line-soft); }
-.nav { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 32px; padding-top: 18px; padding-bottom: 18px; color: var(--ink); }
+.nav { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 16px 32px; padding-top: 18px; padding-bottom: 18px; color: var(--ink); }
+/* logo left, links always dead centre, button right — whatever the logo's width */
+.nav > .logo { justify-self: start; min-width: 0; }
+.nav > .nav-links { justify-self: center; }
+.nav > .nav-cta { justify-self: end; }
+.nav .logo-img { max-width: 100%; object-fit: contain; }
 .nav-links { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 36px; font-size: 15px; font-weight: 500; }
 .nav-link { position: relative; color: var(--ink); text-decoration: none; padding: 12px 0; }
 .nav-link:hover { color: var(--ink); }
@@ -403,7 +408,7 @@ textarea.input { resize: vertical; }
 @media (max-width: 860px) {
   .nav-desktop, .nav-cta { display: none !important; }
   .menu-btn { display: flex; }
-  .nav { padding-top: 12px; padding-bottom: 12px; flex-wrap: nowrap; }
+  .nav { display: flex; justify-content: space-between; padding-top: 12px; padding-bottom: 12px; }
   .site-header .logo { position: relative; z-index: 61; }
 }
 
