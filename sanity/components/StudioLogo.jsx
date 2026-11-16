@@ -23,12 +23,15 @@ export function StudioLogo() {
     return () => { alive = false; sub.unsubscribe(); };
   }, [client]);
 
-  if (!url) return <LogoMark />;
+  /* The dashboard draws this icon in a small, top-aligned slot: scale it up and nudge it down so it
+     sits larger and centred beside the title without changing the toolbar's layout. */
+  const boost = { display: 'block', transform: 'translateY(28%) scale(1.45)', transformOrigin: 'center' };
+  if (!url) return <span style={boost}><LogoMark /></span>;
   return (
     <img
-      src={url.toLowerCase().endsWith('.svg') ? url : `${url}?h=160&fit=max&q=100`}
+      src={url.toLowerCase().endsWith('.svg') ? url : `${url}?h=200&fit=max&q=100`}
       alt=""
-      style={{ width: '1em', height: '1em', objectFit: 'contain', borderRadius: '0.26em', display: 'block' }}
+      style={{ ...boost, width: '1em', height: '1em', objectFit: 'contain', borderRadius: '0.26em' }}
     />
   );
 }
@@ -41,7 +44,7 @@ export function StudioBrand(props) {
   const title = (props && props.title) || 'Louis Oliver';
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10, height: '100%', padding: '0 4px', lineHeight: 1 }}>
-      <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, fontSize: 30, flex: 'none' }}>
+      <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, fontSize: 22, flex: 'none' }}>
         <StudioLogo />
       </span>
       <span style={{ fontWeight: 600, fontSize: 15, letterSpacing: '-0.01em', whiteSpace: 'nowrap' }}>{title}</span>
