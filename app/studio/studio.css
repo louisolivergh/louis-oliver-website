@@ -452,9 +452,10 @@ html body [data-testid="form-view"] .lo-field[data-lo-top]:not(fieldset .lo-fiel
     border-color: #d6deeb !important;
   }
 }
-/* the section you're typing in lifts gently and glows blue */
-html body [data-testid="form-view"] fieldset:not(.lo-field fieldset):focus-within,
-html body [data-testid="form-view"] .lo-field[data-lo-top]:not(fieldset .lo-field):focus-within {
+/* the section you're typing in lifts gently and glows blue (only while typing, so clicking a
+   list item or a button doesn't make the card flicker behind the window it opens) */
+html body [data-testid="form-view"] fieldset:not(.lo-field fieldset):has(:is(input:not([type="checkbox"], [type="radio"], [type="file"]), textarea, [contenteditable="true"]):focus),
+html body [data-testid="form-view"] .lo-field[data-lo-top]:not(fieldset .lo-field):has(:is(input:not([type="checkbox"], [type="radio"], [type="file"]), textarea, [contenteditable="true"]):focus) {
   border-color: #c4d3fa !important;
   box-shadow: 0 0 0 4px rgba(16, 77, 230, .05), 0 32px 58px -42px rgba(16, 77, 230, .55);
 }
@@ -738,28 +739,50 @@ html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [da
 }
 
 /* ---------- lists of items (questions, services, stats, logos, page sections…) ---------- */
+/* each item: a white card. No entrance animation here: Sanity mounts list items as you scroll,
+   so anything that rises in would keep replaying and make the list feel jumpy */
 html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-ui="ArrayInput__content"] [data-ui="Card"][aria-selected] {
   border: 1px solid var(--lo-edge) !important;
   border-radius: 16px !important;
   --card-bg-color: #ffffff !important;
-  box-shadow: 0 1px 2px rgba(11, 18, 32, .04);
-  transition: border-color .3s ease, box-shadow .5s var(--lo-ease);
-  animation: loRise .55s var(--lo-ease) backwards;
+  box-shadow: 0 1px 2px rgba(11, 18, 32, .04), 0 20px 36px -28px rgba(11, 18, 32, 0);
+  transition: border-color .25s ease, box-shadow .35s var(--lo-ease);
 }
 @media (hover: hover) {
   html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-ui="ArrayInput__content"] [data-ui="Card"][aria-selected]:hover {
     border-color: var(--lo-edge-hover) !important;
-    box-shadow: 0 20px 36px -28px rgba(11, 18, 32, .4);
+    box-shadow: 0 1px 2px rgba(11, 18, 32, .04), 0 20px 36px -28px rgba(11, 18, 32, .4);
   }
 }
 html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-ui="ArrayInput__content"] [data-ui="Card"][aria-selected="true"] {
   border-color: var(--lo-blue) !important;
 }
+/* the item's own button (its picture and name): a soft blue wash on hover, eased in and out, instead of Sanity's grey */
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-ui="ArrayInput__content"] [data-ui="Card"][aria-selected] button[data-ui="Card"] {
+  border-radius: 12px !important;
+  background-color: transparent !important;
+  transition: background-color .25s ease;
+}
+@media (hover: hover) {
+  html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-ui="ArrayInput__content"] [data-ui="Card"][aria-selected] button[data-ui="Card"]:not(:disabled):hover {
+    background-color: #f3f6fe !important;
+  }
+}
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-ui="ArrayInput__content"] [data-ui="Card"][aria-selected] button[data-ui="Card"]:active {
+  background-color: var(--lo-tint) !important;
+}
 html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-ui="ArrayInput__content"] [data-ui="PreviewCard"] {
   border-radius: 12px !important;
 }
+/* the box around a list with things in it: invisible, so each item stands as its own card */
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-ui="ArrayInput__content"] > [data-ui="Card"]:only-child:not([aria-selected]):not(:has(> [data-ui="Text"])) {
+  --card-bg-color: transparent !important;
+  --card-border-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
 /* empty list: a friendly dashed box */
-html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-ui="ArrayInput__content"] > [data-ui="Card"]:only-child:not([aria-selected]) {
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-ui="ArrayInput__content"] > [data-ui="Card"]:only-child:not([aria-selected]):has(> [data-ui="Text"]) {
   padding: 22px 18px !important;
   border: 1.5px dashed #cbd8f5 !important;
   border-radius: 16px !important;
@@ -2355,18 +2378,18 @@ html body .lo-dash-next {
 }
 html body .lo-dn-rings {
   position: absolute;
-  right: -150px;
-  top: -170px;
+  right: -190px;
+  top: -210px;
   z-index: -1;
-  width: 440px;
-  height: 440px;
-  border-radius: 50%;
+  width: 520px;
+  height: 520px;
   pointer-events: none;
-  background: repeating-radial-gradient(circle at center, rgba(255, 255, 255, 0) 0 28px, rgba(255, 255, 255, .13) 28px 29px);
-  -webkit-mask-image: radial-gradient(closest-side, #000 50%, transparent);
-  mask-image: radial-gradient(closest-side, #000 50%, transparent);
-  animation: loDrift 90s linear infinite;
+  -webkit-mask-image: radial-gradient(closest-side, #000 62%, transparent);
+  mask-image: radial-gradient(closest-side, #000 62%, transparent);
+  animation: loFade 1.2s ease .2s backwards;
 }
+html body .lo-dn-spin { transform-box: view-box; transform-origin: 50% 50%; animation: loDrift 40s linear infinite; }
+html body .lo-dn-spin[data-rev] { animation-duration: 60s; animation-direction: reverse; }
 html body .lo-dn-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 html body .lo-dn-eyebrow { display: inline-flex; align-items: center; gap: 10px; font: 600 11.5px/1 var(--lo-body); letter-spacing: .16em; text-transform: uppercase; color: rgba(255, 255, 255, .85); }
 html body .lo-dn-when { padding: 8px 13px; border-radius: 999px; background: #ffffff; color: var(--lo-blue); font: 700 12.5px/1 var(--lo-body); animation: loPop .6s var(--lo-spring) .3s backwards; }
@@ -2911,9 +2934,6 @@ html body .lo-sv-edit {
 }
 html body .lo-sv-edit:hover { background: var(--lo-blue); box-shadow: inset 0 0 0 1px transparent; color: #ffffff; }
 html body .lo-sv-edit:active { transform: scale(.96); }
-html body .lo-sv-edit[data-big] { padding: 13px 26px; font-size: 14px; background: var(--lo-blue); color: #ffffff; box-shadow: 0 12px 24px -14px rgba(16, 77, 230, .9); }
-html body .lo-sv-edit[data-big]:hover { background: var(--lo-blue-dark); }
-html body .lo-sv-end { display: flex; justify-content: center; padding: 8px 0 4px; }
 
 /* where it's up to */
 html body .lo-sv-track { display: flex; flex-direction: column; gap: 16px; padding: 20px; border-radius: 22px; background: #ffffff; box-shadow: inset 0 0 0 1px var(--lo-edge); }
@@ -3278,7 +3298,7 @@ html body .lo-mini-btn { box-shadow: inset 0 0 0 1px var(--lo-edge), 0 8px 16px 
 html body .lo-match-item { box-shadow: inset 0 0 0 1px var(--lo-edge), 0 12px 24px -18px rgba(16, 77, 230, 0); }
 html body .lo-li-map:hover,
 html body .lo-pill:hover,
-html body .lo-sv-edit:not([data-big]):hover { box-shadow: inset 0 0 0 1px transparent; }
+html body .lo-sv-edit:hover { box-shadow: inset 0 0 0 1px transparent; }
 html body .lo-native,
 html body .lo-match-search,
 html body :is(.lo-li-input, .lo-li-select, .lo-li-area) { box-shadow: inset 0 0 0 1px var(--lo-edge), 0 0 0 4px rgba(16, 77, 230, 0); }
@@ -3327,71 +3347,215 @@ html body .lo-dg-loose:hover { transform: translateY(-1px); box-shadow: inset 0 
 html body .lo-dg-loose small { color: var(--lo-muted); font-weight: 500; }
 html body .lo-dg-loose[data-untimed] { background: #fff7eb; box-shadow: inset 0 0 0 1px #f0cf9c, 0 8px 16px -12px rgba(161, 92, 7, 0); }
 
-html body .lo-dg-cal { overflow: hidden; border-radius: 22px; background: #ffffff; box-shadow: inset 0 0 0 1px var(--lo-edge); }
-/* one column per shoot, with its name on top */
-html body .lo-dg-heads { display: grid; gap: 10px; padding: 14px 14px 12px 70px; border-bottom: 1px solid var(--lo-line); }
-html body .lo-dg-head { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 10px 12px; border-radius: 14px; background: var(--lo-soft); }
-html body .lo-dg-head[data-active] { background: var(--lo-tint); box-shadow: inset 0 0 0 1.5px #c6d4fa; }
-html body .lo-dg-head[data-draft] { opacity: .75; }
-html body .lo-dg-head-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
-html body .lo-dg-head-top b { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font: 600 15px/1.25 var(--lo-display); letter-spacing: -.01em; }
-html body .lo-dg-head small { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--lo-muted); font-size: 12.5px; }
-html body .lo-dg-open { align-self: flex-start; margin-top: 2px; color: var(--lo-blue) !important; font: 600 12.5px/1 var(--lo-body); text-decoration: none !important; }
-html body .lo-dg-open:hover { text-decoration: underline !important; }
+html body .lo-dg-cal { overflow: clip; border-radius: 22px; background: #ffffff; box-shadow: inset 0 0 0 1px var(--lo-edge); }
 /* the hours */
-html body .lo-dg-body { position: relative; margin: 12px 14px 16px 0; }
+html body .lo-dg-body { position: relative; margin: 14px 14px 16px 0; }
 html body .lo-dg-hour { position: absolute; left: 0; right: 0; height: 0; border-top: 1px solid #edf1f7; }
 html body .lo-dg-hour > span { position: absolute; left: 14px; top: -8px; padding-right: 8px; background: #ffffff; color: var(--lo-muted); font: 600 11.5px/1 var(--lo-body); font-variant-numeric: tabular-nums; }
 html body .lo-dg-cols { position: absolute; inset: 0 0 0 70px; display: grid; gap: 10px; }
 html body .lo-dg-col { position: relative; min-width: 0; }
-/* the shoot itself: a soft band from start to finish */
-html body .lo-dg-span {
+/* the shoot: one box from start to finish, with its name on top and every time inside it */
+html body .lo-dg-shoot {
   position: absolute;
   left: 0;
   right: 0;
   z-index: 1;
-  border-radius: 12px;
-  background: rgba(16, 77, 230, .06);
-  box-shadow: inset 3px 0 0 var(--lo-blue);
+  box-sizing: border-box;
+  border-radius: 18px;
+  background: #f1f5ff;
+  box-shadow: inset 0 0 0 1.5px #c6d4fa;
+  transition: box-shadow .3s ease;
+  animation: loRise .45s var(--lo-ease) backwards;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+html body .lo-dg-shoot[data-active] { box-shadow: inset 0 0 0 2px var(--lo-blue); }
+html body .lo-dg-shoot[data-draft] { background: repeating-linear-gradient(135deg, #f4f7ff 0 8px, #edf2fe 8px 16px); }
+html body .lo-dg-shoot-hit { position: absolute; inset: 0; z-index: 0; border-radius: inherit; transition: background-color .3s ease; }
+html body .lo-dg-shoot-hit:hover { background: rgba(16, 77, 230, .05); }
+html body .lo-dg-shoot-head {
+  position: sticky;
+  top: 10px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  box-sizing: border-box;
+  height: 50px;
+  margin: 0 0 6px;
+  padding: 0 14px;
+  border-radius: 18px 18px 12px 12px;
+  background: var(--lo-blue);
+  box-shadow: 0 12px 22px -18px rgba(16, 77, 230, .9);
+  color: #ffffff !important;
   text-decoration: none !important;
   transition: background-color .3s ease;
 }
-html body .lo-dg-span:hover { background: rgba(16, 77, 230, .1); }
-html body .lo-dg-span[data-draft] { background: repeating-linear-gradient(135deg, rgba(16, 77, 230, .05) 0 8px, rgba(16, 77, 230, .02) 8px 16px); }
-html body .lo-dg-span-label { display: flex; flex-direction: column; gap: 3px; padding: 8px 10px 8px 14px; color: var(--lo-blue); font: 600 13px/1.3 var(--lo-body); }
-html body .lo-dg-span-label small { color: var(--lo-text); font-weight: 500; }
-/* each time in the schedule: a block at its time, until the next one */
+html body .lo-dg-shoot-head:hover { background: var(--lo-blue-dark); }
+html body .lo-dg-shoot[data-draft] .lo-dg-shoot-head { background: #6f93ef; }
+html body .lo-dg-shoot-name { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+html body .lo-dg-shoot-name b { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font: 600 14.5px/1.2 var(--lo-display); letter-spacing: -.01em; }
+html body .lo-dg-shoot-status { flex: none; padding: 4px 8px; border-radius: 999px; background: rgba(255, 255, 255, .2); color: #ffffff; font: 700 10.5px/1 var(--lo-body); letter-spacing: .04em; text-transform: uppercase; }
+html body .lo-dg-shoot-head small { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: rgba(255, 255, 255, .84); font: 500 12px/1.2 var(--lo-body); }
+html body .lo-dg-shoot-note { position: absolute; left: 14px; right: 14px; top: 64px; color: var(--lo-blue); font: 600 12.5px/1.35 var(--lo-body); pointer-events: none; }
+html body .lo-dg-shoot-end { position: absolute; left: 14px; bottom: 10px; color: var(--lo-blue); font: 600 11.5px/1 var(--lo-body); font-variant-numeric: tabular-nums; pointer-events: none; }
+/* each time on the schedule: a card inside the shoot, at its time, until the next one */
 html body .lo-dg-event {
   position: absolute;
-  left: 8px;
-  right: 6px;
+  left: 10px;
+  right: 10px;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 2px;
   overflow: hidden;
-  padding: 6px 10px;
+  padding: 6px 10px 6px 15px;
   border-radius: 10px;
-  background: var(--lo-blue);
-  box-shadow: 0 0 0 1.5px #ffffff, 0 10px 20px -16px rgba(16, 77, 230, 0);
-  color: #ffffff !important;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px #d5e0fb, 0 10px 18px -16px rgba(16, 77, 230, 0);
+  color: var(--lo-ink) !important;
   font: 600 13px/1.25 var(--lo-body);
   text-decoration: none !important;
-  transition: transform .45s var(--lo-ease), box-shadow .4s ease, background-color .3s ease;
+  transition: transform .45s var(--lo-ease), box-shadow .4s ease;
   animation: loRise .45s var(--lo-ease) backwards;
+  animation-delay: calc(var(--i, 0) * 40ms + 80ms);
 }
-html body .lo-dg-event b { font-size: 11.5px; font-weight: 700; font-variant-numeric: tabular-nums; opacity: .85; }
+html body .lo-dg-event::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--lo-blue); }
+html body .lo-dg-event b { color: var(--lo-blue); font-size: 11.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
 html body .lo-dg-event span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 html body .lo-dg-event[data-short] { flex-direction: row; align-items: center; gap: 8px; padding-top: 3px; padding-bottom: 3px; }
-html body .lo-dg-event:hover { z-index: 30 !important; background: var(--lo-blue-dark); transform: translateY(-1px); box-shadow: 0 0 0 1.5px #ffffff, 0 10px 20px -16px rgba(16, 77, 230, .9); }
-html body .lo-dg-event[data-draft] { background: #6f93ef; }
+html body .lo-dg-event:hover { z-index: 30 !important; transform: translateY(-1px); box-shadow: inset 0 0 0 1px #9db5f5, 0 10px 18px -16px rgba(16, 77, 230, .8); }
+html body .lo-dg-shoot[data-draft] .lo-dg-event::before { background: #9db5f5; }
 /* now (on today) */
 html body .lo-dg-now { position: absolute; left: 62px; right: 0; z-index: 40; height: 2px; background: #e5484d; pointer-events: none; }
 html body .lo-dg-now::before { content: ""; position: absolute; left: -5px; top: -4px; width: 10px; height: 10px; border-radius: 50%; background: #e5484d; }
 @container (max-width: 560px) {
-  html body .lo-dg-heads { padding-left: 14px; }
   html body .lo-dg-cols { left: 56px; }
   html body .lo-dg-side-label { width: auto; }
 }
 @media (prefers-reduced-motion: reduce) {
   html body :is(.lo-dg, .lo-dg *) { animation: none !important; transition-duration: .01ms !important; }
 }
+
+/* ---------- 20. A shoot ends where its content ends (no big empty space under it) ---------- */
+html body [data-testid="document-panel-scroller"] [data-ui="Container"]:has(.lo-doc[data-lo-doc="booking"]) { padding-bottom: 28px !important; }
+html body [data-testid="form-view"]:has(.lo-doc[data-lo-doc="booking"]) { padding-bottom: 0 !important; margin-bottom: 0 !important; }
+
+/* ---------- 21. Calls clients book from the website: teal, one hour on the calendar ---------- */
+html body { --lo-call: #0b6f78; --lo-call-bg: #e8f7f8; --lo-call-line: #b3e1e5; --lo-call-hover: #6cc3cb; }
+/* in a day of the month */
+html body .lo-ccall {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 5px 8px;
+  border-radius: 10px;
+  background: var(--lo-call-bg);
+  box-shadow: inset 0 0 0 1px var(--lo-call-line), 0 8px 16px -12px rgba(11, 111, 120, 0);
+  color: var(--lo-call) !important;
+  font: 600 11.5px/1.2 var(--lo-body);
+  text-decoration: none !important;
+  transition: transform .5s var(--lo-ease), box-shadow .45s ease;
+  animation: loRise .5s var(--lo-ease) backwards;
+}
+html body .lo-ccall:hover { transform: translateY(-1px); box-shadow: inset 0 0 0 1px var(--lo-call-hover), 0 8px 16px -12px rgba(11, 111, 120, .55); transition: transform .45s var(--lo-spring), box-shadow .3s ease; }
+html body .lo-ccall[data-active] { box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px var(--lo-call-hover) !important; }
+html body .lo-ccall svg { flex: none; font-size: 12px; }
+html body .lo-ccall-time { flex: none; font-variant-numeric: tabular-nums; }
+html body .lo-ccall-title { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-weight: 500; }
+html body .lo-mini-dots i[data-call] { background: var(--lo-call-hover); box-shadow: none; }
+html body .lo-legend span[data-call] i { background: var(--lo-call-bg); box-shadow: inset 0 0 0 1px var(--lo-call-hover); }
+/* on the day's timeline: its own column, one hour tall */
+html body .lo-dg-call {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  overflow: hidden;
+  padding: 9px 12px;
+  border-radius: 14px;
+  background: var(--lo-call-bg);
+  box-shadow: inset 0 0 0 1.5px var(--lo-call-line), 0 10px 18px -16px rgba(11, 111, 120, 0);
+  color: var(--lo-call) !important;
+  text-decoration: none !important;
+  transition: transform .45s var(--lo-ease), box-shadow .4s ease;
+  animation: loRise .45s var(--lo-ease) backwards;
+  animation-delay: calc(var(--i, 0) * 50ms + 80ms);
+}
+html body .lo-dg-call:hover { z-index: 30; transform: translateY(-1px); box-shadow: inset 0 0 0 1.5px var(--lo-call-hover), 0 10px 18px -16px rgba(11, 111, 120, .8); }
+html body .lo-dg-call[data-active] { box-shadow: inset 0 0 0 2px var(--lo-call), 0 10px 18px -16px rgba(11, 111, 120, 0); }
+html body .lo-dg-call-top { display: flex; align-items: center; gap: 6px; font: 700 11.5px/1.2 var(--lo-body); font-variant-numeric: tabular-nums; }
+html body .lo-dg-call-top svg { flex: none; font-size: 13px; }
+html body .lo-dg-call-who { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--lo-ink); font: 600 13px/1.25 var(--lo-body); }
+html body .lo-dg-call small { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--lo-text); font-size: 12px; }
+/* in the day list beside an open shoot */
+html body .lo-dayv-call {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 18px;
+  background: var(--lo-call-bg);
+  box-shadow: inset 0 0 0 1px var(--lo-call-line), 0 10px 20px -14px rgba(11, 111, 120, 0);
+  color: var(--lo-call) !important;
+  text-decoration: none !important;
+  transition: transform .5s var(--lo-ease), box-shadow .45s ease;
+  animation: loRise .5s var(--lo-ease) backwards;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+html body .lo-dayv-call:hover { transform: translateY(-1px); box-shadow: inset 0 0 0 1px var(--lo-call-hover), 0 10px 20px -14px rgba(11, 111, 120, .55); transition: transform .45s var(--lo-spring), box-shadow .3s ease; }
+html body .lo-dayv-call svg { flex: none; font-size: 18px; }
+html body .lo-dayv-call span { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+html body .lo-dayv-call b { font-size: 14px; font-weight: 600; }
+html body .lo-dayv-call small { color: var(--lo-text); font-size: 13px; }
+/* "Calls booked" beside the calendar */
+html body .lo-callrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 -8px;
+  padding: 10px 8px;
+  border-radius: 14px;
+  color: var(--lo-ink) !important;
+  text-decoration: none !important;
+  transition: background-color .3s ease;
+  animation: loRise .5s var(--lo-ease) backwards;
+  animation-delay: calc(var(--i, 0) * 50ms);
+}
+html body .lo-callrow:hover { background: var(--lo-call-bg); }
+html body .lo-callrow[data-active] { background: var(--lo-call-bg); box-shadow: inset 0 0 0 1px var(--lo-call-line); }
+html body .lo-callrow-when { display: flex; flex: none; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: 58px; height: 50px; border-radius: 14px; background: var(--lo-call-bg); color: var(--lo-call); }
+html body .lo-callrow-when b { font: 700 11px/1.1 var(--lo-body); letter-spacing: .02em; text-align: center; }
+html body .lo-callrow-when small { font: 700 13px/1 var(--lo-body); font-variant-numeric: tabular-nums; }
+html body .lo-callrow-who { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+html body .lo-callrow-who b { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 14px; font-weight: 600; }
+html body .lo-callrow-who small { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--lo-muted); font-size: 12.5px; }
+/* on the enquiry itself */
+html body .lo-hero-call {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  max-width: 100%;
+  margin: 10px 0 0;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: var(--lo-call-bg);
+  box-shadow: inset 0 0 0 1px var(--lo-call-line);
+  color: var(--lo-call);
+  font-size: 13px;
+  font-weight: 500;
+  animation: loRise .8s var(--lo-ease) .25s backwards;
+}
+html body .lo-hero-call b { font-weight: 700; }
+html body .lo-hero-call svg { flex: none; font-size: 15px; }
+@media (prefers-reduced-motion: reduce) {
+  html body :is(.lo-ccall, .lo-dg-call, .lo-dayv-call, .lo-callrow, .lo-hero-call) { animation: none !important; transition-duration: .01ms !important; }
+}
+html body .lo-enq-call { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; margin-top: 3px; padding: 4px 9px; border-radius: 999px; background: var(--lo-call-bg); color: var(--lo-call); font: 600 11.5px/1.2 var(--lo-body); }
+html body .lo-enq-call svg { flex: none; font-size: 12px; }

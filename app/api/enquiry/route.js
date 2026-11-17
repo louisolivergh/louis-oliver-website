@@ -2,6 +2,7 @@ import { createClient } from 'next-sanity';
 import { NextResponse } from 'next/server';
 import { apiVersion, dataset, projectId } from '@/sanity/env';
 import { notify } from '@/lib/notify';
+import { CALL_MINUTES, openTimes } from '@/lib/calls';
 
 const clip = (v, n = 4000) => (typeof v === 'string' ? v.trim().slice(0, n) : '');
 
@@ -31,8 +32,21 @@ export async function POST(req) {
   if (!doc.name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(doc.email)) {
     return NextResponse.json({ ok: false, error: 'Name and a valid email are required.' }, { status: 400 });
   }
+  const callDate = clip(body.callDate, 10);
+  const callTime = clip(body.callTime, 5);
+  if ((callDate || callTime) && !(/^\d{4}-\d{2}-\d{2}$/.test(callDate) && /^\d{2}:\d{2}$/.test(callTime))) {
+    return NextResponse.json({ ok: false, error: 'That call time isn’t valid.' }, { status: 400 });
+  }
   try {
-    const client = createClient({ projectId, dataset, apiVersion, token, useCdn: false });
+    const client = createClient({ projectId, dataset, apiVersion, token, useCdn: false, perspective: 'raw' });
+    if (callDate) {
+      // the time they picked must still be free (someone else may have just taken it)
+      const { days } = await openTimes(client);
+      if (!days.some((d) => d.date === callDate && d.slots.includes(callTime))) {
+        return NextResponse.json({ ok: false, error: 'taken' }, { status: 409 });
+      }
+      doc.call = { date: callDate, time: callTime, minutes: CALL_MINUTES };
+    }
     await client.create(doc);
     await notify(doc, new URL(req.url).origin);
     return NextResponse.json({ ok: true });

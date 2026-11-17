@@ -33,7 +33,19 @@ export default async function ShootPage({ params }) {
   const equipment = equipList(shoot.equipment, shoot.extraEquipment);
   const list = all || [];
   const idx = list.findIndex((s) => s.slug === slug);
-  const next = list.length > 1 ? list[(idx + 1) % list.length] : null;
+  // the shoots either side of this one on the Work page (newest first). With three or more it
+  // goes round at the ends, so there's always a previous and a next; with two, each points to the other once.
+  const n = list.length;
+  let prev = null;
+  let next = null;
+  if (n > 1 && idx < 0) next = list[0];
+  else if (n === 2) {
+    prev = idx > 0 ? list[idx - 1] : null;
+    next = idx < n - 1 ? list[idx + 1] : null;
+  } else if (n > 2) {
+    prev = list[(idx - 1 + n) % n];
+    next = list[(idx + 1) % n];
+  }
   const cols = [2, 3, 4].includes((work || {}).galleryColumns) ? work.galleryColumns : 3;
   const sections = (shoot.sections || []).map((s) => ({ ...s, equipmentList: equipList(s.equipment, s.extraEquipment) }));
 
@@ -76,14 +88,27 @@ export default async function ShootPage({ params }) {
         <p className="empty" style={{ margin: 0, fontSize: 17, color: 'var(--muted)' }}>Photos and videos for this shoot are coming soon.</p>
       )}
 
-      {next ? (
-        <Link href={`/work/${next.slug}`} className="next-shoot">
-          <span style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <span className="label">Next shoot</span>
-            <span className="display" style={{ fontSize: 'clamp(32px, 4vw, 56px)', fontWeight: 600 }}>{next.title}</span>
-          </span>
-          <span className="btn btn-primary">View shoot <Arrow /></span>
-        </Link>
+      {prev || next ? (
+        <nav className="shoot-nav" aria-label="More shoots">
+          {prev ? (
+            <Link href={`/work/${prev.slug}`} className="shoot-nav-link" data-dir="prev">
+              <span className="shoot-nav-name">
+                <span className="label">Previous shoot</span>
+                <span className="display">{prev.title}</span>
+              </span>
+              <span className="btn btn-ghost btn-sm"><BackArrow className="back-arrow" /> View shoot</span>
+            </Link>
+          ) : null}
+          {next ? (
+            <Link href={`/work/${next.slug}`} className="shoot-nav-link" data-dir="next">
+              <span className="shoot-nav-name">
+                <span className="label">Next shoot</span>
+                <span className="display">{next.title}</span>
+              </span>
+              <span className="btn btn-primary btn-sm">View shoot <Arrow /></span>
+            </Link>
+          ) : null}
+        </nav>
       ) : null}
     </article>
   );

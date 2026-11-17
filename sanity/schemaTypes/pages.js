@@ -6,6 +6,23 @@ const s = (name, title, extra = {}) => defineField({ name, title, type: 'string'
 const t = (name, title, rows = 3, extra = {}) => defineField({ name, title, type: 'text', rows, ...extra });
 const img = (name, title, extra = {}) => defineField({ name, title, type: 'image', options: { hotspot: true }, ...extra });
 
+/* calls clients can book from the enquiry form (see lib/calls.js) */
+const WEEKDAYS = [
+  { value: 'mon', title: 'Monday' },
+  { value: 'tue', title: 'Tuesday' },
+  { value: 'wed', title: 'Wednesday' },
+  { value: 'thu', title: 'Thursday' },
+  { value: 'fri', title: 'Friday' },
+  { value: 'sat', title: 'Saturday' },
+  { value: 'sun', title: 'Sunday' },
+];
+const CALL_HOURS = Array.from({ length: 16 }, (_, i) => `${String(i + 7).padStart(2, '0')}:00`);
+const CALL_WEEKS = [1, 2, 3, 4, 6, 8];
+const shortDay = (day) => {
+  const [y, m, d] = String(day).split('-').map(Number);
+  return y && m && d ? new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }) : '';
+};
+
 const show = (title = 'Show on website') => defineField({ name: 'show', title, type: 'boolean', initialValue: true });
 
 /* The dashboard shows its own header card on every page you edit (sanity/components/FormChrome.jsx) */
@@ -357,6 +374,7 @@ export const contactPage = defineType({
     TOP,
     { name: 'details', title: 'Your details', description: 'How clients can reach you, shown beside the form.', options: { columns: 2 } },
     { name: 'form', title: 'Enquiry form', description: 'The form clients fill in. New enquiries arrive in your Inbox and by email.' },
+    { name: 'calls', title: 'Calls', description: 'Clients can book a call with you on the enquiry form. It only offers hours your calendar has free, and each call takes up one hour on your calendar.' },
     { name: 'faq', title: 'Questions', description: 'The common questions at the bottom of the page.' },
   ],
   fields: [
@@ -367,7 +385,28 @@ export const contactPage = defineType({
     s('hours', 'Hours', { fieldset: 'details', placeholder: '[Mon to Fri, 9:00 to 18:00]' }),
     s('formTitle', 'Form heading', { fieldset: 'form', placeholder: 'Start a project' }),
     defineField({ name: 'services', title: 'Services in the drop-down', type: 'array', of: [defineArrayMember({ type: 'string' })], options: { layout: 'tags' }, fieldset: 'form', description: 'Type one and press Enter.' }),
-    defineField({ name: 'budgets', title: 'Budget ranges in the drop-down', type: 'array', of: [defineArrayMember({ type: 'string' })], options: { layout: 'tags' }, fieldset: 'form', description: 'Type one and press Enter, e.g. £2k to £5k.' }),
+    defineField({ name: 'budgets', title: 'Budget ranges in the drop-down', type: 'array', of: [defineArrayMember({ type: 'string' })], options: { layout: 'tags' }, fieldset: 'form', description: 'Type one and press Enter, e.g. £2k to £5k. Leave empty to use: Under £500, £500 to £1,000, £1,000 to £2,500, £2,500 to £5,000, £5,000 or more, Not sure yet.' }),
+    defineField({ name: 'callsOn', title: 'Let clients book a call', type: 'boolean', initialValue: true, fieldset: 'calls', description: 'Shows “Book a call” on the enquiry form.' }),
+    defineField({
+      name: 'callDays',
+      title: 'Days you take calls',
+      type: 'array',
+      of: [defineArrayMember({ type: 'string' })],
+      options: { list: WEEKDAYS, layout: 'grid' },
+      initialValue: ['mon', 'tue', 'wed', 'thu', 'fri'],
+      fieldset: 'calls',
+      description: 'Leave empty for Monday to Friday.',
+    }),
+    s('callFrom', 'First call at', { fieldset: 'calls', initialValue: '09:00', options: { list: CALL_HOURS }, description: 'UK time. Leave empty for 09:00.' }),
+    s('callTo', 'Finish calls by', { fieldset: 'calls', initialValue: '17:00', options: { list: CALL_HOURS }, description: 'The last call starts an hour before this. Leave empty for 17:00.' }),
+    defineField({
+      name: 'callWeeks',
+      title: 'How far ahead they can book',
+      type: 'number',
+      initialValue: 3,
+      fieldset: 'calls',
+      options: { list: CALL_WEEKS.map((w) => ({ value: w, title: w === 1 ? '1 week' : `${w} weeks` })), layout: 'radio', direction: 'horizontal' },
+    }),
     s('faqTitle', 'Heading', { fieldset: 'faq', placeholder: '[Common questions from new clients.]' }),
     defineField({ name: 'faqs', title: 'Questions', type: 'array', of: [faq], fieldset: 'faq', placeholder: 'No questions yet. Add your first one below.' }),
   ],
@@ -400,6 +439,21 @@ export const enquiry = defineType({
     s('company', 'Company', { readOnly: true, fieldset: 'from' }),
     s('email', 'Email', { readOnly: true, fieldset: 'from' }),
     s('phone', 'Phone', { readOnly: true, fieldset: 'from' }),
+    defineField({
+      name: 'call',
+      title: 'Call they booked',
+      type: 'object',
+      readOnly: true,
+      fieldset: 'project',
+      description: 'UK time. It takes up an hour on your calendar.',
+      hidden: ({ value }) => !value || !value.date,
+      options: { columns: 2 },
+      fields: [
+        defineField({ name: 'date', title: 'Day', type: 'date', options: { dateFormat: 'dddd D MMMM YYYY' } }),
+        s('time', 'Time'),
+        defineField({ name: 'minutes', title: 'Minutes', type: 'number', hidden: true }),
+      ],
+    }),
     s('service', 'Service', { readOnly: true, fieldset: 'project' }),
     s('budget', 'Budget', { readOnly: true, fieldset: 'project' }),
     t('details', 'Project details', 6, { readOnly: true, fieldset: 'project' }),
@@ -407,10 +461,16 @@ export const enquiry = defineType({
   ],
   orderings: [{ title: 'Newest first', name: 'newest', by: [{ field: 'receivedAt', direction: 'desc' }] }],
   preview: {
-    select: { name: 'name', company: 'company', at: 'receivedAt', replied: 'replied' },
-    prepare: ({ name, company, at, replied }) => ({
+    select: { name: 'name', company: 'company', at: 'receivedAt', replied: 'replied', callDate: 'call.date', callTime: 'call.time' },
+    prepare: ({ name, company, at, replied, callDate, callTime }) => ({
       title: `${replied ? '✓ ' : '● '}${[name, company].filter(Boolean).join(' · ') || 'Enquiry'}`,
-      subtitle: `${replied ? 'Replied' : 'To reply'}${at ? ' · ' + new Date(at).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }) : ''}`,
+      subtitle: [
+        replied ? 'Replied' : 'To reply',
+        callDate && callTime ? `Call ${shortDay(callDate)} ${callTime}` : '',
+        at ? new Date(at).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }) : '',
+      ]
+        .filter(Boolean)
+        .join(' · '),
     }),
   },
 });

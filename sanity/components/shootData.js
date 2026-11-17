@@ -19,7 +19,7 @@ export const SHOOTS_QUERY = `{
     "schedule": schedule[]{ _key, dayNo, time, text },
     "kit": kit[]->name
   },
-  "enquiries": *[_type == "enquiry"] | order(receivedAt desc)[0...80]{ _id, name, company, service, budget, details, receivedAt, replied, declined }
+  "enquiries": *[_type == "enquiry"] | order(receivedAt desc)[0...80]{ _id, name, company, service, budget, details, receivedAt, replied, declined, "call": call{ date, time } }
 }`;
 
 /** a shoot with its sums and days worked out */

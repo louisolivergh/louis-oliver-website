@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useClient } from 'sanity';
 import { IntentLink } from 'sanity/router';
 import { EQUIPMENT_CATEGORIES } from '../categories';
-import { CameraIcon, InboxIcon, KitIcon } from './DashIcons';
-import { tidyRange } from '../bookingData';
+import { CameraIcon, InboxIcon, KitIcon, PhoneIcon } from './DashIcons';
+import { fmtDay, tidyRange, todayYmd } from '../bookingData';
 
 /**
  * The pages of the Updates tab (beside the menu in UpdatesHome.jsx):
@@ -18,7 +18,7 @@ import { tidyRange } from '../bookingData';
 const QUERY = `{
   "shoots": *[_type == "shoot"]{ _id, title, client, category, featured, date, "thumb": thumbnail.asset->url },
   "kit": *[_type == "equipment"]{ _id, name, spec, category },
-  "enquiries": *[_type == "enquiry"] | order(receivedAt desc)[0...60]{ _id, name, company, service, budget, receivedAt, replied }
+  "enquiries": *[_type == "enquiry"] | order(receivedAt desc)[0...60]{ _id, name, company, service, budget, receivedAt, replied, "call": call{ date, time } }
 }`;
 const LISTEN = '*[_type in ["shoot", "equipment", "enquiry"]]';
 
@@ -204,6 +204,11 @@ function Canvas({ view }) {
                 <span className="lo-cv-mail-main">
                   <span className="lo-cv-mail-name">{[e.name, e.company].filter(Boolean).join(' · ') || 'Enquiry'}</span>
                   <span className="lo-cv-mail-meta">{[e.service, tidyRange(e.budget)].filter(Boolean).join(' · ') || 'No details'}</span>
+                  {e.call && e.call.date && e.call.time && e.call.date >= todayYmd() ? (
+                    <span className="lo-enq-call">
+                      <PhoneIcon /> Call {e.call.date === todayYmd() ? 'today' : fmtDay(e.call.date, { weekday: 'short', day: 'numeric', month: 'short' })}, {e.call.time}
+                    </span>
+                  ) : null}
                 </span>
                 <span className="lo-cv-mail-side">
                   <span className="lo-cv-pill">{e.replied ? 'Replied' : 'To reply'}</span>

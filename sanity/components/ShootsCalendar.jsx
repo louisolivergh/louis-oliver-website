@@ -40,7 +40,7 @@ import {
   ymd,
 } from '../bookingData';
 import { bookShoot, declineEnquiry, unbookedOf, upcomingOf, useShootData, withMoney } from './shootData';
-import { CalendarIcon, ChevronLeft, ChevronRight, ClockIcon, InboxIcon, ListIcon, PlusIcon, TruckIcon } from './DashIcons';
+import { CalendarIcon, ChevronLeft, ChevronRight, ClockIcon, InboxIcon, ListIcon, PhoneIcon, PlusIcon, TruckIcon } from './DashIcons';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const DND = 'application/x-lo-shoot';
@@ -183,6 +183,31 @@ function DueChip({ b, ChildLink, active }) {
   );
 }
 
+/* a call a client booked from the website's enquiry form: one hour on the calendar */
+const callWho = (e) => e.name || e.company || 'a client';
+const callEnd = (t) => {
+  const m = toMin(t);
+  return m === null ? '' : fmtMin(m + 60);
+};
+const CALL_PARAMS = { type: 'enquiry' };
+function CallChip({ e, ChildLink, active }) {
+  return (
+    <ChildLink
+      childId={e._baseId}
+      childParameters={CALL_PARAMS}
+      className="lo-ccall"
+      data-active={active ? '' : undefined}
+      title={`Call with ${callWho(e)}${e.company && e.name ? ` (${e.company})` : ''} · ${e.call.time} to ${callEnd(e.call.time)}`}
+      draggable={false}
+      onClick={(ev) => ev.stopPropagation()}
+    >
+      <PhoneIcon />
+      <span className="lo-ccall-time">{e.call.time}</span>
+      <span className="lo-ccall-title">Call with {callWho(e)}</span>
+    </ChildLink>
+  );
+}
+
 /* that day's schedule, under the shoot */
 function PlanLines({ b, lines, ChildLink }) {
   if (!lines.length) return null;
@@ -255,19 +280,23 @@ function DayShoot({ b, day, ChildLink, active, i }) {
 
 /* ---------- the day as a timeline, like Google Calendar: hours down the side, every time at its place ---------- */
 const HOUR = 72; // pixels for one hour
+const HEAD = 56; // the shoot's name bar, sitting just above its first time
 const toMin = (t) => {
   const m = /^(\d{1,2}):(\d{2})/.exec(String(t || ''));
   return m ? Number(m[1]) * 60 + Number(m[2]) : null;
 };
 const fmtMin = (m) => `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 
-function DayGrid({ day, today, shoots, dues, ChildLink, openId, onBook }) {
+function DayGrid({ day, today, shoots, dues, calls = [], ChildLink, openId, onBook }) {
   const live = shoots.filter((b) => b.status !== 'cancelled');
   const off = shoots.filter((b) => b.status === 'cancelled');
   const cols = live.map((b) => {
     const info = dayInfo(b, day);
     const plan = scheduleFor(b, day);
-    const timed = plan.filter((s) => toMin(s.time) !== null).map((s) => ({ ...s, at: toMin(s.time) }));
+    const timed = plan
+      .filter((s) => toMin(s.time) !== null)
+      .map((s) => ({ ...s, at: toMin(s.time) }))
+      .sort((p, q) => p.at - q.at);
     const untimed = plan.filter((s) => toMin(s.time) === null);
     const marks = [toMin(info.start), ...timed.map((s) => s.at)].filter((x) => x !== null);
     const start = marks.length ? Math.min(...marks) : null;
@@ -275,20 +304,23 @@ function DayGrid({ day, today, shoots, dues, ChildLink, openId, onBook }) {
     const set = toMin(info.end);
     const end = start === null ? null : Math.max(set !== null ? set : start + 120, last !== null ? last + 30 : 0, start + 30);
     const loc = (Array.isArray(b.locations) ? b.locations : []).find((l) => l && (l.name || l.address));
-    return { b, info, timed, untimed, start, end, place: loc ? loc.name || loc.address : '' };
+    return { b, info, timed, untimed, start, end, ends: set !== null, place: loc ? loc.name || loc.address : '' };
   });
   const placed = cols.filter((c) => c.start !== null);
   const loose = cols.filter((c) => c.start === null);
   const untimed = cols.flatMap((c) => c.untimed.map((s) => ({ s, c })));
-  const from = Math.max(0, Math.floor((Math.min(8 * 60, ...placed.map((c) => c.start)) - 60) / 60) * 60);
-  const to = Math.min(24 * 60, Math.ceil((Math.max(18 * 60, ...placed.map((c) => c.end)) + 60) / 60) * 60);
-  const y = (m) => ((m - from) / 60) * HOUR;
+  const callAt = calls.map((e) => toMin(e.call.time));
+  const from = Math.max(0, Math.floor((Math.min(8 * 60, ...placed.map((c) => c.start), ...callAt) - 60) / 60) * 60);
+  const to = Math.min(24 * 60, Math.ceil((Math.max(18 * 60, ...placed.map((c) => c.end), ...callAt.map((m) => m + 60)) + 60) / 60) * 60);
+  /* room above the earliest shoot for its name bar */
+  const lead = placed.length ? Math.max(0, HEAD + 10 - ((Math.min(...placed.map((c) => c.start)) - from) / 60) * HOUR) : 0;
+  const y = (m) => lead + ((m - from) / 60) * HOUR;
   const hours = [];
   for (let h = from; h <= to; h += 60) hours.push(h);
   const nowDate = new Date();
   const nowMin = day === today ? nowDate.getHours() * 60 + nowDate.getMinutes() : null;
-  const grid = { gridTemplateColumns: `repeat(${Math.max(placed.length, 1)}, minmax(0, 1fr))` };
-  const nothing = !live.length && !dues.length;
+  const grid = { gridTemplateColumns: `repeat(${Math.max(placed.length + (calls.length ? 1 : 0), 1)}, minmax(0, 1fr))` };
+  const nothing = !live.length && !dues.length && !calls.length;
 
   return (
     <div className="lo-dg" key={day}>
@@ -325,28 +357,8 @@ function DayGrid({ day, today, shoots, dues, ChildLink, openId, onBook }) {
         </div>
       ) : null}
 
-      {placed.length ? (
+      {placed.length || calls.length ? (
         <div className="lo-dg-cal">
-          <div className="lo-dg-heads" style={grid}>
-            {placed.map((c) => (
-              <div key={c.b._baseId} className="lo-dg-head" data-active={openId === c.b._baseId ? '' : undefined} data-draft={isBooked(c.b) ? undefined : ''}>
-                <span className="lo-dg-head-top">
-                  <b>{bookingTitle(c.b)}</b>
-                  {isBooked(c.b) ? (
-                    <span className="lo-ag-status" data-status={c.b.status}>
-                      {statusOf(c.b.status).short}
-                    </span>
-                  ) : (
-                    <Unsaved />
-                  )}
-                </span>
-                <small>{[timeRange(c.info.start, c.info.end), c.b.days.length > 1 ? `day ${c.b.days.indexOf(day) + 1} of ${c.b.days.length}` : '', c.place].filter(Boolean).join(' · ')}</small>
-                <ChildLink childId={c.b._baseId} className="lo-dg-open">
-                  Open shoot
-                </ChildLink>
-              </div>
-            ))}
-          </div>
           <div className="lo-dg-body" style={{ height: y(to) }}>
             {hours.map((h) => (
               <div key={h} className="lo-dg-hour" style={{ top: y(h) }}>
@@ -354,43 +366,81 @@ function DayGrid({ day, today, shoots, dues, ChildLink, openId, onBook }) {
               </div>
             ))}
             <div className="lo-dg-cols" style={grid}>
-              {placed.map((c) => (
-                <div key={c.b._baseId} className="lo-dg-col">
-                  <ChildLink
-                    childId={c.b._baseId}
-                    className="lo-dg-span"
-                    data-draft={isBooked(c.b) ? undefined : ''}
-                    style={{ top: y(c.start), height: Math.max(24, y(c.end) - y(c.start)) }}
-                    title={`${bookingTitle(c.b)} · ${fmtMin(c.start)} to ${fmtMin(c.end)}`}
-                  >
-                    {c.timed.length ? null : (
-                      <span className="lo-dg-span-label">
-                        <b>{fmtMin(c.start)}</b> {bookingTitle(c.b)}
-                        {c.info.note ? <small>{c.info.note}</small> : null}
-                      </span>
-                    )}
-                  </ChildLink>
-                  {c.timed.map((s, i) => {
-                    const next = c.timed[i + 1] ? c.timed[i + 1].at : c.end;
-                    const top = y(s.at);
-                    const height = Math.max(26, y(Math.max(next, s.at + 15)) - top - 3);
+              {placed.map((c, ci) => {
+                const booked = isBooked(c.b);
+                const title = bookingTitle(c.b);
+                const span = c.ends ? `${fmtMin(c.start)} to ${fmtMin(c.end)}` : `From ${fmtMin(c.start)}`;
+                const more = [span, c.b.days.length > 1 ? `day ${c.b.days.indexOf(day) + 1} of ${c.b.days.length}` : '', c.place].filter(Boolean).join(' · ');
+                const at = (m) => HEAD + y(m) - y(c.start); // inside the shoot's box
+                const last = c.timed[c.timed.length - 1];
+                const lastEnd = last ? (c.end - last.at <= 60 ? c.end : last.at + 30) : c.start;
+                return (
+                  <div key={c.b._baseId} className="lo-dg-col">
+                    <div
+                      className="lo-dg-shoot"
+                      data-active={openId === c.b._baseId ? '' : undefined}
+                      data-draft={booked ? undefined : ''}
+                      style={{ top: y(c.start) - HEAD, height: HEAD + Math.max(30, y(c.end) - y(c.start)), '--i': ci }}
+                    >
+                      <ChildLink childId={c.b._baseId} className="lo-dg-shoot-hit" tabIndex={-1} aria-hidden="true" />
+                      <ChildLink childId={c.b._baseId} className="lo-dg-shoot-head" title={`Open ${title}`}>
+                        <span className="lo-dg-shoot-name">
+                          <b>{title}</b>
+                          {booked ? <span className="lo-dg-shoot-status">{statusOf(c.b.status).short}</span> : <Unsaved />}
+                        </span>
+                        <small>{more}</small>
+                      </ChildLink>
+                      {c.timed.map((s, i) => {
+                        const next = c.timed[i + 1] ? c.timed[i + 1].at : lastEnd;
+                        const top = at(s.at);
+                        const height = Math.max(26, at(Math.max(next, s.at + 15)) - top - 4);
+                        return (
+                          <ChildLink
+                            key={s._key || i}
+                            childId={c.b._baseId}
+                            className="lo-dg-event"
+                            data-short={height < 44 ? '' : undefined}
+                            style={{ top, height, zIndex: 2 + i, '--i': i }}
+                            title={`${s.time} ${s.text || ''}`}
+                          >
+                            <b>{s.time}</b>
+                            <span>{s.text || 'Something planned'}</span>
+                          </ChildLink>
+                        );
+                      })}
+                      {c.timed.length ? null : <span className="lo-dg-shoot-note">{c.info.note || 'No times on the schedule yet'}</span>}
+                      {c.ends && c.end - lastEnd >= 45 ? <span className="lo-dg-shoot-end">Until {fmtMin(c.end)}</span> : null}
+                    </div>
+                  </div>
+                );
+              })}
+              {calls.length ? (
+                <div className="lo-dg-col" data-calls="">
+                  {calls.map((e, i) => {
+                    const at = toMin(e.call.time);
                     return (
                       <ChildLink
-                        key={s._key || i}
-                        childId={c.b._baseId}
-                        className="lo-dg-event"
-                        data-short={height < 44 ? '' : undefined}
-                        data-draft={isBooked(c.b) ? undefined : ''}
-                        style={{ top, height, zIndex: 2 + i }}
-                        title={`${s.time} ${s.text || ''}`}
+                        key={e._baseId}
+                        childId={e._baseId}
+                        childParameters={CALL_PARAMS}
+                        className="lo-dg-call"
+                        data-active={openId === e._baseId ? '' : undefined}
+                        style={{ top: y(at), height: y(at + 60) - y(at) - 4, '--i': i }}
+                        title={`Call with ${callWho(e)} · ${e.call.time} to ${callEnd(e.call.time)}`}
                       >
-                        <b>{s.time}</b>
-                        <span>{s.text || 'Something planned'}</span>
+                        <span className="lo-dg-call-top">
+                          <PhoneIcon />
+                          <b>
+                            {e.call.time} to {callEnd(e.call.time)}
+                          </b>
+                        </span>
+                        <span className="lo-dg-call-who">Call with {callWho(e)}</span>
+                        {e.company && e.name ? <small>{e.company}</small> : e.service ? <small>{e.service}</small> : null}
                       </ChildLink>
                     );
                   })}
                 </div>
-              ))}
+              ) : null}
             </div>
             {nowMin !== null && nowMin >= from && nowMin <= to ? <div className="lo-dg-now" style={{ top: y(nowMin) }} aria-label={`Now, ${fmtMin(nowMin)}`} /> : null}
           </div>
@@ -407,11 +457,11 @@ function DayGrid({ day, today, shoots, dues, ChildLink, openId, onBook }) {
   );
 }
 
-function DayView({ day, today, shoots, dues, ChildLink, openId, onBook, compact }) {
-  if (!compact) return <DayGrid day={day} today={today} shoots={shoots} dues={dues} ChildLink={ChildLink} openId={openId} onBook={onBook} />;
+function DayView({ day, today, shoots, dues, calls = [], ChildLink, openId, onBook, compact }) {
+  if (!compact) return <DayGrid day={day} today={today} shoots={shoots} dues={dues} calls={calls} ChildLink={ChildLink} openId={openId} onBook={onBook} />;
   const live = shoots.filter((b) => b.status !== 'cancelled');
   const off = shoots.filter((b) => b.status === 'cancelled');
-  const nothing = !live.length && !dues.length;
+  const nothing = !live.length && !dues.length && !calls.length;
   return (
     <div className="lo-dayv" data-compact={compact ? '' : undefined} key={day}>
       {nothing ? (
@@ -431,6 +481,24 @@ function DayView({ day, today, shoots, dues, ChildLink, openId, onBook, compact 
           <span>
             <b>{b.status === 'delivered' ? 'Delivered' : 'Due to the client today'}</b>
             <small>{bookingTitle(b)}</small>
+          </span>
+        </ChildLink>
+      ))}
+      {calls.map((e, i) => (
+        <ChildLink
+          key={`call-${e._baseId}`}
+          childId={e._baseId}
+          childParameters={CALL_PARAMS}
+          className="lo-dayv-call"
+          data-active={openId === e._baseId ? '' : undefined}
+          style={{ '--i': live.length + dues.length + i }}
+        >
+          <PhoneIcon />
+          <span>
+            <b>
+              Call with {callWho(e)}, {e.call.time} to {callEnd(e.call.time)}
+            </b>
+            <small>{[e.name ? e.company : '', e.service].filter(Boolean).join(' · ') || 'Booked from your website'}</small>
           </span>
         </ChildLink>
       ))}
@@ -650,6 +718,28 @@ export function ShootsCalendar(props) {
     return m;
   }, [bookings]);
 
+  /* calls clients booked from the enquiry form (an enquiry marked "Not going ahead" drops its call) */
+  const callByDay = useMemo(() => {
+    const m = new Map();
+    (data ? data.enquiries : []).forEach((e) => {
+      const c = e && e.call;
+      if (!c || e.declined || !parseYmd(c.date) || toMin(c.time) === null) return;
+      const d = c.date.slice(0, 10);
+      if (!m.has(d)) m.set(d, []);
+      m.get(d).push(e);
+    });
+    m.forEach((list) => list.sort((a, b) => String(a.call.time).localeCompare(String(b.call.time))));
+    return m;
+  }, [data]);
+  const upcomingCalls = useMemo(
+    () =>
+      [...callByDay.entries()]
+        .filter(([d]) => d >= today)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .flatMap(([, list]) => list),
+    [callByDay, today]
+  );
+
   const book = (date, enquiryId) => bookShoot(router, { date, enquiryId });
   /* click a date: that day, with its full schedule (a shoot open beside the calendar closes to make room) */
   const openDay = (d) => {
@@ -664,6 +754,7 @@ export function ShootsCalendar(props) {
   };
   const dayShoots = byDay.get(day) || [];
   const dayDues = dueByDay.get(day) || [];
+  const dayCalls = callByDay.get(day) || [];
   const dayLive = dayShoots.filter((x) => x.status !== 'cancelled');
   const dayTimes = dayLive.flatMap((x) => {
     const info = dayInfo(x, day);
@@ -808,7 +899,8 @@ export function ShootsCalendar(props) {
             {cells.map((d) => {
               const list = (byDay.get(d) || []).filter((b) => b.status !== 'cancelled');
               const dues = dueByDay.get(d) || [];
-              const first = list[0] || dues[0];
+              const calls = callByDay.get(d) || [];
+              const first = list[0] || dues[0] || calls[0];
               const flags = {
                 'data-out': d.slice(0, 7) !== month.slice(0, 7) ? '' : undefined,
                 'data-today': d === today ? '' : undefined,
@@ -818,12 +910,13 @@ export function ShootsCalendar(props) {
               const inner = (
                 <>
                   <span className="lo-mini-num">{parseYmd(d).getDate()}</span>
-                  {list.length || dues.length ? (
+                  {list.length || dues.length || calls.length ? (
                     <i className="lo-mini-dots">
                       {list.slice(0, 3).map((b) => (
                         <i key={b._baseId} data-status={b.status} data-draft={isBooked(b) ? undefined : ''} />
                       ))}
                       {dues.length && list.length < 3 ? <i data-due="" /> : null}
+                      {calls.length && list.length + (dues.length ? 1 : 0) < 3 ? <i data-call="" /> : null}
                     </i>
                   ) : null}
                 </>
@@ -837,7 +930,7 @@ export function ShootsCalendar(props) {
                   onClick={() => openDay(d)}
                   title={
                     first
-                      ? [...list.map((b) => bookingTitle(b)), ...dues.map((b) => `Due: ${bookingTitle(b)}`)].join(', ')
+                      ? [...list.map((b) => bookingTitle(b)), ...dues.map((b) => `Due: ${bookingTitle(b)}`), ...calls.map((e) => `Call with ${callWho(e)} at ${e.call.time}`)].join(', ')
                       : `See ${fmtDay(d, { weekday: 'long', day: 'numeric', month: 'long' })}`
                   }
                   {...flags}
@@ -857,7 +950,7 @@ export function ShootsCalendar(props) {
                 Whole month
               </button>
             </div>
-            <DayView day={day} today={today} shoots={dayShoots} dues={dayDues} ChildLink={ChildLink} openId={openId} onBook={book} compact />
+            <DayView day={day} today={today} shoots={dayShoots} dues={dayDues} calls={dayCalls} ChildLink={ChildLink} openId={openId} onBook={book} compact />
           </div>
         ) : (
         <div className="lo-agenda">
@@ -938,7 +1031,12 @@ export function ShootsCalendar(props) {
         </div>
         {view === 'day' ? (
           <div className="lo-cal-stats">
-            <Stat label={day === today ? 'Shoots today' : 'Shoots that day'} value={data ? dayLive.length : '…'} main />
+            <Stat
+              label={day === today ? 'Shoots today' : 'Shoots that day'}
+              value={data ? dayLive.length : '…'}
+              sub={dayCalls.length ? `plus ${dayCalls.length === 1 ? 'a call' : `${dayCalls.length} calls`} booked` : ''}
+              main
+            />
             <Stat label="First call" value={data ? dayFirst || 'Not set' : '…'} sub={dayFirst ? 'earliest time planned' : ''} />
             <Stat label="Wrap" value={data ? dayWrap || 'Not set' : '…'} sub={dayWrap ? 'latest finish' : ''} />
             <Stat label="Due to clients" value={data ? dayDues.length : '…'} sub={dayDues.length ? dayDues.map((b) => bookingTitle(b)).join(', ') : ''} />
@@ -960,7 +1058,7 @@ export function ShootsCalendar(props) {
           {view === 'list' ? (
             <ListView bookings={bookings} openId={openId} ChildLink={ChildLink} today={today} />
           ) : view === 'day' ? (
-            <DayView day={day} today={today} shoots={dayShoots} dues={dayDues} ChildLink={ChildLink} openId={openId} onBook={book} />
+            <DayView day={day} today={today} shoots={dayShoots} dues={dayDues} calls={dayCalls} ChildLink={ChildLink} openId={openId} onBook={book} />
           ) : (
             <div className="lo-month" key={month}>
               <div className="lo-month-wd">
@@ -981,7 +1079,10 @@ export function ShootsCalendar(props) {
                     return { b, lines: all.slice(0, cap), hidden: Math.max(0, all.length - cap) };
                   });
                   const duesShown = open ? dues : dues.slice(0, Math.max(1, 3 - shown.length));
-                  const more = list.length - shown.length + (dues.length - duesShown.length) + plans.reduce((a, p) => a + p.hidden, 0);
+                  const calls = callByDay.get(d) || [];
+                  const callsShown = open ? calls : calls.slice(0, Math.max(1, 3 - shown.length - duesShown.length));
+                  const more =
+                    list.length - shown.length + (dues.length - duesShown.length) + (calls.length - callsShown.length) + plans.reduce((a, p) => a + p.hidden, 0);
                   const date = parseYmd(d);
                   const wd = (date.getDay() + 6) % 7;
                   return (
@@ -1028,6 +1129,9 @@ export function ShootsCalendar(props) {
                         {duesShown.map((b) => (
                           <DueChip key={`due-${b._baseId}`} b={b} ChildLink={ChildLink} active={openId === b._baseId} />
                         ))}
+                        {callsShown.map((e) => (
+                          <CallChip key={`call-${e._baseId}`} e={e} ChildLink={ChildLink} active={openId === e._baseId} />
+                        ))}
                         {more > 0 || open ? (
                           <button
                             type="button"
@@ -1056,6 +1160,10 @@ export function ShootsCalendar(props) {
                   <i />
                   Due to the client
                 </span>
+                <span data-call="">
+                  <i />
+                  Call booked
+                </span>
                 <span className="lo-legend-tip">Click a day to see it · + books a shoot · drag a shoot or due date to move it</span>
               </div>
             </div>
@@ -1063,6 +1171,30 @@ export function ShootsCalendar(props) {
         </section>
 
         <aside className="lo-cal-side">
+          {upcomingCalls.length ? (
+            <div className="lo-side-card">
+              <span className="lo-side-label">Calls booked</span>
+              {upcomingCalls.slice(0, 5).map((e, i) => (
+                <ChildLink
+                  key={e._baseId}
+                  childId={e._baseId}
+                  childParameters={CALL_PARAMS}
+                  className="lo-callrow"
+                  data-active={openId === e._baseId ? '' : undefined}
+                  style={{ '--i': i }}
+                >
+                  <span className="lo-callrow-when">
+                    <b>{e.call.date === today ? 'Today' : fmtDay(e.call.date, { weekday: 'short', day: 'numeric', month: 'short' })}</b>
+                    <small>{e.call.time}</small>
+                  </span>
+                  <span className="lo-callrow-who">
+                    <b>Call with {callWho(e)}</b>
+                    <small>{[e.name ? e.company : '', e.service].filter(Boolean).join(' · ') || 'Booked from your website'}</small>
+                  </span>
+                </ChildLink>
+              ))}
+            </div>
+          ) : null}
           <div className="lo-side-card">
             <span className="lo-side-label">Coming up</span>
             {data === null ? <p className="lo-side-empty">Loading…</p> : null}

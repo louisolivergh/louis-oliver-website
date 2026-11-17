@@ -10,7 +10,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { set } from 'sanity';
-import { isBooked } from '../bookingData';
+import { fmtDay, isBooked } from '../bookingData';
+import { PhoneIcon } from './DashIcons';
 import { BookingHero, EnquiryActions } from './BookingHero';
 import { ShootMode } from './shootMode';
 import { ShootSummary } from './ShootSummary';
@@ -141,6 +142,7 @@ export function countFields(schemaType, doc) {
   fields.forEach((f) => {
     const t = f.type || {};
     if (t.jsonType === 'boolean' || t.readOnly === true || isHidden(t.hidden, doc, f.name)) return;
+    if (f.fieldset === 'calls') return; // call hours have sensible defaults, so they never count as missing
     total += 1;
     if (isFilled(doc[f.name])) filled += 1;
   });
@@ -205,6 +207,9 @@ function DocHero({ schemaType, value }) {
   const received = isEnquiry && v.receivedAt
     ? new Date(v.receivedAt).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })
     : '';
+  // a call they booked on the website's enquiry form (one hour, UK time)
+  const call = isEnquiry && v.call && /^\d{4}-\d{2}-\d{2}$/.test(String(v.call.date || '')) && /^\d{2}:\d{2}$/.test(String(v.call.time || '')) ? v.call : null;
+  const callEnds = call ? `${String((Number(call.time.slice(0, 2)) + 1) % 24).padStart(2, '0')}${call.time.slice(2)}` : '';
 
   return (
     <header className="lo-hero">
@@ -243,6 +248,15 @@ function DocHero({ schemaType, value }) {
                 <b>{filled}</b> of {total} filled
               </>
             )}
+          </span>
+        </div>
+      ) : null}
+
+      {call ? (
+        <div className="lo-hero-call">
+          <PhoneIcon />
+          <span>
+            Call booked for <b>{fmtDay(call.date, { weekday: 'long', day: 'numeric', month: 'long' })}, {call.time} to {callEnds}</b>
           </span>
         </div>
       ) : null}

@@ -6,9 +6,9 @@ export function Arrow({ className = 'arrow', size = 14 }) {
   );
 }
 
-export function BackArrow() {
+export function BackArrow({ className } = {}) {
   return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+    <svg className={className} width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
       <path d="M13 7H1M6 2L1 7l5 5" stroke="currentColor" strokeWidth="1.8" />
     </svg>
   );

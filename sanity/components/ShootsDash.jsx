@@ -32,7 +32,7 @@ import {
   todayYmd,
 } from '../bookingData';
 import { bookShoot, declineEnquiry, setShootStatus, unbookedOf, upcomingOf } from './shootData';
-import { CalendarIcon, ClockIcon, InboxIcon, KitIcon, PinIcon, PlusIcon, TruckIcon, UsersIcon } from './DashIcons';
+import { CalendarIcon, ClockIcon, InboxIcon, KitIcon, PhoneIcon, PinIcon, PlusIcon, TruckIcon, UsersIcon } from './DashIcons';
 
 /** money totals for a list of (saved, not cancelled) shoots */
 export const totalsOf = (list) => {
@@ -136,7 +136,20 @@ export function ShootsDash({ base = '/studio', data, setData }) {
       <div className="lo-dash-grid">
         {/* next shoot */}
         <article className="lo-dash-next" data-empty={next ? undefined : ''}>
-          <span className="lo-dn-rings" aria-hidden="true" />
+          {/* the same turning rings as the blue panels on the website */}
+          <svg className="lo-dn-rings" viewBox="0 0 600 600" aria-hidden="true">
+            <g className="lo-dn-spin">
+              <circle cx="300" cy="300" r="250" fill="none" stroke="rgba(255,255,255,0.45)" strokeDasharray="2 10" />
+            </g>
+            <circle cx="300" cy="300" r="190" fill="none" stroke="rgba(255,255,255,0.22)" />
+            <g className="lo-dn-spin" data-rev="">
+              <circle cx="300" cy="300" r="130" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.2" strokeDasharray="120 40" />
+              <circle cx="430" cy="300" r="6" fill="#ffffff" />
+            </g>
+            <g className="lo-dn-spin">
+              <circle cx="300" cy="50" r="4" fill="#ffffff" />
+            </g>
+          </svg>
           {next ? (
             <>
               <div className="lo-dn-top">
@@ -311,6 +324,11 @@ export function ShootsDash({ base = '/studio', data, setData }) {
                 <span className="lo-enq-main">
                   <span className="lo-enq-name">{[e.name, e.company].filter(Boolean).join(' · ') || 'Enquiry'}</span>
                   <span className="lo-enq-meta">{[e.service, tidyRange(e.budget), e.receivedAt ? relDay(e.receivedAt.slice(0, 10)) : ''].filter(Boolean).join(' · ')}</span>
+                  {e.call && e.call.date && e.call.time && e.call.date >= today ? (
+                    <span className="lo-enq-call">
+                      <PhoneIcon /> Call {e.call.date === today ? 'today' : fmtDay(e.call.date, { weekday: 'short', day: 'numeric', month: 'short' })}, {e.call.time}
+                    </span>
+                  ) : null}
                 </span>
                 <button type="button" className="lo-mini-btn" data-primary="" onClick={() => bookShoot(router, { enquiryId: e._baseId })}>
                   Book

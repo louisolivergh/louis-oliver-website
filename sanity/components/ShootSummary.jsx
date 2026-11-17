@@ -581,12 +581,6 @@ export function ShootSummary({ value, onEdit, onStatus }) {
           </Card>
         ) : null}
       </div>
-
-      <div className="lo-sv-end">
-        <button type="button" className="lo-sv-edit" data-big="" onClick={onEdit}>
-          Edit shoot
-        </button>
-      </div>
     </div>
   );
 }

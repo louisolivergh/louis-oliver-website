@@ -50,9 +50,8 @@ export const updatesStructure = (S, context) =>
       const types = TOOL_TYPES.updates;
       let type = types.includes(p.type) ? p.type : types.includes(p.template) ? p.template : '';
       if (!type) type = await typeOf(S, context, docId);
-      return S.document()
-        .schemaType(types.includes(type) ? type : 'shoot')
-        .documentId(docId);
+      // the default document keeps each type's views (a portfolio shoot has Edit and Preview, see sanity.config.js)
+      return S.defaultDocument({ documentId: docId, schemaType: types.includes(type) ? type : 'shoot' });
     })
     .canHandleIntent((intent, params) => (intent === 'edit' || intent === 'create') && Boolean(params && TOOL_TYPES.updates.includes(params.type)));
 
@@ -61,7 +60,11 @@ export const shootsStructure = (S) =>
   S.component(ShootsCalendar)
     .id('calendar')
     .title('Shoots')
-    .child((id) => S.document().schemaType('booking').documentId(String(id).replace(/^__edit__/, '')));
+    .child((id, options) => {
+      // a call (opened from the calendar) is an enquiry; everything else on the calendar is a booked shoot
+      const type = options && options.params && options.params.type === 'enquiry' ? 'enquiry' : 'booking';
+      return S.defaultDocument({ documentId: String(id).replace(/^__edit__/, ''), schemaType: type });
+    });
 
 /* ---------- Website setup: a visual map of your pages; each opens its editor beside it ---------- */
 export const websiteStructure = (S) =>
@@ -70,9 +73,9 @@ export const websiteStructure = (S) =>
     .title('Website setup')
     .child((id, options) => {
       if (id === 'processStep') return typeList(S, 'processStep', 'Process steps');
-      if (SINGLETON_TITLES[id]) return S.document().schemaType(id).documentId(id).title(SINGLETON_TITLES[id]);
+      if (SINGLETON_TITLES[id]) return S.defaultDocument({ documentId: id, schemaType: id }).title(SINGLETON_TITLES[id]);
       // a single process step opened from a link elsewhere
       const type = (options && options.params && options.params.type) || 'processStep';
-      return S.document().schemaType(type).documentId(id);
+      return S.defaultDocument({ documentId: id, schemaType: type });
     })
     .canHandleIntent((intent, params) => (intent === 'edit' || intent === 'create') && Boolean(params && TOOL_TYPES.website.includes(params.type)));
