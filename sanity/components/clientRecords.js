@@ -1,6 +1,8 @@
 /* Making and saving company and client records from the Clients page, the company picker and the
    Save buttons. Records are created as drafts and never published, so they stay private. */
 
+import { nameKey, orgKey, phoneKey } from '../clientData';
+
 const API = '2024-10-01';
 export { API as CLIENTS_API };
 
@@ -16,6 +18,7 @@ export const newKey = () => Math.random().toString(36).slice(2, 12);
 export const todayDay = () => new Date().toISOString().slice(0, 10);
 export const companyRef = (id) => ({ _type: 'reference', _ref: String(id).replace(/^drafts\./, ''), _weak: true });
 const strings = (list) => (Array.isArray(list) ? list.filter((x) => typeof x === 'string' && x.trim()).map((x) => x.trim()) : []);
+const arr = (v) => (Array.isArray(v) ? v : []);
 
 /** a new company record. saved: false leaves it to be saved along with the client being made */
 export async function createCompany(client, { name, aliases, category, addedAt, saved = true } = {}) {
@@ -117,4 +120,107 @@ export async function saveCompanyOf(client, ref) {
 /** open a new client, already in this company */
 export function addPersonTo(router, companyId) {
   router.navigateIntent('create', [{ type: 'client', template: 'client-in-company' }, { companyId: String(companyId).replace(/^drafts\./, '') }]);
+}
+
+/* ---------- merging (from the Merge button on a company or a person) ---------- */
+
+const uniqBy = (list, key) => {
+  const seen = new Set();
+  return list.filter((x) => {
+    const k = key(x);
+    if (!k || seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+};
+/** every name in names except the one kept, once each (same means same by `key`) */
+const otherNamesOf = (names, keepName, key) => uniqBy(strings(names).filter((n) => key(n) && key(n) !== key(keepName)), key);
+const firstDay = (...days) => days.filter((d) => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}/.test(d)).map((d) => d.slice(0, 10)).sort()[0] || '';
+
+/**
+ * Two companies become one: `other` goes into `keep` (both as they appear on the Clients page).
+ * Every name either one has gone by becomes one of its other names, so their shoots and enquiries all
+ * come under it. Details it doesn't have yet come across; ones that differ are kept in its notes. The
+ * people saved under the other company move across, and its record goes. Returns the kept record's id.
+ */
+export async function mergeCompanies(client, keep, other, name) {
+  const id = await ensureCompany(client, keep);
+  const cur = (await client.fetch('*[_id in [$id, "drafts." + $id]] | order(_updatedAt desc)[0]{ _id, name, aliases, category, website, email, phone, address, notes, addedAt }', { id })) || {};
+  const o = other.saved || {};
+  const keepName = String(name || cur.name || keep.name || '').trim();
+  const set = {
+    name: keepName,
+    aliases: otherNamesOf([cur.name, keep.name, ...arr(keep.otherNames), ...arr(cur.aliases), other.name, ...arr(other.otherNames), ...arr(o.aliases)], keepName, orgKey),
+  };
+  const differs = [];
+  [['website', 'Website'], ['email', 'Email'], ['phone', 'Phone'], ['address', 'Address']].forEach(([k, label]) => {
+    const theirs = String(o[k] || other[k] || '').trim();
+    const ours = String(cur[k] || '').trim();
+    if (!theirs) return;
+    if (!ours) set[k] = theirs;
+    else if (ours.toLowerCase() !== theirs.toLowerCase()) differs.push(`${label}: ${theirs}`);
+  });
+  if (!cur.category && (o.category || other.category)) set.category = o.category || other.category;
+  const theirNotes = String(o.notes || '').trim();
+  if (differs.length || theirNotes) set.notes = [String(cur.notes || '').trim(), [`From ${other.name}:`, ...differs, theirNotes].filter(Boolean).join('\n')].filter(Boolean).join('\n\n');
+  const added = firstDay(cur.addedAt, o.addedAt, other.addedAt);
+  if (added) set.addedAt = added;
+  await client.patch(cur._id || `drafts.${id}`).set(set).commit();
+
+  const gone = [o, ...arr(other.alsoSaved)].filter((d) => d && d._baseId && d._baseId !== id);
+  const goneIds = gone.map((d) => d._baseId);
+  if (goneIds.length) {
+    const people = (await client.fetch('*[_type == "client" && company._ref in $ids]._id', { ids: goneIds })) || [];
+    await Promise.all(people.map((pid) => client.patch(pid).set({ company: companyRef(id) }).commit()));
+  }
+  for (const d of gone) {
+    if (!d.legacy) continue;
+    for (const p of arr(d.contacts)) {
+      if (p && String(p.name || '').trim()) await createClient(client, { name: p.name, role: p.role, emails: p.emails, phones: p.phones, companyId: id });
+    }
+  }
+  await Promise.all(goneIds.flatMap((x) => [`drafts.${x}`, x]).map((x) => client.delete(x).catch(() => null)));
+  return id;
+}
+
+/**
+ * Two people become one client: `other` goes into `keep` (both as on the Clients page). Every email
+ * address, phone number and name either has used is kept, so all their shoots and enquiries come
+ * together. company: the company `keep` is shown under (null for none). otherCompany: the other
+ * person's, which `keep` joins if they had none. Returns { person, company } ids.
+ */
+export async function mergeClients(client, keep, other, { company = null, otherCompany = null, name } = {}) {
+  let companyId = '';
+  let id;
+  if (keep.saved && !keep.saved.kind) id = keep.saved._baseId;
+  else if (keep.saved) {
+    await tidyLegacyPerson(client, keep.saved);
+    id = keep.saved._baseId;
+  } else {
+    companyId = company ? await ensureCompany(client, company) : '';
+    id = await createClient(client, { name: keep.name, role: keep.roles[0], emails: keep.emails, phones: keep.phones, companyId, addedAt: keep.addedAt });
+  }
+  const cur = (await client.fetch('*[_id in [$id, "drafts." + $id]] | order(_updatedAt desc)[0]{ _id, name, role, emails, phones, aliases, notes, addedAt, company }', { id })) || {};
+  const o = other.saved || {};
+  const keepName = String(name || cur.name || keep.name || '').trim();
+  const set = {
+    name: keepName,
+    aliases: otherNamesOf([cur.name, keep.name, ...arr(keep.otherNames), ...arr(cur.aliases), other.name, ...arr(other.otherNames), ...arr(o.aliases)], keepName, nameKey),
+    emails: uniqBy(strings([...arr(cur.emails), ...arr(keep.emails), ...arr(other.emails)]), (e) => e.toLowerCase()),
+    phones: uniqBy(strings([...arr(cur.phones), ...arr(keep.phones), ...arr(other.phones)]), (t) => phoneKey(t) || t.replace(/\D/g, '')),
+  };
+  if (!String(cur.role || '').trim() && arr(other.roles)[0]) set.role = other.roles[0];
+  const theirNotes = String(o.notes || '').trim();
+  if (theirNotes) set.notes = [String(cur.notes || '').trim(), `From ${other.name}:\n${theirNotes}`].filter(Boolean).join('\n\n');
+  const added = firstDay(cur.addedAt, o.addedAt, other.addedAt);
+  if (added) set.addedAt = added;
+  // someone with no company yet joins the other person's
+  if (!(cur.company && cur.company._ref) && !companyId && !company && otherCompany) {
+    companyId = await ensureCompany(client, otherCompany);
+    set.company = companyRef(companyId);
+  }
+  await client.patch(cur._id || `drafts.${id}`).set(set).commit();
+  const gone = [o, ...arr(other.alsoSaved)].filter((d) => d && d._baseId && d._baseId !== id);
+  await Promise.all(gone.flatMap((d) => [`drafts.${d._baseId}`, d._baseId]).map((x) => client.delete(x).catch(() => null)));
+  return { person: id, company: companyId };
 }

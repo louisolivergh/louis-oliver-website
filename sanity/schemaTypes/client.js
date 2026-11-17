@@ -1,6 +1,7 @@
 import { defineArrayMember, defineField, defineType } from 'sanity';
 import { CLIENT_CATEGORIES } from '../clientData';
 import { CompanyPicker } from '../components/CompanyPicker';
+import { EmailListInput, NameListInput, PhoneListInput } from '../components/ListInput';
 
 /* Companies and the people who work there (your clients).
    A company is a business you shoot for; a client is one person, who usually works for or owns a
@@ -10,6 +11,8 @@ import { CompanyPicker } from '../components/CompanyPicker';
 
 const today = () => new Date().toISOString().slice(0, 10);
 const tags = (name, title, extra = {}) => defineField({ name, title, type: 'array', of: [defineArrayMember({ type: 'string' })], options: { layout: 'tags' }, ...extra });
+/* emails, numbers and other names: one box each, kept as you type (no pressing Enter) */
+const list = (name, title, input, extra = {}) => defineField({ name, title, type: 'array', of: [defineArrayMember({ type: 'string' })], components: { input }, ...extra });
 
 export const company = defineType({
   name: 'company',
@@ -29,7 +32,7 @@ export const company = defineType({
     defineField({ name: 'email', title: 'Main email', type: 'string', fieldset: 'contact', placeholder: 'hello@business.co.uk' }),
     defineField({ name: 'phone', title: 'Main phone', type: 'string', fieldset: 'contact', placeholder: 'e.g. 01273 000000' }),
     defineField({ name: 'address', title: 'Address', type: 'text', rows: 2, fieldset: 'contact', placeholder: 'Street, town and postcode' }),
-    tags('aliases', 'Also known as', { fieldset: 'more', description: 'Type a name and press Enter, e.g. Otellos Brighton.' }),
+    list('aliases', 'Also known as', NameListInput, { fieldset: 'more', description: 'Other names their shoots and enquiries come in under, e.g. Otellos Brighton.' }),
     defineField({ name: 'notes', title: 'Notes', type: 'text', rows: 4, fieldset: 'more' }),
     defineField({ name: 'addedAt', title: 'Added', type: 'date', fieldset: 'more', initialValue: today, options: { dateFormat: 'D MMM YYYY' } }),
     defineField({ name: 'savedAt', title: 'Saved', type: 'datetime', hidden: true, readOnly: true }),
@@ -63,8 +66,9 @@ export const client = defineType({
       weak: true,
       components: { input: CompanyPicker },
     }),
-    tags('emails', 'Email addresses', { fieldset: 'contact', description: 'Type one and press Enter.' }),
-    tags('phones', 'Phone numbers', { fieldset: 'contact', description: 'Type one and press Enter.' }),
+    list('emails', 'Email addresses', EmailListInput, { fieldset: 'contact' }),
+    list('phones', 'Phone numbers', PhoneListInput, { fieldset: 'contact' }),
+    list('aliases', 'Other names they go by', NameListInput, { fieldset: 'more', description: 'Shoots and enquiries under any of these names are theirs too.' }),
     defineField({ name: 'notes', title: 'Notes', type: 'text', rows: 4, fieldset: 'more' }),
     defineField({ name: 'addedAt', title: 'Client since', type: 'date', fieldset: 'more', initialValue: today, options: { dateFormat: 'D MMM YYYY' } }),
     defineField({ name: 'savedAt', title: 'Saved', type: 'datetime', hidden: true, readOnly: true }),
@@ -72,7 +76,6 @@ export const client = defineType({
     defineField({ name: 'kind', title: 'Kind', type: 'string', hidden: true }),
     defineField({ name: 'category', title: 'Category', type: 'string', hidden: true }),
     defineField({ name: 'website', title: 'Website', type: 'url', hidden: true }),
-    tags('aliases', 'Also known as', { hidden: true }),
     defineField({
       name: 'people',
       title: 'People',

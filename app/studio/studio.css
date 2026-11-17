@@ -1712,7 +1712,7 @@ html body .lo-ag-date b { font: 600 19px/1 var(--lo-display); letter-spacing: -.
 html body .lo-ag-date small { margin-top: 3px; font-size: 10px; font-weight: 700; line-height: 1.15; letter-spacing: .08em; text-align: center; text-transform: uppercase; opacity: .85; }
 html body .lo-ag-date small:only-child { margin: 0; font-size: 9.5px; letter-spacing: .04em; }
 html body .lo-ag-main { display: flex; flex: 1; flex-direction: column; gap: 3px; min-width: 0; }
-html body .lo-ag-title { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font: 600 14px/1.25 var(--lo-display); letter-spacing: -.01em; }
+html body .lo-ag-title { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font: 600 14px/1.35 var(--lo-display); letter-spacing: -.01em; }
 html body .lo-ag-meta { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 12.5px; color: var(--lo-muted); }
 /* in the narrower lists, long names get two lines rather than being cut short */
 html body :is(.lo-cal-side, .lo-cal[data-mode="side"]) .lo-ag-title { display: -webkit-box; white-space: normal; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
@@ -3838,7 +3838,7 @@ html body .lo-cl-up {
   gap: 6px;
   max-width: 100%;
   margin-bottom: 16px;
-  padding: 8px 14px 8px 10px;
+  padding: 7px 14px 7px 10px;
   border: 0;
   border-radius: 999px;
   background: var(--lo-soft);
@@ -3849,7 +3849,7 @@ html body .lo-cl-up {
 }
 html body .lo-cl-up:hover { background: #e9eef9; }
 html body .lo-cl-up svg { flex: none; font-size: 15px; }
-html body .lo-cl-up span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+html body .lo-cl-up span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; line-height: 1.35; }
 html body .lo-cl-actions a.lo-cv-btn svg { font-size: 15px; }
 /* people with no company, under the list */
 html body .lo-cl-link { display: inline; padding: 0; border: 0; background: none; color: var(--lo-blue); font: inherit; font-weight: 600; cursor: pointer; }
@@ -3900,6 +3900,41 @@ html body .lo-cp-note { margin: 0 4px; color: #b42318; font-size: 13px; font-wei
 @media (prefers-reduced-motion: reduce) {
   html body :is(.lo-cl-prow, .lo-cl-prow > svg) { transition: none !important; }
 }
+
+/* ---------- 22c. Merging, other names, and the boxes for emails and numbers ---------- */
+html body .lo-cl-aka[data-names] { margin-top: 3px; }
+html body .lo-cl-merge { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; padding: 18px; border-radius: 20px; background: var(--lo-soft); box-shadow: inset 0 0 0 1px var(--lo-edge); animation: loRise .4s var(--lo-ease) backwards; }
+html body .lo-cl-merge-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; }
+html body .lo-cl-merge-head b { min-width: 0; overflow-wrap: anywhere; color: var(--lo-ink); font: 600 16px/1.35 var(--lo-display); letter-spacing: -.01em; }
+html body .lo-cl-merge-x { flex: none; width: 32px; height: 32px; border: 0; border-radius: 50%; background: #ffffff; color: var(--lo-muted); font: 400 18px/1 var(--lo-body); cursor: pointer; transition: color .2s ease; }
+html body .lo-cl-merge-x:hover { color: var(--lo-ink); }
+html body .lo-cl-merge-text { margin: 0; color: var(--lo-text); font-size: 13.5px; line-height: 1.55; }
+html body .lo-cl-merge .lo-cp-opt:hover,
+html body .lo-cl-merge .lo-cp-opt:focus-visible { background: #ffffff; }
+html body .lo-cl-merge-names { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+html body .lo-cl-merge-names > span { width: 100%; color: var(--lo-muted); font: 700 10.5px/1.4 var(--lo-body); letter-spacing: .1em; text-transform: uppercase; }
+html body .lo-cl-merge-names label { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 999px; background: #ffffff; box-shadow: inset 0 0 0 1px var(--lo-edge); color: var(--lo-ink); font: 600 13.5px/1.3 var(--lo-body); cursor: pointer; transition: box-shadow .2s ease; }
+html body .lo-cl-merge-names label:has(input:checked) { box-shadow: inset 0 0 0 2px var(--lo-blue); }
+html body .lo-cl-merge-names input { margin: 0; accent-color: var(--lo-blue); }
+html body .lo-cl-merge-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+html body .lo-cl-merge-acts .lo-cv-btn { border: 0; cursor: pointer; }
+html body .lo-cl-merge-acts .lo-cv-btn:disabled { opacity: .6; cursor: default; }
+html body .lo-cl-merge-acts .lo-cv-btn svg,
+html body .lo-cl-actions .lo-cv-btn svg { font-size: 15px; }
+html body .lo-cl-actions button.lo-cv-btn[aria-expanded="true"] { box-shadow: inset 0 0 0 2px var(--lo-blue); }
+/* emails, numbers and other names on a client or company: one box each (sanity/components/ListInput.jsx) */
+html body .lo-list { display: flex; flex-direction: column; gap: 8px; }
+html body .lo-list-row { display: flex; align-items: center; gap: 6px; }
+html body .lo-list-row .lo-native { flex: 1; min-width: 0; box-sizing: border-box; }
+html body .lo-list-x { flex: none; width: 36px; height: 36px; border: 0; border-radius: 50%; background: transparent; color: var(--lo-muted); font: 400 20px/1 var(--lo-body); cursor: pointer; transition: background-color .2s ease, color .2s ease; }
+html body .lo-list-x:hover { background: var(--lo-soft); color: #b42318; }
+html body .lo-list-add { display: inline-flex; align-self: flex-start; align-items: center; gap: 6px; padding: 6px 2px; border: 0; background: none; color: var(--lo-blue); font: 600 13px/1.35 var(--lo-body); cursor: pointer; }
+html body .lo-list-add:hover { text-decoration: underline; }
+html body .lo-list-add svg { font-size: 14px; }
+/* a day of a shoot booked over several days, on the dashboard: shoot 1/2, shoot 2/2 */
+html body .lo-ag-titlerow { display: flex; align-items: center; gap: 8px; min-width: 0; }
+html body .lo-ag-titlerow .lo-ag-title { min-width: 0; }
+html body .lo-ag-part { flex: none; padding: 3px 8px; border-radius: 999px; background: var(--lo-tint); color: var(--lo-blue); font: 700 10.5px/1.3 var(--lo-body); letter-spacing: .03em; white-space: nowrap; }
 
 /* ---------- 23. Updates home: the four cards always fill their rows (4 across, 2 by 2, or 1 per row) ---------- */
 html body .lo-up[data-mode="home"] .lo-cv { max-width: 1240px; }

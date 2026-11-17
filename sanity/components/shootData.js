@@ -4,7 +4,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useClient } from 'sanity';
-import { computeBudget, latestById, nextDayOf, shootDays } from '../bookingData';
+import { computeBudget, dayInfo, latestById, nextDayOf, shootDays } from '../bookingData';
 
 export const SHOOTS_QUERY = `{
   "bookings": *[_type == "booking"]{
@@ -79,6 +79,21 @@ export function upcomingOf(bookings, today) {
     .map((b) => ({ ...b, next: nextDayOf(b, today) }))
     .sort((a, b) => a.next.localeCompare(b.next) || String(a.startTime || '').localeCompare(String(b.startTime || '')));
 }
+
+/** every shoot day still to come, one entry each: a shoot booked over two days is two shoots here,
+    "shoot 1/2" and "shoot 2/2" (part and parts), each with its own day in .next */
+export function upcomingDaysOf(bookings, today) {
+  const out = [];
+  (bookings || []).forEach((b) => {
+    if (b.status === 'cancelled' || !b.days.length) return;
+    b.days.forEach((day, i) => {
+      if (day >= today) out.push({ ...b, next: day, part: i + 1, parts: b.days.length });
+    });
+  });
+  return out.sort((a, b) => a.next.localeCompare(b.next) || String(dayInfo(a, a.next).start || '').localeCompare(String(dayInfo(b, b.next).start || '')));
+}
+/** "Shoot 1/2" for a day of a shoot booked over several days, nothing for a one day shoot */
+export const partLabel = (b) => (b && b.parts > 1 ? `Shoot ${b.part}/${b.parts}` : '');
 
 /** enquiries with no shoot booked yet, leaving out ones marked "Not going ahead" */
 export function unbookedOf(enquiries, bookings) {

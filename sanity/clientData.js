@@ -177,7 +177,7 @@ export function buildClients({ companies = [], people = [], bookings = [], enqui
     const keys = [];
     arr(p.emails).forEach((e) => keys.push(...contactKeys({ email: e })));
     arr(p.phones).forEach((t) => keys.push(...contactKeys({ phone: t })));
-    nodes.push({ type: 'person', doc: p, keys, links: p.company ? [`co:${p.company}`] : [], org: '', name: nameKey(p.name) });
+    nodes.push({ type: 'person', doc: p, keys, links: p.company ? [`co:${p.company}`] : [], org: '', name: nameKey(p.name), names: [p.name, ...arr(p.aliases)].map(nameKey).filter(Boolean) });
   });
   arr(bookings).forEach((b) => {
     const k = (b && b.client) || {};
@@ -223,14 +223,28 @@ export function buildClients({ companies = [], people = [], bookings = [], enqui
       else owner.set(key, i);
     });
   });
+  const namesOf = (n) => n.names || (n.name ? [n.name] : []);
   /* someone with nothing but a name joins the one group where that name already appears, if there's exactly one */
   nodes.forEach((n, i) => {
     if (n.keys.length || n.links.length || !n.name) return;
     const roots = new Set();
     nodes.forEach((m, j) => {
-      if (j !== i && m.name === n.name) roots.add(find(j));
+      if (j !== i && namesOf(m).includes(n.name)) roots.add(find(j));
     });
     if (roots.size === 1) join(i, [...roots][0], 'name');
+  });
+  /* the same full name is the same person: someone not at any business yet joins the one group where
+     their full name already appears (at a company, or another booking of theirs) */
+  const business = (r) => orgs[r].size > 0 || docs[r].size > 0;
+  nodes.forEach((n, i) => {
+    namesOf(n).forEach((name) => {
+      if (!name.includes(' ') || business(find(i))) return;
+      const roots = new Set();
+      nodes.forEach((m, j) => {
+        if (find(j) !== find(i) && namesOf(m).includes(name)) roots.add(find(j));
+      });
+      if (roots.size === 1) join(i, [...roots][0], 'name');
+    });
   });
 
   const groups = new Map();
@@ -314,7 +328,7 @@ function describe(companyDocs, personDocs, shoots, enquiries, work, today) {
   const anchor = [...shoots].sort((a, b) => String(a._createdAt || a._id).localeCompare(String(b._createdAt || b._id)))[0];
 
   const info = savedDoc || {};
-  const search = [name, ...otherNames, info.notes, info.email, info.phone, info.website, categoryTitle(info.category), ...people.flatMap((p) => [p.name, ...p.roles, ...p.emails, ...p.phones, ...p.phones.map(phoneId)])]
+  const search = [name, ...otherNames, info.notes, info.email, info.phone, info.website, categoryTitle(info.category), ...people.flatMap((p) => [p.name, ...p.otherNames, ...p.roles, ...p.emails, ...p.phones, ...p.phones.map(phoneId)])]
     .filter(Boolean)
     .join(' ')
     .toLowerCase();
@@ -374,12 +388,33 @@ function shootSums(list, today) {
   };
 }
 
-/** the same person (same email, or the same full name) once, with every number and address they've used,
-    their own shoots and enquiries, and their saved client record if there is one */
+/* ---------- the people at a company ---------- */
+
+const nameWords = (n) => nameKey(n).split(' ').filter(Boolean);
+const isFull = (n) => nameWords(n).length > 1;
+/** two names that can't be the same person: both full names, and neither is the other with words left out
+    ("Mark Lee" and "Mark A Lee" can be; "Mark Lee" and "Lily Ward" can't) */
+function clash(a, b) {
+  const x = nameWords(a);
+  const y = nameWords(b);
+  if (x.length < 2 || y.length < 2) return false;
+  const within = (s, t) => s.every((w) => t.includes(w));
+  return !within(x, y) && !within(y, x);
+}
+
+/**
+ * Everyone at a company, each person once. The same email address, the same phone number or the same
+ * full name is the same person, and everything that's different (other numbers, other email
+ * addresses, other names they've gone by, other roles) is kept with them. One exception: two people
+ * with different full names who share a number or an inbox (the shop's landline, hello@) stay apart.
+ * Their own shoots and enquiries, and their saved client record if there is one, come with them.
+ */
 function mergePeople(companyDoc, personDocs, shoots, enquiries, today) {
   const found = [];
   // when: for ordering (a shoot's date). since: when they became a client (the day a shoot was booked). asked: their first enquiry
-  personDocs.forEach((d) => found.push({ name: clean(d.name), role: clean(d.role), emails: arr(d.emails), phones: arr(d.phones), when: dayOf(d.addedAt), since: dayOf(d.addedAt) || dayOf(d.savedAt), saved: d }));
+  personDocs.forEach((d) =>
+    found.push({ name: clean(d.name), aliases: arr(d.aliases).map(clean).filter(Boolean), role: clean(d.role), emails: arr(d.emails), phones: arr(d.phones), when: dayOf(d.addedAt), since: dayOf(d.addedAt) || dayOf(d.savedAt), saved: d })
+  );
   arr(companyDoc && companyDoc.contacts).forEach((p) => found.push({ name: clean(p && p.name), role: clean(p && p.role), emails: arr(p && p.emails), phones: arr(p && p.phones), when: '' }));
   shoots.forEach((b) => {
     const k = b.client || {};
@@ -390,12 +425,15 @@ function mergePeople(companyDoc, personDocs, shoots, enquiries, today) {
   });
 
   const people = [];
-  const byKey = new Map();
-  const blank = () => ({ saved: null, name: '', roles: [], emails: [], phones: [], shoots: [], enquiries: [], first: '', last: '', since: '', asked: '' });
+  const byKey = new Map(); // a detail → the people who have it
+  const blank = () => ({ saved: null, alsoSaved: [], names: [], nicks: [], roles: [], emails: [], phones: [], shoots: [], enquiries: [], first: '', last: '', since: '', asked: '' });
   const earliest = (into, k, w) => {
     if (w && (!into[k] || w < into[k])) into[k] = w;
   };
-  const better = (a, b) => (b && (!a || b.split(/\s+/).length > a.split(/\s+/).length) ? b : a);
+  const addName = (into, n) => {
+    const k = nameKey(n);
+    if (k && !into.names.some((x) => nameKey(x) === k)) into.names.push(clean(n).replace(/\s+/g, ' '));
+  };
   const addPhone = (into, t) => {
     const k = phoneId(t);
     if (k && !into.phones.some((x) => phoneId(x) === k)) into.phones.push(clean(t));
@@ -404,51 +442,98 @@ function mergePeople(companyDoc, personDocs, shoots, enquiries, today) {
     const k = emailKey(e);
     if (k && !into.emails.includes(k)) into.emails.push(k);
   };
-  const keysOf = (p) => [...p.emails.map(emailKey).filter(Boolean).map((e) => `mail:${e}`), nameKey(p.name).includes(' ') ? `name:${nameKey(p.name)}` : ''].filter(Boolean);
+  // a name on its own ("Mark") only matches a client you've told it belongs to (one of their other names)
+  const keysOf = (x, nicks) => [
+    ...arr(x.emails).map(emailKey).filter(Boolean).map((e) => `mail:${e}`),
+    ...arr(x.phones).map(phoneKey).filter(Boolean).map((t) => `tel:${t}`),
+    ...arr(x.names).filter(isFull).map((n) => `name:${nameKey(n)}`),
+    ...arr(nicks).filter((n) => !isFull(n)).map((n) => `nick:${nameKey(n)}`),
+  ];
+  const fits = (person, name) => !name || !person.names.length || person.names.some((n) => !clash(n, name));
+  const together = (a, b) => !a.names.length || !b.names.length || b.names.some((n) => fits(a, n));
+  const shared = (person, name) => Math.max(0, ...person.names.map((n) => nameWords(n).filter((w) => nameWords(name).includes(w)).length));
   const absorb = (into, p) => {
-    into.name = p.saved ? clean(p.saved.name) || into.name : better(into.name, p.name);
-    if (p.saved && !into.saved) into.saved = p.saved;
+    [...(p.names || [p.name]), ...arr(p.aliases)].forEach((n) => addName(into, n));
+    [...arr(p.nicks), ...arr(p.aliases)].forEach((n) => {
+      if (n && !into.nicks.some((x) => nameKey(x) === nameKey(n))) into.nicks.push(n);
+    });
+    [p.saved, ...arr(p.alsoSaved)].forEach((d) => {
+      if (!d) return;
+      if (!into.saved) into.saved = d;
+      else if (d !== into.saved && !into.alsoSaved.includes(d)) into.alsoSaved.push(d);
+    });
     (p.roles || [p.role]).forEach((r) => r && !into.roles.includes(r) && into.roles.push(r));
-    p.emails.forEach((e) => addEmail(into, e));
-    p.phones.forEach((t) => addPhone(into, t));
+    arr(p.emails).forEach((e) => addEmail(into, e));
+    arr(p.phones).forEach((t) => addPhone(into, t));
     if (p.booking && !into.shoots.includes(p.booking)) into.shoots.push(p.booking);
     if (p.enquiry && !into.enquiries.includes(p.enquiry)) into.enquiries.push(p.enquiry);
     arr(p.shoots).forEach((b) => !into.shoots.includes(b) && into.shoots.push(b));
     arr(p.enquiries).forEach((e) => !into.enquiries.includes(e) && into.enquiries.push(e));
-    [p.when, p.first].filter(Boolean).forEach((w) => {
-      if (!into.first || w < into.first) into.first = w;
-    });
+    earliest(into, 'first', p.when);
+    earliest(into, 'first', p.first);
     [p.when, p.last].filter(Boolean).forEach((w) => {
       if (w > into.last) into.last = w;
     });
     earliest(into, 'since', p.since);
     earliest(into, 'asked', p.asked);
   };
+  const index = (person) =>
+    keysOf(person, person.nicks).forEach((k) => {
+      const list = byKey.get(k) || [];
+      if (!list.includes(person)) list.push(person);
+      byKey.set(k, list);
+    });
+
   found.forEach((p) => {
-    const hits = [...new Set(keysOf(p).map((k) => byKey.get(k)).filter(Boolean))];
+    const own = { names: [p.name, ...arr(p.aliases)].filter(Boolean), emails: p.emails, phones: p.phones };
+    const hits = [];
+    keysOf(own, own.names).forEach((k) =>
+      (byKey.get(k) || []).forEach((h) => {
+        // a shared email or number doesn't make two clearly different people one
+        if (!hits.includes(h) && (k.startsWith('name:') || k.startsWith('nick:') || fits(h, p.name))) hits.push(h);
+      })
+    );
+    // the best match first: the one who shares most of their name
+    hits.sort((a, b) => shared(b, p.name) - shared(a, p.name));
     const into = hits[0] || blank();
     if (!hits.length) people.push(into);
-    // this detail links two people we had apart, so they're the same person
+    // this record links people we had apart, so they're the same person (unless they clearly aren't)
     hits.slice(1).forEach((other) => {
-      absorb(into, { ...other, role: '', when: '', saved: other.saved });
+      if (!together(into, other) || !together(other, into)) return;
+      absorb(into, other);
       people.splice(people.indexOf(other), 1);
-      byKey.forEach((v, k) => v === other && byKey.set(k, into));
+      byKey.forEach((list) => {
+        const i = list.indexOf(other);
+        if (i < 0) return;
+        list.splice(i, 1);
+        if (!list.includes(into)) list.push(into);
+      });
     });
     absorb(into, p);
-    keysOf(into).forEach((k) => byKey.set(k, into));
+    index(into);
   });
 
+  const keys = new Set();
   return people
-    .filter((p) => p.name || p.emails.length || p.phones.length)
+    .filter((p) => p.names.length || p.emails.length || p.phones.length)
     .map((p) => {
       const list = withDays(p.shoots);
       const sums = shootSums(list, today);
       // a client since you saved them, or since their first shoot was booked (never a date still to come)
       const start = dayOf(p.saved && p.saved.addedAt) || p.since || p.asked || today;
+      // their name: as saved, or the fullest one they've used
+      const name = (p.saved && clean(p.saved.name)) || [...p.names].sort((a, b) => nameWords(b).length - nameWords(a).length)[0] || '';
+      // other names they've gone by (not just a shorter form of their name)
+      const otherNames = p.names.filter((n) => nameKey(n) !== nameKey(name) && !nameWords(n).every((w) => nameWords(name).includes(w)));
+      let key = p.saved ? p.saved._baseId : `auto-${p.emails[0] || nameKey(name).replace(/\s+/g, '-') || phoneId(p.phones[0])}`;
+      for (let n = 2; keys.has(key); n += 1) key = `${key.replace(/-\d+$/, '')}-${n}`;
+      keys.add(key);
       return {
-        key: p.saved ? p.saved._baseId : `auto-${p.emails[0] || nameKey(p.name).replace(/\s+/g, '-') || phoneId(p.phones[0])}`,
+        key,
         saved: p.saved,
-        name: p.name,
+        alsoSaved: p.alsoSaved,
+        name,
+        otherNames,
         roles: p.saved && clean(p.saved.role) ? [clean(p.saved.role), ...p.roles.filter((r) => r !== clean(p.saved.role))] : p.roles,
         emails: p.emails,
         phones: p.phones,

@@ -17,11 +17,12 @@ import {
   SettingsIcon,
   StarIcon,
   StepsIcon,
-  TargetIcon,
   TrendIcon,
+  UsersIcon,
 } from './DashIcons';
 import { ShootsDash, totalsOf } from './ShootsDash';
-import { upcomingOf, useShootData } from './shootData';
+import { partLabel, upcomingDaysOf, useShootData } from './shootData';
+import { useClientsData } from './ClientsPane';
 import { bookingTitle, fmtDay, isBooked, money, percent, relDay, tidyRange, todayYmd } from '../bookingData';
 
 /* Name shown in the greeting */
@@ -296,17 +297,18 @@ export function Overview() {
   /* the business, at a glance, saved shoots only, cancelled ones left out */
   const today = todayYmd();
   const counted = shoots.data ? shoots.data.bookings.filter((b) => b.status !== 'cancelled' && isBooked(b)) : [];
-  const upcoming = upcomingOf(counted, today);
+  // each day of a shoot booked over several days counts as its own shoot (shoot 1/2, shoot 2/2)
+  const upcoming = upcomingDaysOf(counted, today);
   const nextShoot = upcoming[0] || null;
   const thisYear = totalsOf(counted.filter((b) => b.days[0] && b.days[0].slice(0, 4) === today.slice(0, 4)));
   const owed = counted.reduce((a, b) => a + b.money.outstanding, 0);
   const owedCount = counted.filter((b) => b.money.outstanding > 0).length;
   const openShoots = () => router.navigateUrl({ path: `${base || '/studio'}/shoots` });
-  // win rate: how many enquiries ended up as a saved shoot
-  const enqList = shoots.data ? shoots.data.enquiries : [];
-  const wonIds = new Set(counted.map((b) => b.client && b.client.enquiry).filter(Boolean));
-  const won = enqList.filter((e) => wonIds.has(e._baseId)).length;
-  const winRate = enqList.length ? Math.round((won / enqList.length) * 100) : 0;
+  // your clients: the companies you shoot for, and how many are new this year
+  const clients = useClientsData();
+  const newClients = clients.companies.filter((c) => c.addedAt >= `${today.slice(0, 4)}-01-01`).length;
+  const clientPeople = clients.companies.reduce((t, c) => t + c.people.length, 0) + clients.loners.length;
+  const openClients = () => router.navigateUrl({ path: `${base || '/studio'}/updates/clients` });
   const showEnquiries = (id) => {
     setFilter(id);
     const el = document.getElementById('lo-enquiries');
@@ -334,7 +336,7 @@ export function Overview() {
                   ? `You have ${data.newEnquiries} enquir${data.newEnquiries === 1 ? 'y' : 'ies'} waiting for a reply.`
                   : 'You’re all caught up on enquiries.'
                 : 'Loading your overview…'}
-              {data && nextShoot ? ` Next shoot: ${bookingTitle(nextShoot)}, ${nextWhen(nextShoot.next)}.` : ''}
+              {data && nextShoot ? ` Next shoot: ${bookingTitle(nextShoot)}${partLabel(nextShoot) ? ` (${partLabel(nextShoot).toLowerCase()})` : ''}, ${nextWhen(nextShoot.next)}.` : ''}
             </span>
           </div>
           <div className="lo-ov-in" style={{ '--d': '380ms', position: 'relative', display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -350,7 +352,14 @@ export function Overview() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 14 }}>
           <Stat icon={InboxIcon} label="To reply" delay={200} value={data && data.newEnquiries} sub={data ? `${data.enquiries} enquiries in total` : ''} accent onClick={() => showEnquiries('new')} />
           <Stat icon={CalendarIcon} label="Upcoming shoots" delay={270} value={shoots.data ? upcoming.length : undefined} sub={shoots.data ? (nextShoot ? `Next: ${['Today', 'Tomorrow'].includes(relDay(nextShoot.next)) ? relDay(nextShoot.next).toLowerCase() : fmtDay(nextShoot.next, { weekday: 'short', day: 'numeric', month: 'short' })}` : 'None booked yet') : ''} onClick={openShoots} />
-          <Stat icon={TargetIcon} label="Win rate" delay={340} value={shoots.data ? winRate : undefined} format={(n) => `${n}%`} sub={shoots.data ? (enqList.length ? `${won} of ${enqList.length} enquir${enqList.length === 1 ? 'y' : 'ies'} booked` : 'No enquiries yet') : ''} onClick={() => showEnquiries('all')} />
+          <Stat
+            icon={UsersIcon}
+            label="Clients"
+            delay={340}
+            value={clients.loading ? undefined : clients.companies.length}
+            sub={clients.loading ? '' : clients.companies.length ? [`${newClients} new in ${today.slice(0, 4)}`, clientPeople ? `${clientPeople} ${clientPeople === 1 ? 'person' : 'people'}` : ''].filter(Boolean).join(' · ') : 'Every company you shoot for'}
+            onClick={openClients}
+          />
           <Stat icon={TrendIcon} label={`Profit in ${today.slice(0, 4)}`} delay={410} value={shoots.data ? Math.round(thisYear.profit) : undefined} format={money} sub={shoots.data ? (thisYear.count ? `${thisYear.count} shoot${thisYear.count === 1 ? '' : 's'} ${thisYear.income ? ` · ${percent(thisYear.profit / thisYear.income)} margin` : ''}` : 'No shoots yet') : ''} onClick={openShoots} />
           <Stat icon={ClockIcon} label="Still to come in" delay={480} value={shoots.data ? Math.round(owed) : undefined} format={money} sub={shoots.data ? (owedCount ? `from ${owedCount} shoot${owedCount === 1 ? '' : 's'}` : 'Everyone’s paid up') : ''} onClick={openShoots} />
         </div>
@@ -445,6 +454,7 @@ export function Overview() {
               <Quick icon={CalendarIcon} label="Book a shoot" intent="create" params={[{ type: 'booking', template: 'booking-new' }, {}]} primary />
               <Quick icon={CameraIcon} label="Add to your portfolio" intent="create" params={{ type: 'shoot' }} />
               <Quick icon={KitIcon} label="Add equipment" intent="create" params={{ type: 'equipment' }} />
+              <Quick icon={UsersIcon} label="Add client" intent="create" params={{ type: 'client', template: 'client' }} />
               <span style={{ ...eyebrow, color: MUTED, marginTop: 8 }}>Edit pages</span>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 10 }}>
                 <Quick icon={HomeIcon} label="Home" intent="edit" params={{ id: 'homePage', type: 'homePage' }} />

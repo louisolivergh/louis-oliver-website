@@ -31,7 +31,7 @@ import {
   timeRange,
   todayYmd,
 } from '../bookingData';
-import { bookShoot, declineEnquiry, setShootStatus, unbookedOf, upcomingOf } from './shootData';
+import { bookShoot, declineEnquiry, partLabel, setShootStatus, unbookedOf, upcomingDaysOf } from './shootData';
 import { CalendarIcon, ClockIcon, InboxIcon, KitIcon, PhoneIcon, PinIcon, PlusIcon, TruckIcon, UsersIcon } from './DashIcons';
 
 /** money totals for a list of (saved, not cancelled) shoots */
@@ -64,7 +64,10 @@ function Row({ b, i, right, today }) {
         )}
       </span>
       <span className="lo-ag-main">
-        <span className="lo-ag-title">{bookingTitle(b)}</span>
+        <span className="lo-ag-titlerow">
+          <span className="lo-ag-title">{bookingTitle(b)}</span>
+          {partLabel(b) ? <span className="lo-ag-part">{partLabel(b)}</span> : null}
+        </span>
         <span className="lo-ag-meta">{[d ? relDay(day) : '', timeRange(info.start, info.end), place && place.label].filter(Boolean).join(' · ')}</span>
       </span>
       <span className="lo-ag-side">
@@ -97,7 +100,8 @@ export function ShootsDash({ base = '/studio', data, setData }) {
   const today = todayYmd();
   const bookings = data ? data.bookings : [];
   const counted = bookings.filter((b) => b.status !== 'cancelled' && isBooked(b));
-  const upcoming = upcomingOf(bookings, today);
+  // each day of a shoot booked over several days counts as its own shoot (shoot 1/2, shoot 2/2)
+  const upcoming = upcomingDaysOf(bookings, today);
   const next = upcoming.find((b) => isBooked(b));
   const rest = upcoming.filter((b) => b !== next);
   const monthKey = today.slice(0, 7);
@@ -164,7 +168,7 @@ export function ShootsDash({ base = '/studio', data, setData }) {
                 <span>
                   <CalendarIcon />
                   {fmtDay(nextDay, { weekday: 'long', day: 'numeric', month: 'long' })}
-                  {next.days.length > 1 ? ` · day ${next.days.indexOf(nextDay) + 1} of ${next.days.length}` : ''}
+                  {partLabel(next) ? ` · ${partLabel(next)}` : ''}
                 </span>
                 {nextInfo && nextInfo.start ? (
                   <span>
@@ -354,7 +358,11 @@ export function ShootsDash({ base = '/studio', data, setData }) {
             <span className="lo-dc-sub">{upcoming.length ? `${upcoming.length} in the diary` : ''}</span>
           </div>
           {rest.length ? (
-            rest.slice(0, 5).map((b, i) => <Row key={b._baseId} b={b} i={i} today={today} right={b.money.income ? <span className="lo-ag-money">{moneyShort(b.money.profit)}</span> : null} />)
+            rest.slice(0, 5).map((b, i, list) => {
+              // a shoot's money shows once, on the first of its days in the list
+              const firstOfIt = list.findIndex((x) => x._baseId === b._baseId) === i && !(next && next._baseId === b._baseId);
+              return <Row key={`${b._baseId}-${b.next}`} b={b} i={i} today={today} right={firstOfIt && b.money.income ? <span className="lo-ag-money">{moneyShort(b.money.profit)}</span> : null} />;
+            })
           ) : (
             <p className="lo-dc-empty">{next ? 'Just the one above for now.' : 'Nothing coming up yet.'}</p>
           )}

@@ -48,6 +48,8 @@ export const NoteIcon = make(<><path d="M5 3.5h10l4 4V20.5H5z" /><path d="M15 3.
 export const ChevronLeft = make(<path d="M14.5 5.5 8 12l6.5 6.5" />);
 export const ChevronRight = make(<path d="M9.5 5.5 16 12l-6.5 6.5" />);
 export const PlusIcon = make(<path d="M12 5v14M5 12h14" />);
+/* two lines coming together into one: merge */
+export const MergeIcon = make(<><path d="M6 4v4.5a4.5 4.5 0 0 0 4.5 4.5H19" /><path d="M6 20v-2.5A4.5 4.5 0 0 1 10.5 13" /><path d="M15.5 9.5 19 13l-3.5 3.5" /></>);
 export const TruckIcon = make(<><path d="M2.5 6.5h11v10h-11z" /><path d="M13.5 10h4.5l3 3.5v3h-7.5" /><circle cx="6.5" cy="17.5" r="1.8" /><circle cx="17" cy="17.5" r="1.8" /></>);
 export const TargetIcon = make(<><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.2" /></>);
 export const TrendIcon = make(<><path d="M3 17.5l5.5-5.5 4 4L21 7.5" /><path d="M15 7.5h6v6" /></>);

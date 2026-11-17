@@ -14,8 +14,8 @@ import { IntentLink, useRouter } from 'sanity/router';
 import { CLIENT_CATEGORIES, CLIENT_SORTS, buildClients, categoryTitle, filterClients, savedRecords, sortClients, unattached } from '../clientData';
 import { bookingTitle, fmtDay, initials, latestById, money, relDay, statusOf, tidyRange, todayYmd } from '../bookingData';
 import { bookShoot, withMoney } from './shootData';
-import { CLIENTS_API, addPersonTo, createClient, ensureCompany, tidyLegacyPerson } from './clientRecords';
-import { CameraIcon, ChevronLeft, ChevronRight, InboxIcon, MailIcon, NoteIcon, PhoneIcon, PlusIcon, UsersIcon } from './DashIcons';
+import { CLIENTS_API, addPersonTo, createClient, ensureCompany, mergeClients, mergeCompanies, tidyLegacyPerson } from './clientRecords';
+import { CameraIcon, ChevronLeft, ChevronRight, InboxIcon, MailIcon, MergeIcon, NoteIcon, PhoneIcon, PlusIcon, UsersIcon } from './DashIcons';
 
 const QUERY = `{
   "companies": *[_type == "company"]{ _id, _createdAt, _updatedAt, name, category, website, email, phone, address, aliases, notes, addedAt, savedAt },
@@ -301,12 +301,131 @@ function Note({ note }) {
   ) : null;
 }
 
+/* ---------- merging two that are really the same ---------- */
+
+const same = (a, b) => String(a || '').trim().toLowerCase() === String(b || '').trim().toLowerCase();
+
+/* what you can merge a company with: every other company */
+function companyChoices(companies, c) {
+  return companies
+    .filter((x) => x.key !== c.key)
+    .sort((a, b) => a.name.localeCompare(b.name, 'en-GB', { sensitivity: 'base' }))
+    .map((x) => ({ key: x.key, name: x.name, sub: [plural(x.stats.people, 'person', 'people'), plural(x.stats.shoots, 'shoot', 'shoots')].join(' · '), search: x.search, company: x }));
+}
+/* what you can merge a person with: the others at their company and anyone with no company
+   (someone with no company can be merged with anyone) */
+function personChoices(p, company, companies, loners) {
+  const out = [];
+  const add = (x, co) => {
+    if (x === p) return;
+    out.push({
+      key: `${co ? co.key : 'none'}:${x.key}`,
+      name: x.name || x.emails[0] || x.phones[0] || 'Someone',
+      sub: [co ? co.name : 'No company', x.roles[0], x.emails[0] || x.phones[0]].filter(Boolean).join(' · '),
+      search: [x.name, ...x.otherNames, ...x.emails, ...x.phones, co ? co.name : ''].join(' ').toLowerCase(),
+      person: x,
+      company: co,
+    });
+  };
+  if (company) company.people.forEach((x) => add(x, company));
+  loners.forEach((x) => add(x, null));
+  if (!company) companies.forEach((co) => co.people.forEach((x) => add(x, co)));
+  return out;
+}
+
+/* pick the other one, choose which name to keep, then merge */
+function MergePanel({ kind, current, choices, onMerge, onClose }) {
+  const [q, setQ] = useState('');
+  const [pick, setPick] = useState(null);
+  const [keepName, setKeepName] = useState(current.name);
+  const { busy, note, run } = useRun();
+  const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+  const shown = choices.filter((o) => words.every((w) => o.search.includes(w)));
+  const company = kind === 'company';
+
+  return (
+    <div className="lo-cl-merge" role="group" aria-label={company ? 'Merge with another company' : 'Merge with another person'}>
+      {!pick ? (
+        <>
+          <div className="lo-cl-merge-head">
+            <b>Merge another {company ? 'company' : 'person'} into {current.name}</b>
+            <button type="button" className="lo-cl-merge-x" onClick={onClose} aria-label="Close">
+              ×
+            </button>
+          </div>
+          <p className="lo-cl-merge-text">{company ? 'For the same business listed twice. Pick the other one.' : 'For the same person listed twice. Pick the other one.'}</p>
+          <label className="lo-cp-search">
+            <SearchIcon />
+            <input type="text" value={q} onChange={(e) => setQ(e.target.value)} placeholder={company ? 'Search your companies' : 'Search people'} aria-label={company ? 'Search your companies' : 'Search people'} autoFocus />
+          </label>
+          <div className="lo-cp-list" role="listbox" aria-label={company ? 'Companies' : 'People'}>
+            {shown.slice(0, 8).map((o) => (
+              <button
+                key={o.key}
+                type="button"
+                role="option"
+                aria-selected="false"
+                className="lo-cp-opt"
+                onClick={() => {
+                  setPick(o);
+                  setKeepName(current.name);
+                }}
+              >
+                <span className="lo-cl-av" data-kind={company ? undefined : 'person'}>
+                  {initials(o.name || '?')}
+                </span>
+                <span className="lo-cp-main">
+                  <b>{o.name}</b>
+                  <small>{o.sub}</small>
+                </span>
+              </button>
+            ))}
+            {!shown.length ? <p className="lo-cp-empty">{choices.length ? 'No match.' : `No other ${company ? 'companies' : 'people'} to merge with yet.`}</p> : null}
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="lo-cl-merge-head">
+            <b>
+              Merge {pick.name} into {current.name}?
+            </b>
+          </div>
+          <p className="lo-cl-merge-text">
+            {company ? 'Their people, shoots, enquiries and details all show under one company.' : 'Their shoots, enquiries, numbers and email addresses all show under one person.'} Anything that’s different is kept: other names, numbers and
+            emails stay listed with the rest. You can’t undo this.
+          </p>
+          {!same(current.name, pick.name) ? (
+            <div className="lo-cl-merge-names" role="radiogroup" aria-label="Name to keep">
+              <span>Name to keep</span>
+              {[current.name, pick.name].map((n) => (
+                <label key={n}>
+                  <input type="radio" name={`lo-keep-${kind}`} checked={keepName === n} onChange={() => setKeepName(n)} /> {n}
+                </label>
+              ))}
+            </div>
+          ) : null}
+          <Note note={note} />
+          <div className="lo-cl-merge-acts">
+            <button type="button" className="lo-cv-btn" data-primary="" disabled={busy} onClick={() => run(() => onMerge(pick, keepName))}>
+              <MergeIcon /> {busy ? 'Merging…' : company ? 'Merge companies' : 'Merge clients'}
+            </button>
+            <button type="button" className="lo-cv-btn" disabled={busy} onClick={() => setPick(null)}>
+              Back
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 /* ---------- a company ---------- */
 
-function CompanyDetail({ c, today, onBack, onPerson, onSaved }) {
+function CompanyDetail({ c, companies, today, onBack, onPerson, onSaved }) {
   const client = useClient({ apiVersion: CLIENTS_API });
   const router = useRouter();
   const { busy, note, run } = useRun();
+  const [merging, setMerging] = useState(false);
   const top = useTopOnOpen();
   const main = c.people[0] || null;
   // a company found from your shoots gets its own record the first time you change something on it
@@ -384,11 +503,27 @@ function CompanyDetail({ c, today, onBack, onPerson, onSaved }) {
             Edit company details
           </button>
         )}
+        <button type="button" className="lo-cv-btn" onClick={() => setMerging((v) => !v)} aria-expanded={merging} title="The same company listed twice? Merge them into one">
+          <MergeIcon /> Merge
+        </button>
         <button type="button" className="lo-cv-btn" data-primary="" onClick={book}>
           <PlusIcon /> Book a shoot
         </button>
       </div>
       <Note note={note} />
+      {merging ? (
+        <MergePanel
+          kind="company"
+          current={c}
+          choices={companyChoices(companies, c)}
+          onClose={() => setMerging(false)}
+          onMerge={async (pick, name) => {
+            const id = await mergeCompanies(client, c, pick.company, name);
+            setMerging(false);
+            onSaved(id);
+          }}
+        />
+      ) : null}
       {!c.saved ? <p className="lo-cl-hint">Put together from their shoots and enquiries. Its details are kept once you edit them or add a person.</p> : null}
 
       <Tiles x={c} today={today} />
@@ -501,10 +636,11 @@ function CompanyDetail({ c, today, onBack, onPerson, onSaved }) {
 
 /* ---------- a person (a client), opened from their company ---------- */
 
-function PersonDetail({ p, company, today, onBack, onSaved }) {
+function PersonDetail({ p, company, companies, loners, today, onBack, onSaved }) {
   const client = useClient({ apiVersion: CLIENTS_API });
   const router = useRouter();
   const { busy, note, run } = useRun();
+  const [merging, setMerging] = useState(false);
   const top = useTopOnOpen();
   const legacy = Boolean(p.saved && p.saved.kind);
 
@@ -534,6 +670,7 @@ function PersonDetail({ p, company, today, onBack, onSaved }) {
           <span className="lo-cl-kicker">{company ? `Client at ${company.name}` : 'Client · No company'}</span>
           <h2 className="lo-cl-name">{p.name || 'Name not given'}</h2>
           {p.roles.length ? <small className="lo-cl-aka">{p.roles.join(', ')}</small> : null}
+          {p.otherNames.length ? <small className="lo-cl-aka" data-names="">Also booked as {p.otherNames.join(', ')}</small> : null}
         </div>
       </header>
 
@@ -561,11 +698,41 @@ function PersonDetail({ p, company, today, onBack, onSaved }) {
             <PhoneIcon /> Call
           </a>
         ) : null}
+        <button type="button" className="lo-cv-btn" onClick={() => setMerging((v) => !v)} aria-expanded={merging} title="The same person listed twice? Merge them into one">
+          <MergeIcon /> Merge
+        </button>
         <button type="button" className="lo-cv-btn" data-primary="" onClick={book}>
           <PlusIcon /> Book a shoot
         </button>
       </div>
       <Note note={note} />
+      {merging ? (
+        <MergePanel
+          kind="person"
+          current={p}
+          choices={personChoices(p, company, companies, loners)}
+          onClose={() => setMerging(false)}
+          onMerge={async (pick, name) => {
+            const res = await mergeClients(client, p, pick.person, { company, otherCompany: pick.company, name });
+            setMerging(false);
+            onSaved(res);
+          }}
+        />
+      ) : null}
+      {p.alsoSaved && p.alsoSaved.length ? (
+        <p className="lo-cl-hint">
+          Also saved separately as{' '}
+          {p.alsoSaved.map((d, i) => (
+            <span key={d._baseId}>
+              {i ? ', ' : ''}
+              <IntentLink intent="edit" params={{ id: d._baseId, type: 'client' }}>
+                {d.name || 'a client'}
+              </IntentLink>
+            </span>
+          ))}
+          . The details match, so they’re shown together here. You can delete the extra one.
+        </p>
+      ) : null}
       {!p.saved ? <p className="lo-cl-hint">Found from their shoots and enquiries. Save them as a client to keep notes and edit their details.</p> : null}
 
       <Tiles x={p} today={today} />
@@ -800,14 +967,17 @@ export function ClientsPane() {
                   key={`person-${personView}`}
                   p={who}
                   company={loner ? null : current}
+                  companies={companies}
+                  loners={loners}
                   today={today}
                   onBack={() => {
                     setPerson('');
                     setWasPerson('');
                   }}
                   onSaved={({ person: id, company: companyId }) => {
-                    if (current && companyId && companyId !== current.key) {
-                      setWas(current.key);
+                    // their company may have just got its record, or (someone with no company) they've joined one
+                    if (companyId && (!current || companyId !== current.key)) {
+                      setWas(current && !loner ? current.key : '');
                       setOpen(companyId);
                     }
                     setWasPerson(who.key);
@@ -818,6 +988,7 @@ export function ClientsPane() {
                 <CompanyDetail
                   key={companyView}
                   c={current}
+                  companies={companies}
                   today={today}
                   onBack={() => openCompany('')}
                   onPerson={(key) => {
