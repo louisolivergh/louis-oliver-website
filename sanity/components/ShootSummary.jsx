@@ -129,6 +129,7 @@ function StatusTrack({ v, days, today, onStatus }) {
   const delivered = status === 'delivered';
   const late = due && !delivered && due < today;
   const nextUp = !cancelled && at >= 0 && at < STATUS_FLOW.length - 1 ? STATUS_FLOW[at + 1] : null;
+  const backTo = !cancelled && at > 0 ? STATUS_FLOW[at - 1] : null;
   // a nudge when the shoot day has been and it's still marked as booked
   const shouldBeShot = last && last < today && (status === 'pencilled' || status === 'confirmed');
   return (
@@ -165,20 +166,38 @@ function StatusTrack({ v, days, today, onStatus }) {
           return (
             <li key={s} data-state={state}>
               <button type="button" onClick={() => onStatus(s)} aria-pressed={state === 'now'} disabled={state === 'now'} title={statusOf(s).title}>
-                <span className="lo-sv-step-dot">{state === 'done' ? <IconTick /> : i + 1}</span>
+                <span className="lo-sv-step-dot" key={state}>
+                  {state === 'done' || state === 'now' ? <IconTick /> : i + 1}
+                </span>
                 <span className="lo-sv-step-label">{statusOf(s).short}</span>
               </button>
             </li>
           );
         })}
       </ol>
-      {nextUp ? (
-        <button type="button" className="lo-sv-next" onClick={() => onStatus(nextUp)}>
-          Mark as {statusOf(nextUp).short.toLowerCase()}
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M3 8h10M9 4l4 4-4 4" />
-          </svg>
-        </button>
+      {nextUp || backTo ? (
+        <div className="lo-sv-moves">
+          {nextUp ? (
+            <button type="button" className="lo-sv-next" onClick={() => onStatus(nextUp)}>
+              Mark as {statusOf(nextUp).short.toLowerCase()}
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M3 8h10M9 4l4 4-4 4" />
+              </svg>
+            </button>
+          ) : (
+            <span className="lo-sv-finished">
+              <IconTick /> Delivered. All done
+            </span>
+          )}
+          {backTo ? (
+            <button type="button" className="lo-sv-back" onClick={() => onStatus(backTo)}>
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M13 8H3M7 4L3 8l4 4" />
+              </svg>
+              Back to {statusOf(backTo).short.toLowerCase()}
+            </button>
+          ) : null}
+        </div>
       ) : null}
     </section>
   );

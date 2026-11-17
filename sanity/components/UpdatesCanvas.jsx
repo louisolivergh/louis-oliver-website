@@ -285,11 +285,11 @@ function usePaneLayoutHost(enabled) {
 function CanvasHost() {
   const tool = useRouterState((s) => (s && typeof s.tool === 'string' ? s.tool : ''));
   const panes = useRouterState((s) => (s && s.tool && s[s.tool] && Array.isArray(s[s.tool].panes) ? s[s.tool].panes : EMPTY));
-  const host = usePaneLayoutHost(tool === 'updates');
-  if (!host) return null;
   const first = panes[0] && panes[0][0] ? panes[0][0].id : '';
   const view = first === 'shoot' ? 'shoots' : first === 'equipment' ? 'kit' : first === 'enquiries' ? 'inbox' : 'home';
-  if (view === 'home') return null; // nothing open: the Updates pane is the whole page (UpdatesHome.jsx)
+  // nothing open: the Updates pane is the whole page (UpdatesHome.jsx), so there's no panel beside it at all
+  const host = usePaneLayoutHost(tool === 'updates' && view !== 'home');
+  if (!host || view === 'home') return null;
   return createPortal(<Canvas view={view} />, host);
 }
 

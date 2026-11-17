@@ -907,7 +907,8 @@ html body [data-ui="PaneLayout"] > .lo-canvas {
 }
 /* it steps aside the moment an editor opens, and on small screens */
 html body [data-ui="PaneLayout"][data-collapsed] > .lo-canvas,
-html body [data-ui="PaneLayout"]:has([data-testid="document-pane"]) > .lo-canvas {
+html body [data-ui="PaneLayout"]:has([data-testid="document-pane"]) > .lo-canvas,
+html body [data-ui="PaneLayout"] > .lo-canvas:empty {
   display: none;
 }
 @media (max-width: 900px) {
@@ -2965,8 +2966,10 @@ html body .lo-sv-step-dot {
 html body .lo-sv-steps button:hover:not(:disabled) .lo-sv-step-dot { box-shadow: inset 0 0 0 2px var(--lo-blue); color: var(--lo-blue); transform: scale(1.08); }
 html body .lo-sv-steps li[data-state="done"] .lo-sv-step-dot { background: var(--lo-blue); box-shadow: none; color: #ffffff; }
 html body .lo-sv-steps li[data-state="done"] button { color: var(--lo-ink); }
-html body .lo-sv-steps li[data-state="now"] .lo-sv-step-dot { background: #ffffff; box-shadow: inset 0 0 0 3px var(--lo-blue), 0 0 0 6px var(--lo-tint); color: var(--lo-blue); animation: loPop .6s var(--lo-spring) backwards; }
-html body .lo-sv-steps li[data-state="now"] button { color: var(--lo-blue); }
+/* where it's at: ticked like the ones before it, with a soft halo so you can see it's the current one */
+html body .lo-sv-steps li[data-state="now"] .lo-sv-step-dot { background: var(--lo-blue); box-shadow: 0 0 0 6px var(--lo-tint), 0 10px 22px -10px rgba(16, 77, 230, .85); color: #ffffff; transform: scale(1.06); animation: loPop .6s var(--lo-spring) backwards; }
+html body .lo-sv-steps li[data-state="now"] button { color: var(--lo-blue); font-weight: 700; }
+html body .lo-sv-steps li[data-state="done"] .lo-sv-step-dot { animation: loPop .5s var(--lo-spring) backwards; }
 html body .lo-sv-track[data-cancelled] .lo-sv-steps { opacity: .45; }
 html body .lo-sv-next {
   display: inline-flex;
@@ -2987,6 +2990,26 @@ html body .lo-sv-next svg { transition: transform .45s var(--lo-spring); }
 html body .lo-sv-next:hover { background: var(--lo-blue-dark); }
 html body .lo-sv-next:hover svg { transform: translateX(3px); }
 html body .lo-sv-next:active { transform: scale(.96); }
+html body .lo-sv-moves { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+html body .lo-sv-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px var(--lo-edge);
+  color: var(--lo-text);
+  font: 600 13px/1 var(--lo-body);
+  cursor: pointer;
+  transition: background-color .3s ease, color .3s ease, box-shadow .3s ease, transform .45s var(--lo-spring);
+}
+html body .lo-sv-back svg { transition: transform .45s var(--lo-spring); }
+html body .lo-sv-back:hover { background: var(--lo-soft); box-shadow: inset 0 0 0 1px var(--lo-edge-hover); color: var(--lo-ink); }
+html body .lo-sv-back:hover svg { transform: translateX(-3px); }
+html body .lo-sv-back:active { transform: scale(.96); }
+html body .lo-sv-finished { display: inline-flex; align-items: center; gap: 8px; padding: 11px 16px; border-radius: 999px; background: #e7f5ee; color: #12805c; font: 600 13px/1 var(--lo-body); }
 @container (max-width: 520px) {
   html body .lo-sv-steps button { font-size: 11px; }
   html body .lo-sv-step-dot { width: 32px; height: 32px; }
@@ -3119,6 +3142,11 @@ html body .lo-dl-next {
 }
 html body .lo-dl-next:hover { background: var(--lo-blue); color: #ffffff; }
 html body .lo-dl-next:active { transform: scale(.95); }
+html body .lo-dl-now { display: inline-flex; align-items: center; gap: 6px; }
+html body .lo-dl-now[data-status="delivered"] { color: #12805c; }
+html body .lo-dl-btns { display: inline-flex; align-items: center; gap: 6px; }
+html body .lo-dl-back { padding: 6px 10px; border: 0; border-radius: 999px; background: transparent; color: var(--lo-muted); font: 600 12px/1 var(--lo-body); cursor: pointer; transition: background-color .25s ease, color .25s ease; }
+html body .lo-dl-back:hover { background: var(--lo-soft); color: var(--lo-ink); }
 
 /* ---------- 15. Updates: its own page, and a slim menu once a list is open (UpdatesHome.jsx) ---------- */
 html body [data-ui="Pane"]:has(.lo-up) [data-testid="pane-header"] { display: none; }
@@ -3161,4 +3189,73 @@ html body .lo-up-add:hover { background: var(--lo-tint); }
 html body .lo-up[data-mode="home"] .lo-cv { animation: none; }
 @media (prefers-reduced-motion: reduce) {
   html body :is(.lo-sv, .lo-sv *, .lo-up *, .lo-bk-edit, .lo-rc-pick, .lo-plan, .lo-cdue) { animation: none !important; transition-duration: .01ms !important; }
+}
+
+/* ---------- 16. One day on the calendar (ShootsCalendar.jsx, DayView) ---------- */
+html body .lo-dayv { display: flex; flex-direction: column; gap: 12px; }
+html body .lo-dayv-shoot {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 18px;
+  padding: 20px;
+  border-radius: 22px;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px var(--lo-edge);
+  animation: loRise .5s var(--lo-ease) backwards;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+html body .lo-dayv-shoot[data-active] { box-shadow: inset 0 0 0 2px var(--lo-blue); }
+html body .lo-dayv-shoot[data-draft] { opacity: .75; }
+html body .lo-dayv-time { display: flex; flex-direction: column; gap: 4px; padding-right: 16px; border-right: 2px solid var(--lo-line); }
+html body .lo-dayv-time b { font: 600 22px/1 var(--lo-display); letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: var(--lo-blue); }
+html body .lo-dayv-time small { color: var(--lo-muted); font-size: 12.5px; font-weight: 600; }
+html body .lo-dayv-main { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+html body .lo-dayv-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
+html body .lo-dayv-head h3 { margin: 0; font: 600 19px/1.2 var(--lo-display); letter-spacing: -.02em; }
+html body .lo-dayv-meta { margin: 0; color: var(--lo-muted); font-size: 13px; }
+html body .lo-dayv-note { margin: 0; padding: 8px 12px; border-radius: 10px; background: var(--lo-soft); color: var(--lo-text); font-size: 13px; }
+html body .lo-dayv-plan { display: flex; flex-direction: column; margin: 4px 0 0; padding: 0; list-style: none; }
+html body .lo-dayv-plan li { position: relative; display: flex; gap: 14px; padding: 8px 0 8px 18px; font-size: 14px; }
+html body .lo-dayv-plan li::before { content: ""; position: absolute; left: 0; top: 14px; width: 8px; height: 8px; border-radius: 50%; background: var(--lo-blue); box-shadow: 0 0 0 3px var(--lo-tint); }
+html body .lo-dayv-plan li::after { content: ""; position: absolute; left: 3px; top: 24px; bottom: -6px; width: 2px; background: #e2e8f4; }
+html body .lo-dayv-plan li:last-child::after { content: none; }
+html body .lo-dayv-plan b { flex: none; min-width: 46px; font-variant-numeric: tabular-nums; }
+html body .lo-dayv-none { margin: 2px 0 0; color: var(--lo-muted); font-size: 13px; }
+html body .lo-dayv-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+html body .lo-dayv-acts .lo-mini-btn { text-decoration: none !important; }
+html body .lo-dayv-due {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 18px;
+  background: #fff7eb;
+  box-shadow: inset 0 0 0 1px #f0cf9c;
+  color: #8a4b05 !important;
+  text-decoration: none !important;
+  transition: transform .4s var(--lo-spring), box-shadow .3s ease;
+  animation: loRise .5s var(--lo-ease) backwards;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+html body .lo-dayv-due:hover { transform: translateY(-1px); box-shadow: inset 0 0 0 1px #e8a33d, 0 10px 20px -14px rgba(161, 92, 7, .6); }
+html body .lo-dayv-due svg { flex: none; font-size: 18px; }
+html body .lo-dayv-due span { display: flex; flex-direction: column; gap: 3px; }
+html body .lo-dayv-due b { font-size: 14px; font-weight: 600; }
+html body .lo-dayv-due small { color: var(--lo-text); font-size: 13px; }
+html body .lo-dayv-due[data-done] { background: #e7f5ee; box-shadow: inset 0 0 0 1px #c3e6d4; color: #12805c !important; }
+html body .lo-dayv-off { margin: 0; color: var(--lo-muted); font-size: 12.5px; }
+html body .lo-dayv-add { align-self: flex-start; }
+html body .lo-dayv-empty { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; padding: 28px; border: 1.5px dashed #cbd8f5; border-radius: 22px; background: #f8faff; }
+html body .lo-dayv-empty b { font: 600 18px/1.3 var(--lo-display); letter-spacing: -.01em; }
+/* slim: under the small calendar */
+html body .lo-side-dayhead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+html body .lo-dayv[data-compact] .lo-dayv-shoot { grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 16px; border-radius: 18px; }
+html body .lo-dayv[data-compact] .lo-dayv-time { flex-direction: row; align-items: baseline; gap: 8px; padding: 0 0 8px; border-right: 0; border-bottom: 1px solid var(--lo-line); }
+html body .lo-dayv[data-compact] .lo-dayv-time b { font-size: 18px; }
+html body .lo-dayv[data-compact] .lo-dayv-head h3 { font-size: 16px; }
+html body .lo-dayv[data-compact] .lo-dayv-empty { padding: 18px; border-radius: 18px; }
+html body .lo-dayv[data-compact] .lo-dayv-empty b { font-size: 15px; }
+@container (max-width: 560px) {
+  html body .lo-dayv-shoot { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  html body .lo-dayv-time { flex-direction: row; align-items: baseline; gap: 8px; padding: 0 0 8px; border-right: 0; border-bottom: 1px solid var(--lo-line); }
 }

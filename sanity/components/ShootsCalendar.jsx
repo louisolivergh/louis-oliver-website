@@ -5,7 +5,8 @@
  *  - nothing open → the month, plus what's coming up, shoots without a date and enquiries not booked yet
  *  - List → every shoot in a table, with the money
  *  - a shoot open beside it (or a small screen) → a slim month and the agenda
- * Click a day to book a shoot on it. Drag a shoot to another day to move it.
+ * Click a day to see that day: every shoot on it with its times, full schedule and place, and anything due.
+ * The + on a day books a shoot on it. Drag a shoot to another day to move it.
  * Each shoot shows that day's schedule underneath, and a shoot's delivery date shows as "Due" (drag it to change it).
  * Today has a dotted ring; the day(s) of the shoot you have open are filled in.
  * Shoots still being created (not saved with "Save shoot" yet) show faded, and aren't counted in the money.
@@ -23,6 +24,7 @@ import {
   daysBetween,
   fmtDay,
   isBooked,
+  mapsUrl,
   money,
   moneyShort,
   nextDayOf,
@@ -38,7 +40,7 @@ import {
   ymd,
 } from '../bookingData';
 import { bookShoot, declineEnquiry, unbookedOf, upcomingOf, useShootData, withMoney } from './shootData';
-import { CalendarIcon, ChevronLeft, ChevronRight, InboxIcon, ListIcon, PlusIcon, TruckIcon } from './DashIcons';
+import { CalendarIcon, ChevronLeft, ChevronRight, ClockIcon, InboxIcon, ListIcon, PlusIcon, TruckIcon } from './DashIcons';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const DND = 'application/x-lo-shoot';
@@ -196,6 +198,97 @@ function PlanLines({ b, lines, ChildLink }) {
   );
 }
 
+/* ---------- one day: every shoot on it with its full schedule, and anything due ---------- */
+function DayShoot({ b, day, ChildLink, active, i }) {
+  const info = dayInfo(b, day);
+  const plan = scheduleFor(b, day);
+  const at = b.days.indexOf(day);
+  const st = statusOf(b.status);
+  const loc = (Array.isArray(b.locations) ? b.locations : []).find((l) => l && (l.name || l.address));
+  const q = loc ? [loc.name, loc.address].filter(Boolean).join(', ') : '';
+  const start = info.start || (plan[0] && plan[0].time) || '';
+  return (
+    <article className="lo-dayv-shoot" data-status={st.value} data-active={active ? '' : undefined} data-draft={isBooked(b) ? undefined : ''} data-cancelled={b.status === 'cancelled' ? '' : undefined} style={{ '--i': i }}>
+      <div className="lo-dayv-time">
+        <b>{start || 'Any time'}</b>
+        {info.end ? <small>to {info.end}</small> : null}
+      </div>
+      <div className="lo-dayv-main">
+        <div className="lo-dayv-head">
+          <h3>{bookingTitle(b)}</h3>
+          {isBooked(b) ? (
+            <span className="lo-ag-status" data-status={st.value}>
+              {st.short}
+            </span>
+          ) : (
+            <Unsaved />
+          )}
+        </div>
+        <p className="lo-dayv-meta">{[b.days.length > 1 ? `Day ${at + 1} of ${b.days.length}` : '', clientLine(b), loc ? loc.name || loc.address : ''].filter(Boolean).join(' · ') || 'No details yet'}</p>
+        {info.note ? <p className="lo-dayv-note">{info.note}</p> : null}
+        {plan.length ? (
+          <ol className="lo-dayv-plan">
+            {plan.map((s, k) => (
+              <li key={s._key || k}>
+                <b>{s.time || ''}</b>
+                <span>{s.text}</span>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p className="lo-dayv-none">No schedule for this day yet. Add it on the shoot, under Plan &amp; kit.</p>
+        )}
+        <div className="lo-dayv-acts">
+          <ChildLink childId={b._baseId} className="lo-mini-btn" data-primary="">
+            Open shoot
+          </ChildLink>
+          {q ? (
+            <a className="lo-mini-btn" href={mapsUrl(q)} target="_blank" rel="noopener noreferrer">
+              Directions
+            </a>
+          ) : null}
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function DayView({ day, today, shoots, dues, ChildLink, openId, onBook, compact }) {
+  const live = shoots.filter((b) => b.status !== 'cancelled');
+  const off = shoots.filter((b) => b.status === 'cancelled');
+  const nothing = !live.length && !dues.length;
+  return (
+    <div className="lo-dayv" data-compact={compact ? '' : undefined} key={day}>
+      {nothing ? (
+        <div className="lo-dayv-empty">
+          <b>{day < today ? 'Nothing happened on this day.' : 'Nothing booked on this day yet.'}</b>
+          <button type="button" className="lo-cv-btn" data-primary="" onClick={() => onBook(day)}>
+            <PlusIcon /> Book a shoot on this day
+          </button>
+        </div>
+      ) : null}
+      {live.map((b, i) => (
+        <DayShoot key={b._baseId} b={b} day={day} i={i} ChildLink={ChildLink} active={openId === b._baseId} />
+      ))}
+      {dues.map((b, i) => (
+        <ChildLink key={`due-${b._baseId}`} childId={b._baseId} className="lo-dayv-due" data-done={b.status === 'delivered' ? '' : undefined} style={{ '--i': live.length + i }}>
+          <TruckIcon />
+          <span>
+            <b>{b.status === 'delivered' ? 'Delivered' : 'Due to the client today'}</b>
+            <small>{bookingTitle(b)}</small>
+          </span>
+        </ChildLink>
+      ))}
+      {off.length ? <p className="lo-dayv-off">Cancelled: {off.map((b) => bookingTitle(b)).join(', ')}</p> : null}
+      {!nothing ? (
+        <button type="button" className="lo-cv-btn lo-dayv-add" onClick={() => onBook(day)}>
+          <PlusIcon /> Book another shoot on this day
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 function ListView({ bookings, openId, ChildLink, today }) {
   const [filter, setFilter] = useState('upcoming');
   const rows = useMemo(() => {
@@ -321,14 +414,21 @@ function ListView({ bookings, openId, ChildLink, today }) {
   );
 }
 
+const remembered = { view: '', day: '' };
+
 export function ShootsCalendar(props) {
   const openId = String(props.childItemId || '').replace(/^__edit__/, '');
   const { ChildLink, routerPanesState } = usePaneRouter();
   const router = useRouter();
   const { data, setData, load, client } = useShootData();
   const today = todayYmd();
-  const [month, setMonth] = useState(() => firstOfMonth(todayYmd()));
-  const [view, setView] = useState('month');
+  const [view, setView] = useState(() => remembered.view || 'month');
+  const [day, setDay] = useState(() => remembered.day || todayYmd());
+  const [month, setMonth] = useState(() => firstOfMonth(remembered.view === 'day' && remembered.day ? remembered.day : todayYmd()));
+  useEffect(() => {
+    remembered.view = view;
+    remembered.day = day;
+  }, [view, day]);
   const [wide, setWide] = useState(true);
   const [expanded, setExpanded] = useState(null);
   const [dropDay, setDropDay] = useState(null);
@@ -354,7 +454,10 @@ export function ShootsCalendar(props) {
   const openPane = Array.isArray(routerPanesState) && Array.isArray(routerPanesState[0]) ? routerPanesState[0][0] : null;
   const pendingDate = openPane && openPane.payload && typeof openPane.payload.date === 'string' ? openPane.payload.date : '';
   const openShoot = openId ? bookings.find((b) => b._baseId === openId) : null;
-  const selected = useMemo(() => new Set(openShoot && openShoot.days.length ? openShoot.days : pendingDate ? [pendingDate] : []), [openShoot, pendingDate]);
+  const selected = useMemo(
+    () => new Set(openShoot && openShoot.days.length ? openShoot.days : pendingDate ? [pendingDate] : view === 'day' ? [day] : []),
+    [openShoot, pendingDate, view, day]
+  );
 
   /* jump to the month of the shoot you open */
   const firstSelected = [...selected][0] || '';
@@ -393,6 +496,26 @@ export function ShootsCalendar(props) {
   }, [bookings]);
 
   const book = (date, enquiryId) => bookShoot(router, { date, enquiryId });
+  /* click a date: that day, with its full schedule (a shoot open beside the calendar closes to make room) */
+  const openDay = (d) => {
+    setDay(d);
+    setView('day');
+    setMonth(firstOfMonth(d));
+    setExpanded(null);
+    if (openId || pendingDate) {
+      const base = typeof window !== 'undefined' && window.location.pathname.startsWith('/studio') ? '/studio' : '';
+      router.navigateUrl({ path: `${base}/shoots` });
+    }
+  };
+  const dayShoots = byDay.get(day) || [];
+  const dayDues = dueByDay.get(day) || [];
+  const dayLive = dayShoots.filter((x) => x.status !== 'cancelled');
+  const dayTimes = dayLive.flatMap((x) => {
+    const info = dayInfo(x, day);
+    return [info.start, info.end, ...scheduleFor(x, day).map((s) => s.time)].filter((t) => /^\d{2}:\d{2}$/.test(String(t || '')));
+  });
+  const dayFirst = dayTimes.length ? [...dayTimes].sort()[0] : '';
+  const dayWrap = dayLive.map((x) => dayInfo(x, day).end).filter(Boolean).sort().pop() || '';
 
   /* drag a day of a shoot to another day: the first day brings any run of days with it; an extra day moves on its own */
   const move = (payload, date) => {
@@ -550,25 +673,18 @@ export function ShootsCalendar(props) {
                   ) : null}
                 </>
               );
-              return first ? (
-                <ChildLink
-                  key={d}
-                  childId={first._baseId}
-                  className="lo-mini-day"
-                  data-has=""
-                  title={[...list.map((b) => bookingTitle(b)), ...dues.map((b) => `Due: ${bookingTitle(b)}`)].join(', ')}
-                  {...flags}
-                  {...dropTarget(d)}
-                >
-                  {inner}
-                </ChildLink>
-              ) : (
+              return (
                 <button
                   key={d}
                   type="button"
                   className="lo-mini-day"
-                  onClick={() => book(d)}
-                  title={`Book a shoot on ${fmtDay(d, { weekday: 'long', day: 'numeric', month: 'long' })}`}
+                  data-has={first ? '' : undefined}
+                  onClick={() => openDay(d)}
+                  title={
+                    first
+                      ? [...list.map((b) => bookingTitle(b)), ...dues.map((b) => `Due: ${bookingTitle(b)}`)].join(', ')
+                      : `See ${fmtDay(d, { weekday: 'long', day: 'numeric', month: 'long' })}`
+                  }
                   {...flags}
                   {...dropTarget(d)}
                 >
@@ -578,6 +694,17 @@ export function ShootsCalendar(props) {
             })}
           </div>
         </div>
+        {view === 'day' ? (
+          <div className="lo-agenda">
+            <div className="lo-side-dayhead">
+              <span className="lo-side-label">{fmtDay(day, { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+              <button type="button" className="lo-side-more" onClick={() => setView('month')}>
+                Whole month
+              </button>
+            </div>
+            <DayView day={day} today={today} shoots={dayShoots} dues={dayDues} ChildLink={ChildLink} openId={openId} onBook={book} compact />
+          </div>
+        ) : (
         <div className="lo-agenda">
           <span className="lo-side-label">In {monthName}</span>
           {data === null ? <p className="lo-side-empty">Loading your shoots…</p> : null}
@@ -595,6 +722,7 @@ export function ShootsCalendar(props) {
             </>
           ) : null}
         </div>
+        )}
       </div>
     );
   }
@@ -614,6 +742,9 @@ export function ShootsCalendar(props) {
               <button type="button" role="tab" aria-selected={view === 'month'} data-on={view === 'month' ? '' : undefined} onClick={() => setView('month')}>
                 <CalendarIcon /> Month
               </button>
+              <button type="button" role="tab" aria-selected={view === 'day'} data-on={view === 'day' ? '' : undefined} onClick={() => openDay(day)}>
+                <ClockIcon /> Day
+              </button>
               <button type="button" role="tab" aria-selected={view === 'list'} data-on={view === 'list' ? '' : undefined} onClick={() => setView('list')}>
                 <ListIcon /> List
               </button>
@@ -628,17 +759,43 @@ export function ShootsCalendar(props) {
             <h1 className="lo-cal-title" key={month}>
               {monthName} <span>{year}</span>
             </h1>
+          ) : view === 'day' ? (
+            <h1 className="lo-cal-title" key={day}>
+              {fmtDay(day, { weekday: 'long', day: 'numeric', month: 'long' })} <span>{day.slice(0, 4)}</span>
+            </h1>
           ) : (
             <h1 className="lo-cal-title">Every shoot</h1>
           )}
           {view === 'month' ? nav : null}
+          {view === 'day' ? (
+            <div className="lo-cal-nav">
+              <button type="button" onClick={() => openDay(addDays(day, -1))} aria-label="Previous day">
+                <ChevronLeft />
+              </button>
+              <button type="button" data-today="" onClick={() => openDay(today)} disabled={day === today}>
+                Today
+              </button>
+              <button type="button" onClick={() => openDay(addDays(day, 1))} aria-label="Next day">
+                <ChevronRight />
+              </button>
+            </div>
+          ) : null}
         </div>
+        {view === 'day' ? (
+          <div className="lo-cal-stats">
+            <Stat label={day === today ? 'Shoots today' : 'Shoots that day'} value={data ? dayLive.length : '…'} main />
+            <Stat label="First call" value={data ? dayFirst || 'Not set' : '…'} sub={dayFirst ? 'earliest time planned' : ''} />
+            <Stat label="Wrap" value={data ? dayWrap || 'Not set' : '…'} sub={dayWrap ? 'latest finish' : ''} />
+            <Stat label="Due to clients" value={data ? dayDues.length : '…'} sub={dayDues.length ? dayDues.map((b) => bookingTitle(b)).join(', ') : ''} />
+          </div>
+        ) : (
         <div className="lo-cal-stats">
           <Stat label={view === 'month' ? `Shoots in ${monthName}` : 'Coming up'} value={data ? scope.length : '…'} />
           <Stat label="Booked" value={data ? money(sIncome) : '…'} />
           <Stat label="Profit" value={data ? money(sProfit) : '…'} sub={sIncome ? `${percent(sProfit / sIncome)} margin` : ''} main />
           <Stat label="Still to come in" value={data ? money(owed) : '…'} sub="across all shoots" />
         </div>
+        )}
       </header>
 
       {data && data.error ? <p className="lo-cal-error">Couldn’t load your shoots. Check your connection and refresh.</p> : null}
@@ -647,6 +804,8 @@ export function ShootsCalendar(props) {
         <section className="lo-cal-main" aria-label={view === 'month' ? `${monthName} ${year}` : 'Every shoot'}>
           {view === 'list' ? (
             <ListView bookings={bookings} openId={openId} ChildLink={ChildLink} today={today} />
+          ) : view === 'day' ? (
+            <DayView day={day} today={today} shoots={dayShoots} dues={dayDues} ChildLink={ChildLink} openId={openId} onBook={book} />
           ) : (
             <div className="lo-month" key={month}>
               <div className="lo-month-wd">
@@ -682,7 +841,8 @@ export function ShootsCalendar(props) {
                       data-drop={dropDay === d ? '' : undefined}
                       data-open={open ? '' : undefined}
                       style={{ '--i': i }}
-                      onClick={() => book(d)}
+                      onClick={() => openDay(d)}
+                      title={`See ${fmtDay(d, { weekday: 'long', day: 'numeric', month: 'long' })}`}
                       {...dropTarget(d)}
                     >
                       <div className="lo-day-top">
@@ -741,7 +901,7 @@ export function ShootsCalendar(props) {
                   <i />
                   Due to the client
                 </span>
-                <span className="lo-legend-tip">Click a day to book a shoot · drag a shoot or due date to move it</span>
+                <span className="lo-legend-tip">Click a day to see it · + books a shoot · drag a shoot or due date to move it</span>
               </div>
             </div>
           )}

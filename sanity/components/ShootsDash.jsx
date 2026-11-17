@@ -7,6 +7,7 @@
  * Shoots still being created (not saved yet) are marked, and left out of the money.
  */
 
+import { useState } from 'react';
 import { useClient } from 'sanity';
 import { IntentLink, useRouter } from 'sanity/router';
 import {
@@ -23,6 +24,7 @@ import {
   nextStatus,
   parseYmd,
   percent,
+  prevStatus,
   relDay,
   statusOf,
   tidyRange,
@@ -82,9 +84,16 @@ function Row({ b, i, right, today }) {
   );
 }
 
+const TickMark = () => (
+  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M3.4 8.4l3.1 3L12.6 4.8" />
+  </svg>
+);
+
 export function ShootsDash({ base = '/studio', data, setData }) {
   const router = useRouter();
   const client = useClient({ apiVersion: '2024-10-01' });
+  const [kept, setKept] = useState([]); // moved on from here: they stay in the list (with Undo) until you leave the page
   const today = todayYmd();
   const bookings = data ? data.bookings : [];
   const counted = bookings.filter((b) => b.status !== 'cancelled' && isBooked(b));
@@ -98,7 +107,7 @@ export function ShootsDash({ base = '/studio', data, setData }) {
   const last = totalsOf(counted.filter((b) => b.days[0] && b.days[0].slice(0, 7) === lastKey));
   const all = totalsOf(counted.filter((b) => b.days[0] && b.days[0] <= today));
   const toDeliver = counted
-    .filter((b) => b.status === 'shot' || b.status === 'edited' || ((b.status === 'pencilled' || b.status === 'confirmed') && b.days.length && b.days[b.days.length - 1] < today))
+    .filter((b) => kept.includes(b._baseId) || b.status === 'shot' || b.status === 'edited' || ((b.status === 'pencilled' || b.status === 'confirmed') && b.days.length && b.days[b.days.length - 1] < today))
     .sort((a, b) => String(a.deliveryDate || a.date || '').localeCompare(String(b.deliveryDate || b.date || '')));
   const notBooked = unbookedOf(data && data.enquiries, bookings).slice(0, 4);
   const live = bookings.filter((b) => b.status !== 'cancelled');
@@ -348,6 +357,11 @@ export function ShootsDash({ base = '/studio', data, setData }) {
               // where it's up to, and one tap to move it on: shot → edited → delivered
               const now = b.status === 'pencilled' || b.status === 'confirmed' ? 'booked' : b.status;
               const next = now === 'booked' ? 'shot' : nextStatus(b.status);
+              const back = now === 'booked' ? null : prevStatus(b.status);
+              const move = (to) => {
+                setKept((k) => (k.includes(b._baseId) ? k : [...k, b._baseId]));
+                setShootStatus(client, setData, b, to);
+              };
               return (
                 <div key={b._baseId} className="lo-dl-item">
                   <Row
@@ -363,12 +377,22 @@ export function ShootsDash({ base = '/studio', data, setData }) {
                   />
                   <span className="lo-dl-acts">
                     <span className="lo-dl-now" data-status={b.status}>
+                      {b.status === 'delivered' ? <TickMark /> : null}
                       {now === 'booked' ? 'Not marked as shot' : statusOf(b.status).title}
                     </span>
-                    {next && setData ? (
-                      <button type="button" className="lo-dl-next" onClick={() => setShootStatus(client, setData, b, next)}>
-                        Mark as {statusOf(next).short.toLowerCase()}
-                      </button>
+                    {setData ? (
+                      <span className="lo-dl-btns">
+                        {back ? (
+                          <button type="button" className="lo-dl-back" onClick={() => move(back)} title={`Back to ${statusOf(back).short.toLowerCase()}`}>
+                            {b.status === 'delivered' ? 'Undo' : 'Back'}
+                          </button>
+                        ) : null}
+                        {next ? (
+                          <button type="button" className="lo-dl-next" onClick={() => move(next)}>
+                            Mark as {statusOf(next).short.toLowerCase()}
+                          </button>
+                        ) : null}
+                      </span>
                     ) : null}
                   </span>
                 </div>

@@ -15,6 +15,11 @@ export const STATUSES = [
 export const statusOf = (v) => STATUSES.find((s) => s.value === v) || STATUSES[0];
 /** the steps a shoot goes through, in order (cancelled sits outside them) */
 export const STATUS_FLOW = ['pencilled', 'confirmed', 'shot', 'edited', 'delivered'];
+/** the step before, e.g. edited → shot, or null at the start (or when cancelled) */
+export function prevStatus(v) {
+  const at = STATUS_FLOW.indexOf(v || 'pencilled');
+  return at > 0 ? STATUS_FLOW[at - 1] : null;
+}
 /** the next step for a shoot, e.g. shot → edited, or null once it's delivered or cancelled */
 export function nextStatus(v) {
   const at = STATUS_FLOW.indexOf(v || 'pencilled');
