@@ -1,27 +1,31 @@
-/* Clients: everyone who has booked a shoot with you, grouped so each company (or person) appears once.
+/* Clients: the companies you shoot for, and the people there (your clients).
    Plain functions, no Sanity imports, so they can be tested on their own.
 
-   How things are grouped: two bookings, enquiries or saved clients belong together when their details
-   match: the same company name (ignoring "Ltd", "The", capitals and so on), the same email address, the
-   same phone number, the same business email domain (anything@peakgym.uk), or a shoot booked from that
-   enquiry. Someone who has only sent an enquiry isn't a client yet; their enquiries show up under them
-   once they book. Within a client, the same person (same email or same full name) is one person, with
-   every phone number and email address they've used. */
+   You work with businesses, so the Clients page lists companies; the people who work at each one
+   are inside it. A company appears once it has booked a shoot with you, or once you've saved it.
+   Someone who has only sent an enquiry isn't a client yet; their enquiry shows up under the company
+   once it books.
+
+   How things are grouped: bookings, enquiries, saved companies and saved clients belong to the same
+   company when their details match: the same company name (ignoring "Ltd", "The", capitals and so
+   on), the same business email domain (anything@otellos.com), a client saved under that company, a
+   shoot booked from that enquiry, or the same email address or phone number (as long as that doesn't
+   join two different businesses). Inside a company, the same person (same email or same full name)
+   is one person, with every phone number and email address they've used. */
 
 import { isBooked, shootDays, todayYmd } from './bookingData';
 
 export const CLIENT_CATEGORIES = [
-  { title: 'Brand', value: 'brand' },
-  { title: 'Agency', value: 'agency' },
   { title: 'Food and drink', value: 'food' },
   { title: 'Retail', value: 'retail' },
-  { title: 'Fitness and health', value: 'fitness' },
+  { title: 'Brand', value: 'brand' },
+  { title: 'Agency', value: 'agency' },
   { title: 'Beauty', value: 'beauty' },
+  { title: 'Fitness and health', value: 'fitness' },
   { title: 'Automotive', value: 'automotive' },
   { title: 'Property', value: 'property' },
   { title: 'Events', value: 'events' },
   { title: 'Music and arts', value: 'arts' },
-  { title: 'Personal', value: 'personal' },
   { title: 'Other', value: 'other' },
 ];
 export const categoryTitle = (v) => (CLIENT_CATEGORIES.find((c) => c.value === v) || {}).title || '';
@@ -30,8 +34,6 @@ export const CLIENT_SORTS = [
   { value: 'recent', title: 'Latest activity' },
   { value: 'az', title: 'Alphabetical, A to Z' },
   { value: 'za', title: 'Alphabetical, Z to A' },
-  { value: 'company', title: 'Companies first' },
-  { value: 'contact', title: 'Contact name' },
   { value: 'newest', title: 'Date added, newest' },
   { value: 'oldest', title: 'Date added, oldest' },
   { value: 'shoots', title: 'Most shoots' },
@@ -55,7 +57,7 @@ const plain = (s) =>
     .toLowerCase()
     .replace(/['’]/g, '');
 
-/** "The Peak Gym Ltd." and "peak gym" are the same company */
+/** "The Otellos Ltd." and "otellos" are the same company */
 export function orgKey(name) {
   const words = plain(name).replace(/&/g, ' and ').split(/[^a-z0-9]+/).filter(Boolean);
   const kept = words.filter((w) => !NOISE.has(w));
@@ -99,14 +101,55 @@ const clean = (v) => (typeof v === 'string' ? v.trim() : '');
 const dayOf = (v) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v) ? v.slice(0, 10) : '');
 const minOf = (list) => list.filter(Boolean).sort()[0] || '';
 const maxOf = (list) => list.filter(Boolean).sort().slice(-1)[0] || '';
+const baseId = (id) => String(id || '').replace(/^drafts\./, '');
+const idOf = (d) => (d ? d._baseId || baseId(d._id) : '');
+
+/* ---------- saved records ---------- */
+
+/**
+ * The saved companies and clients, from the documents as they come. Nothing counts until it's saved
+ * (the Save button sets savedAt). Records from the first version of clients still count: one that was
+ * a whole company becomes a company (with its people as contacts), one that was a person a client.
+ */
+export function savedRecords(companyDocs = [], clientDocs = []) {
+  const companies = arr(companyDocs)
+    .filter((c) => c && c.savedAt && clean(c.name))
+    .map((c) => ({ ...c, _baseId: idOf(c) }));
+  const people = [];
+  arr(clientDocs).forEach((d) => {
+    if (!d) return;
+    const legacy = d.kind === 'company' || d.kind === 'person';
+    if (d.kind === 'company') {
+      if (clean(d.name)) companies.push({ ...d, _baseId: idOf(d), legacy: true, savedAt: d.savedAt || d.addedAt || d._createdAt, contacts: arr(d.people) });
+      return;
+    }
+    if (!(d.savedAt || legacy) || !clean(d.name)) return;
+    // an older record kept a person's details in a list
+    const contacts = legacy ? arr(d.people) : [];
+    people.push({
+      ...d,
+      _baseId: idOf(d),
+      company: d.company ? baseId(d.company._ref || d.company) : '',
+      role: d.role || (contacts[0] && contacts[0].role) || '',
+      emails: [...arr(d.emails), ...contacts.flatMap((p) => arr(p && p.emails))],
+      phones: [...arr(d.phones), ...contacts.flatMap((p) => arr(p && p.phones))],
+      savedAt: d.savedAt || d.addedAt || d._createdAt,
+    });
+  });
+  return { companies, people };
+}
 
 /* ---------- the grouping ---------- */
 
-function keysFor(contact) {
-  const c = contact || {};
-  const org = orgKey(c.company);
-  return [org ? `org:${org}` : '', emailKey(c.email) ? `mail:${emailKey(c.email)}` : '', phoneKey(c.phone) ? `tel:${phoneKey(c.phone)}` : '', bizDomain(c.email) ? `dom:${bizDomain(c.email)}` : ''].filter(Boolean);
+function contactKeys(c) {
+  const k = c || {};
+  return [
+    emailKey(k.email) ? `mail:${emailKey(k.email)}` : '',
+    phoneKey(k.phone) ? `tel:${phoneKey(k.phone)}` : '',
+    bizDomain(k.email) ? `dom:${bizDomain(k.email)}` : '',
+  ].filter(Boolean);
 }
+const orgKeyed = (name) => (orgKey(name) ? `org:${orgKey(name)}` : '');
 
 /** a booking's sums, whichever shape it comes in */
 const incomeOf = (b) => (b && b.money && typeof b.money.income === 'number' ? b.money.income : 0);
@@ -115,41 +158,43 @@ const owedOf = (b) => (b && b.money && typeof b.money.outstanding === 'number' ?
 const daysOf = (b) => (b && Array.isArray(b.days) && b.days.length ? b.days : shootDays(b || {}));
 
 /**
- * Every client, with their people, shoots, enquiries and portfolio work.
- * saved: client documents · bookings: booked shoots (with .money from computeBudget) · enquiries · work: portfolio shoots.
- * Each list should already be one entry per document (drafts merged, with _baseId).
+ * Your companies, each with its people, shoots, enquiries and portfolio work; plus anyone with no
+ * company at all (`loners`), so they're never lost.
+ * companies / people: saved records (see savedRecords) · bookings: with .money from computeBudget ·
+ * enquiries · work: portfolio shoots. Lists should be one entry per document (drafts merged, with _baseId).
  */
-export function buildClients({ saved = [], bookings = [], enquiries = [], work = [] } = {}, today = todayYmd()) {
+export function buildClients({ companies = [], people = [], bookings = [], enquiries = [], work = [] } = {}, today = todayYmd()) {
   const nodes = [];
-  arr(saved).forEach((c) => {
-    if (!c) return;
-    const strong = [];
-    if (c.kind !== 'person' && orgKey(c.name)) strong.push(`org:${orgKey(c.name)}`);
-    arr(c.aliases).forEach((a) => orgKey(a) && strong.push(`org:${orgKey(a)}`));
-    arr(c.people).forEach((p) => {
-      arr(p && p.emails).forEach((e) => {
-        if (emailKey(e)) strong.push(`mail:${emailKey(e)}`);
-        if (bizDomain(e)) strong.push(`dom:${bizDomain(e)}`);
-      });
-      arr(p && p.phones).forEach((t) => phoneKey(t) && strong.push(`tel:${phoneKey(t)}`));
+  arr(companies).forEach((c) => {
+    const keys = [orgKeyed(c.name), ...arr(c.aliases).map(orgKeyed), siteDomain(c.website) ? `dom:${siteDomain(c.website)}` : '', ...contactKeys({ email: c.email, phone: c.phone })];
+    arr(c.contacts).forEach((p) => {
+      arr(p && p.emails).forEach((e) => keys.push(...contactKeys({ email: e })));
+      arr(p && p.phones).forEach((t) => keys.push(...contactKeys({ phone: t })));
     });
-    if (siteDomain(c.website)) strong.push(`dom:${siteDomain(c.website)}`);
-    nodes.push({ type: 'client', doc: c, strong, links: [], name: c.kind === 'person' ? nameKey(c.name) : '' });
+    nodes.push({ type: 'company', doc: c, keys: keys.filter(Boolean), links: [`co:${idOf(c)}`], org: orgKey(c.name), name: '', companyId: idOf(c) });
+  });
+  arr(people).forEach((p) => {
+    const keys = [];
+    arr(p.emails).forEach((e) => keys.push(...contactKeys({ email: e })));
+    arr(p.phones).forEach((t) => keys.push(...contactKeys({ phone: t })));
+    nodes.push({ type: 'person', doc: p, keys, links: p.company ? [`co:${p.company}`] : [], org: '', name: nameKey(p.name) });
   });
   arr(bookings).forEach((b) => {
     const k = (b && b.client) || {};
-    const strong = keysFor(k);
-    const links = k.enquiry ? [`enq:${String(k.enquiry).replace(/^drafts\./, '')}`] : [];
-    if (!strong.length && !links.length && !nameKey(k.name)) return; // no client details on it yet
-    nodes.push({ type: 'booking', doc: b, strong, links, name: nameKey(k.name) });
+    const keys = [orgKeyed(k.company), ...contactKeys(k)].filter(Boolean);
+    const links = k.enquiry ? [`enq:${baseId(k.enquiry)}`] : [];
+    if (!keys.length && !links.length && !nameKey(k.name)) return; // no client details on it yet
+    nodes.push({ type: 'booking', doc: b, keys, links, org: orgKey(k.company), name: nameKey(k.name) });
   });
   arr(enquiries).forEach((e) => {
     if (!e) return;
-    nodes.push({ type: 'enquiry', doc: e, strong: keysFor(e), links: [`enq:${e._baseId || e._id}`], name: nameKey(e.name) });
+    nodes.push({ type: 'enquiry', doc: e, keys: [orgKeyed(e.company), ...contactKeys(e)].filter(Boolean), links: [`enq:${idOf(e)}`], org: orgKey(e.company), name: nameKey(e.name) });
   });
 
-  /* join everything that shares a detail */
+  /* join everything that shares a detail, without letting one person's email or number join two different businesses */
   const parent = nodes.map((_, i) => i);
+  const orgs = nodes.map((n) => new Set(n.org ? [n.org] : []));
+  const docs = nodes.map((n) => new Set(n.companyId ? [n.companyId] : []));
   const find = (i) => {
     while (parent[i] !== i) {
       parent[i] = parent[parent[i]];
@@ -157,26 +202,35 @@ export function buildClients({ saved = [], bookings = [], enquiries = [], work =
     }
     return i;
   };
-  const join = (a, b) => {
+  const meets = (a, b) => [...a].some((x) => b.has(x));
+  const join = (a, b, how) => {
     const x = find(a);
     const y = find(b);
-    if (x !== y) parent[Math.max(x, y)] = Math.min(x, y);
+    if (x === y) return;
+    const twoBusinesses = (docs[x].size && docs[y].size && !meets(docs[x], docs[y])) || (orgs[x].size && orgs[y].size && !meets(orgs[x], orgs[y]));
+    if (twoBusinesses && (how === 'mail' || how === 'tel')) return;
+    if (docs[x].size && docs[y].size && !meets(docs[x], docs[y]) && how !== 'org') return;
+    const [keep, drop] = x < y ? [x, y] : [y, x];
+    parent[drop] = keep;
+    orgs[drop].forEach((o) => orgs[keep].add(o));
+    docs[drop].forEach((d) => docs[keep].add(d));
   };
   const owner = new Map();
   nodes.forEach((n, i) => {
-    [...n.strong, ...n.links].forEach((key) => {
-      if (owner.has(key)) join(owner.get(key), i);
+    // a client's own company comes first, so it wins over anything their email might suggest
+    [...n.links, ...n.keys].forEach((key) => {
+      if (owner.has(key)) join(owner.get(key), i, key.split(':')[0]);
       else owner.set(key, i);
     });
   });
   /* someone with nothing but a name joins the one group where that name already appears, if there's exactly one */
   nodes.forEach((n, i) => {
-    if (n.strong.length || !n.name) return;
+    if (n.keys.length || n.links.length || !n.name) return;
     const roots = new Set();
     nodes.forEach((m, j) => {
-      if (j !== i && m.name === n.name && (m.strong.length || m.type === 'client')) roots.add(find(j));
+      if (j !== i && m.name === n.name) roots.add(find(j));
     });
-    if (roots.size === 1) join(i, [...roots][0]);
+    if (roots.size === 1) join(i, [...roots][0], 'name');
   });
 
   const groups = new Map();
@@ -187,23 +241,31 @@ export function buildClients({ saved = [], bookings = [], enquiries = [], work =
   });
 
   const out = [];
+  const loners = [];
   groups.forEach((members) => {
-    const savedDocs = members.filter((n) => n.type === 'client').map((n) => n.doc).sort((a, b) => String(a._createdAt || '').localeCompare(String(b._createdAt || '')));
-    const shoots = members.filter((n) => n.type === 'booking').map((n) => n.doc);
-    // only someone who has booked a shoot (or you've added yourself) is a client
-    if (!savedDocs.length && !shoots.some(isBooked)) return;
-    out.push(describe(savedDocs, shoots, members.filter((n) => n.type === 'enquiry').map((n) => n.doc), work, today));
+    const of = (t) => members.filter((n) => n.type === t).map((n) => n.doc);
+    const companyDocs = of('company').sort((a, b) => String(a._createdAt || '').localeCompare(String(b._createdAt || '')));
+    const personDocs = of('person');
+    const shoots = of('booking');
+    const enq = of('enquiry');
+    const named = members.some((n) => n.org);
+    const booked = shoots.some(isBooked);
+    if (!companyDocs.length && !personDocs.length && !booked) return; // only enquiries: not a client yet
+    const c = describe(companyDocs, personDocs, shoots, enq, work, today);
+    // a business that has booked a shoot, or that you've saved yourself, is listed; anyone else is a client with no company
+    if (companyDocs.length || (named && booked)) out.push(c);
+    else loners.push(...c.people.filter((p) => p.saved || p.shoots.some(isBooked)).map((p) => ({ ...p, company: null })));
   });
-  return out;
+  return { companies: out, loners };
 }
 
-/* ---------- one client, put together ---------- */
+/* ---------- one company, put together ---------- */
 
-function describe(savedDocs, shoots, enquiries, work, today) {
-  const savedDoc = savedDocs[0] || null;
+function describe(companyDocs, personDocs, shoots, enquiries, work, today) {
+  const savedDoc = companyDocs[0] || null;
 
-  /* the company names it goes by: bookings count most, then enquiries. Each name is written the
-     way it's most often written ("Peak Gym" over a one-off "PEAK GYM LTD") */
+  /* the names it goes by: bookings count most, then enquiries. Each name is written the way it's most
+     often written ("Otellos" over a one-off "OTELLOS LTD") */
   const tally = new Map();
   const vote = (name, weight, when) => {
     const n = clean(name).replace(/\s+/g, ' ');
@@ -223,98 +285,116 @@ function describe(savedDocs, shoots, enquiries, work, today) {
   const shouty = (n) => n === n.toUpperCase() && /[A-Z]{3}/.test(n);
   const ranked = [...tally.values()]
     .sort((a, b) => b.weight - a.weight || b.when.localeCompare(a.when))
-    .map((t) => {
-      const best = [...t.spellings.values()].sort((a, b) => b.weight - a.weight || Number(shouty(a.name)) - Number(shouty(b.name)) || b.when.localeCompare(a.when))[0];
-      return { name: best.name, weight: t.weight, when: t.when };
-    });
+    .map((t) => [...t.spellings.values()].sort((a, b) => b.weight - a.weight || Number(shouty(a.name)) - Number(shouty(b.name)) || b.when.localeCompare(a.when))[0].name);
 
-  const people = mergePeople(savedDoc, savedDocs, shoots, enquiries);
-  const kind = savedDoc ? savedDoc.kind || 'company' : ranked.length ? 'company' : 'person';
-  const name = clean(savedDoc && savedDoc.name) || (kind === 'company' && ranked[0] ? ranked[0].name : '') || (people[0] && people[0].name) || 'Client';
+  const people = mergePeople(savedDoc, personDocs, shoots, enquiries, today);
+  const name = clean(savedDoc && savedDoc.name) || ranked[0] || (people[0] && people[0].name) || 'Company';
   const own = orgKey(name);
   const otherNames = [];
-  [...ranked.map((r) => r.name), ...arr(savedDoc && savedDoc.aliases)].forEach((n) => {
+  [...ranked, ...arr(savedDoc && savedDoc.aliases)].forEach((n) => {
     const k = orgKey(n);
     if (k && k !== own && !otherNames.some((o) => orgKey(o) === k)) otherNames.push(clean(n));
   });
 
   /* their portfolio work: shoots on your Work page under any of their names */
-  const names = new Set([own, ...otherNames.map(orgKey), ...arr(savedDoc && savedDoc.aliases).map(orgKey)].filter(Boolean));
-  if (kind === 'person') people.forEach((p) => p.name && names.add(orgKey(p.name)));
+  const names = new Set([own, ...otherNames.map(orgKey)].filter(Boolean));
   const portfolio = arr(work)
     .filter((w) => w && names.has(orgKey(w.title)))
     .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
 
-  /* their shoots, newest first; numbers count saved shoots that weren't cancelled */
-  const list = shoots
-    .map((b) => {
-      const days = daysOf(b);
-      return { ...b, first: days[0] || dayOf(b.date), last: days[days.length - 1] || dayOf(b.date) };
-    })
-    .sort((a, b) => String(b.first || '').localeCompare(String(a.first || '')));
-  const real = list.filter((b) => isBooked(b) && b.status !== 'cancelled');
-  const past = real.filter((b) => b.last && b.last < today);
-  const ahead = real.filter((b) => b.first && b.last >= today).sort((a, b) => a.first.localeCompare(b.first));
-  const round = (n) => Math.round(n * 100) / 100;
-  const earned = round(real.reduce((t, b) => t + incomeOf(b), 0));
-  const paid = round(real.reduce((t, b) => t + paidOf(b), 0));
-  const owed = round(real.reduce((t, b) => t + owedOf(b), 0));
-
-  // the shoot that first made them a client: it keeps them the same entry as more shoots come in
-  const anchor = [...shoots].sort((a, b) => String(a._createdAt || a._id).localeCompare(String(b._createdAt || b._id)))[0];
+  const list = withDays(shoots);
+  const sums = shootSums(list, today);
   const enq = [...enquiries].sort((a, b) => String(b.receivedAt || '').localeCompare(String(a.receivedAt || '')));
   const addedAt =
     dayOf(savedDoc && savedDoc.addedAt) ||
-    minOf([...list.filter(isBooked).map((b) => dayOf(b.bookedAt) || dayOf(b._createdAt)), dayOf(savedDoc && savedDoc._createdAt)]) ||
+    minOf([...list.filter(isBooked).map((b) => dayOf(b.bookedAt) || dayOf(b._createdAt)), dayOf(savedDoc && savedDoc.savedAt), ...personDocs.map((p) => dayOf(p.addedAt) || dayOf(p.savedAt))]) ||
     today;
   const activity = maxOf([...list.map((b) => b.last), ...list.map((b) => dayOf(b.bookedAt)), ...enq.map((e) => dayOf(e.receivedAt)), dayOf(savedDoc && savedDoc._updatedAt), addedAt]);
+  // the shoot (or record) that first brought them in: it keeps them the same entry as more come in
+  const anchor = [...shoots].sort((a, b) => String(a._createdAt || a._id).localeCompare(String(b._createdAt || b._id)))[0];
 
-  const search = [name, ...otherNames, savedDoc && savedDoc.notes, categoryTitle(savedDoc && savedDoc.category), ...people.flatMap((p) => [p.name, ...p.roles, ...p.emails, ...p.phones, ...p.phones.map(phoneId)])]
+  const info = savedDoc || {};
+  const search = [name, ...otherNames, info.notes, info.email, info.phone, info.website, categoryTitle(info.category), ...people.flatMap((p) => [p.name, ...p.roles, ...p.emails, ...p.phones, ...p.phones.map(phoneId)])]
     .filter(Boolean)
     .join(' ')
     .toLowerCase();
 
   return {
-    key: savedDoc ? savedDoc._baseId || savedDoc._id : `auto-${anchor ? anchor._baseId || anchor._id : nameKey(name)}`,
+    key: savedDoc ? savedDoc._baseId : `auto-${anchor ? idOf(anchor) : (personDocs[0] && personDocs[0]._baseId) || orgKey(name)}`,
     saved: savedDoc,
-    alsoSaved: savedDocs.slice(1),
-    kind,
+    alsoSaved: companyDocs.slice(1),
     name,
     otherNames,
-    category: (savedDoc && savedDoc.category) || '',
-    website: (savedDoc && savedDoc.website) || '',
-    notes: (savedDoc && savedDoc.notes) || '',
+    category: info.category || '',
+    website: info.website || '',
+    email: info.email || '',
+    phone: info.phone || '',
+    address: info.address || '',
+    notes: info.notes || '',
     people,
     shoots: list,
     enquiries: enq,
     work: portfolio,
     addedAt,
     activity,
-    lastShoot: past.length ? maxOf(past.map((b) => b.last)) : '',
-    nextShoot: ahead[0] || null,
-    stats: { shoots: real.length, done: past.length, upcoming: ahead.length, cancelled: list.filter((b) => b.status === 'cancelled').length, earned, paid, owed, enquiries: enq.length },
+    lastShoot: sums.lastShoot,
+    nextShoot: sums.nextShoot,
+    stats: { ...sums.stats, enquiries: enq.length, people: people.length },
     search,
   };
 }
 
-/** the same person (same email, or the same full name) once, with every number and address they've used */
-function mergePeople(savedDoc, savedDocs, shoots, enquiries) {
+function withDays(shoots) {
+  return shoots
+    .map((b) => {
+      const days = daysOf(b);
+      return { ...b, first: days[0] || dayOf(b.date), last: days[days.length - 1] || dayOf(b.date) };
+    })
+    .sort((a, b) => String(b.first || '').localeCompare(String(a.first || '')));
+}
+
+/** shoots counted the same way everywhere: saved, not cancelled */
+function shootSums(list, today) {
+  const real = list.filter((b) => isBooked(b) && b.status !== 'cancelled');
+  const past = real.filter((b) => b.last && b.last < today);
+  const ahead = real.filter((b) => b.first && b.last >= today).sort((a, b) => a.first.localeCompare(b.first));
+  const round = (n) => Math.round(n * 100) / 100;
+  return {
+    lastShoot: past.length ? maxOf(past.map((b) => b.last)) : '',
+    nextShoot: ahead[0] || null,
+    stats: {
+      shoots: real.length,
+      done: past.length,
+      upcoming: ahead.length,
+      cancelled: list.filter((b) => b.status === 'cancelled').length,
+      earned: round(real.reduce((t, b) => t + incomeOf(b), 0)),
+      paid: round(real.reduce((t, b) => t + paidOf(b), 0)),
+      owed: round(real.reduce((t, b) => t + owedOf(b), 0)),
+    },
+  };
+}
+
+/** the same person (same email, or the same full name) once, with every number and address they've used,
+    their own shoots and enquiries, and their saved client record if there is one */
+function mergePeople(companyDoc, personDocs, shoots, enquiries, today) {
   const found = [];
-  savedDocs.forEach((c) =>
-    arr(c.people).forEach((p) => found.push({ name: clean(p && p.name), role: clean(p && p.role), emails: arr(p && p.emails), phones: arr(p && p.phones), when: '', from: 'client' }))
-  );
-  if (savedDoc && savedDoc.kind === 'person' && !arr(savedDoc.people).length) found.push({ name: clean(savedDoc.name), role: '', emails: [], phones: [], when: '', from: 'client' });
+  // when: for ordering (a shoot's date). since: when they became a client (the day a shoot was booked). asked: their first enquiry
+  personDocs.forEach((d) => found.push({ name: clean(d.name), role: clean(d.role), emails: arr(d.emails), phones: arr(d.phones), when: dayOf(d.addedAt), since: dayOf(d.addedAt) || dayOf(d.savedAt), saved: d }));
+  arr(companyDoc && companyDoc.contacts).forEach((p) => found.push({ name: clean(p && p.name), role: clean(p && p.role), emails: arr(p && p.emails), phones: arr(p && p.phones), when: '' }));
   shoots.forEach((b) => {
     const k = b.client || {};
-    if (clean(k.name) || k.email || k.phone) found.push({ name: clean(k.name), role: '', emails: [k.email], phones: [k.phone], when: dayOf(b.date) || dayOf(b.bookedAt), from: 'shoot' });
+    if (clean(k.name) || k.email || k.phone) found.push({ name: clean(k.name), role: '', emails: [k.email], phones: [k.phone], when: dayOf(b.date) || dayOf(b.bookedAt), since: isBooked(b) ? dayOf(b.bookedAt) || dayOf(b._createdAt) : '', booking: b });
   });
   enquiries.forEach((e) => {
-    if (clean(e.name) || e.email || e.phone) found.push({ name: clean(e.name), role: '', emails: [e.email], phones: [e.phone], when: dayOf(e.receivedAt), from: 'enquiry' });
+    if (clean(e.name) || e.email || e.phone) found.push({ name: clean(e.name), role: '', emails: [e.email], phones: [e.phone], when: dayOf(e.receivedAt), asked: dayOf(e.receivedAt), enquiry: e });
   });
 
   const people = [];
   const byKey = new Map();
-  const blank = () => ({ name: '', roles: [], emails: [], phones: [], shoots: 0, enquiries: 0, last: '' });
+  const blank = () => ({ saved: null, name: '', roles: [], emails: [], phones: [], shoots: [], enquiries: [], first: '', last: '', since: '', asked: '' });
+  const earliest = (into, k, w) => {
+    if (w && (!into[k] || w < into[k])) into[k] = w;
+  };
   const better = (a, b) => (b && (!a || b.split(/\s+/).length > a.split(/\s+/).length) ? b : a);
   const addPhone = (into, t) => {
     const k = phoneId(t);
@@ -325,34 +405,64 @@ function mergePeople(savedDoc, savedDocs, shoots, enquiries) {
     if (k && !into.emails.includes(k)) into.emails.push(k);
   };
   const keysOf = (p) => [...p.emails.map(emailKey).filter(Boolean).map((e) => `mail:${e}`), nameKey(p.name).includes(' ') ? `name:${nameKey(p.name)}` : ''].filter(Boolean);
+  const absorb = (into, p) => {
+    into.name = p.saved ? clean(p.saved.name) || into.name : better(into.name, p.name);
+    if (p.saved && !into.saved) into.saved = p.saved;
+    (p.roles || [p.role]).forEach((r) => r && !into.roles.includes(r) && into.roles.push(r));
+    p.emails.forEach((e) => addEmail(into, e));
+    p.phones.forEach((t) => addPhone(into, t));
+    if (p.booking && !into.shoots.includes(p.booking)) into.shoots.push(p.booking);
+    if (p.enquiry && !into.enquiries.includes(p.enquiry)) into.enquiries.push(p.enquiry);
+    arr(p.shoots).forEach((b) => !into.shoots.includes(b) && into.shoots.push(b));
+    arr(p.enquiries).forEach((e) => !into.enquiries.includes(e) && into.enquiries.push(e));
+    [p.when, p.first].filter(Boolean).forEach((w) => {
+      if (!into.first || w < into.first) into.first = w;
+    });
+    [p.when, p.last].filter(Boolean).forEach((w) => {
+      if (w > into.last) into.last = w;
+    });
+    earliest(into, 'since', p.since);
+    earliest(into, 'asked', p.asked);
+  };
   found.forEach((p) => {
     const hits = [...new Set(keysOf(p).map((k) => byKey.get(k)).filter(Boolean))];
     const into = hits[0] || blank();
     if (!hits.length) people.push(into);
     // this detail links two people we had apart, so they're the same person
     hits.slice(1).forEach((other) => {
-      into.name = better(into.name, other.name);
-      other.roles.forEach((r) => !into.roles.includes(r) && into.roles.push(r));
-      other.emails.forEach((e) => addEmail(into, e));
-      other.phones.forEach((t) => addPhone(into, t));
-      into.shoots += other.shoots;
-      into.enquiries += other.enquiries;
-      if (other.last > into.last) into.last = other.last;
+      absorb(into, { ...other, role: '', when: '', saved: other.saved });
       people.splice(people.indexOf(other), 1);
       byKey.forEach((v, k) => v === other && byKey.set(k, into));
     });
-    into.name = better(into.name, p.name);
-    if (p.role && !into.roles.includes(p.role)) into.roles.push(p.role);
-    p.emails.forEach((e) => addEmail(into, e));
-    p.phones.forEach((t) => addPhone(into, t));
-    if (p.from === 'shoot') into.shoots += 1;
-    if (p.from === 'enquiry') into.enquiries += 1;
-    if (p.when > into.last) into.last = p.when;
+    absorb(into, p);
     keysOf(into).forEach((k) => byKey.set(k, into));
   });
+
   return people
     .filter((p) => p.name || p.emails.length || p.phones.length)
-    .sort((a, b) => b.shoots - a.shoots || String(b.last).localeCompare(String(a.last)) || a.name.localeCompare(b.name));
+    .map((p) => {
+      const list = withDays(p.shoots);
+      const sums = shootSums(list, today);
+      // a client since you saved them, or since their first shoot was booked (never a date still to come)
+      const start = dayOf(p.saved && p.saved.addedAt) || p.since || p.asked || today;
+      return {
+        key: p.saved ? p.saved._baseId : `auto-${p.emails[0] || nameKey(p.name).replace(/\s+/g, '-') || phoneId(p.phones[0])}`,
+        saved: p.saved,
+        name: p.name,
+        roles: p.saved && clean(p.saved.role) ? [clean(p.saved.role), ...p.roles.filter((r) => r !== clean(p.saved.role))] : p.roles,
+        emails: p.emails,
+        phones: p.phones,
+        notes: (p.saved && p.saved.notes) || '',
+        shoots: list,
+        enquiries: [...p.enquiries].sort((a, b) => String(b.receivedAt || '').localeCompare(String(a.receivedAt || ''))),
+        addedAt: start > today ? today : start,
+        last: p.last,
+        lastShoot: sums.lastShoot,
+        nextShoot: sums.nextShoot,
+        stats: { ...sums.stats, enquiries: p.enquiries.length },
+      };
+    })
+    .sort((a, b) => b.stats.shoots - a.stats.shoots || Number(Boolean(b.saved)) - Number(Boolean(a.saved)) || String(b.last).localeCompare(String(a.last)) || a.name.localeCompare(b.name));
 }
 
 /* ---------- finding and ordering ---------- */
@@ -360,8 +470,6 @@ function mergePeople(savedDoc, savedDocs, shoots, enquiries) {
 export function filterClients(list, { show = 'all', category = '', q = '' } = {}) {
   const words = String(q || '').toLowerCase().split(/\s+/).filter(Boolean);
   return arr(list).filter((c) => {
-    if (show === 'company' && c.kind !== 'company') return false;
-    if (show === 'person' && c.kind !== 'person') return false;
     if (show === 'upcoming' && !c.nextShoot) return false;
     if (show === 'owed' && !(c.stats.owed > 0)) return false;
     if (category === 'none' && c.category) return false;
@@ -370,7 +478,6 @@ export function filterClients(list, { show = 'all', category = '', q = '' } = {}
   });
 }
 
-const contactOf = (c) => (c.kind === 'person' ? c.name : (c.people[0] && c.people[0].name) || '');
 const az = (a, b) => a.name.localeCompare(b.name, 'en-GB', { sensitivity: 'base' });
 
 export function sortClients(list, by = 'recent') {
@@ -380,15 +487,6 @@ export function sortClients(list, by = 'recent') {
       return l.sort(az);
     case 'za':
       return l.sort((a, b) => az(b, a));
-    case 'company':
-      return l.sort((a, b) => (a.kind === b.kind ? az(a, b) : a.kind === 'company' ? -1 : 1));
-    case 'contact':
-      return l.sort((a, b) => {
-        const x = contactOf(a);
-        const y = contactOf(b);
-        if (!x !== !y) return x ? -1 : 1;
-        return x.localeCompare(y, 'en-GB', { sensitivity: 'base' }) || az(a, b);
-      });
     case 'newest':
       return l.sort((a, b) => b.addedAt.localeCompare(a.addedAt) || az(a, b));
     case 'oldest':
@@ -412,5 +510,5 @@ export function sortClients(list, by = 'recent') {
 export const unattached = (bookings) =>
   arr(bookings).filter((b) => {
     const k = (b && b.client) || {};
-    return isBooked(b) && !keysFor(k).length && !k.enquiry && !nameKey(k.name);
+    return isBooked(b) && !orgKeyed(k.company) && !contactKeys(k).length && !k.enquiry && !nameKey(k.name);
   });

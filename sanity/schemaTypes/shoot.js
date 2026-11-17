@@ -195,7 +195,7 @@ export const shoot = defineType({
       description: 'Click “Generate”. This becomes yoursite.com/work/…',
       validation: (r) => r.required(),
     }),
-    defineField({ name: 'client', title: 'Location', type: 'string', group: 'details', fieldset: 'basics', placeholder: 'e.g. Hertford', description: 'Where the shoot took place, e.g. Manchester or the store’s branch.' }),
+    defineField({ name: 'client', title: 'Location', type: 'string', group: 'details', fieldset: 'basics', placeholder: 'e.g. Brighton & Hove', description: 'Where the shoot took place: the town, or the store’s branch.' }),
     defineField({
       name: 'category',
       title: 'Category',
@@ -237,7 +237,7 @@ export const shoot = defineType({
       fields: [
         defineField({ name: 'quote', title: 'Review', type: 'text', rows: 3 }),
         defineField({ name: 'name', title: 'Person’s name', type: 'string' }),
-        defineField({ name: 'role', title: 'Their role & company', type: 'string', description: 'e.g. Owner' }),
+        defineField({ name: 'role', title: 'Their role & company', type: 'string', description: 'e.g. Owner, Otellos' }),
         defineField({ name: 'photo', title: 'Their photo', type: 'image', options: { hotspot: true }, description: 'Optional. Otherwise their initials are shown.' }),
       ],
     }),

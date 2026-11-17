@@ -102,7 +102,7 @@ export function CategoryInput(props) {
           type="text"
           value={value || ''}
           readOnly={readOnly}
-          placeholder="Type your category, e.g. Automotive"
+          placeholder="Type your category, e.g. Food & Drink"
           onChange={(e) => onChange(e.target.value ? set(e.target.value) : unset())}
           onBlur={(e) => { if (elementProps && elementProps.onBlur) elementProps.onBlur(e); if (value && value !== norm(value)) write(value); }}
           className="lo-native"

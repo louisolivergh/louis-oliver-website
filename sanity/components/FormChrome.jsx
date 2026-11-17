@@ -105,7 +105,8 @@ const INFO = {
   equipment: { eyebrow: 'Equipment', text: 'Shows in the kit list on your About page, and can be ticked on any shoot or booking.' },
   processStep: { eyebrow: 'Process step', text: 'One step in your process. Steps appear in order of their position number.' },
   enquiry: { eyebrow: 'Enquiry', text: 'Sent from the contact form on your website.' },
-  client: { eyebrow: 'Client', text: 'A company or person you shoot for. Their shoots, people and enquiries are gathered on the Clients page, and it stays private.' },
+  client: { eyebrow: 'Client', text: 'One person you work with. Pick the company they work for or own, then press Save client. It stays private.' },
+  company: { eyebrow: 'Company', text: 'A business you shoot for. Its people, shoots and enquiries are on the Clients page. It stays private.' },
 };
 
 /* ---------- helpers ---------- */
@@ -162,6 +163,8 @@ function heroTitle(type, info, schemaType, v) {
       return [v.name, v.company].filter(Boolean).join(' · ') || 'Enquiry';
     case 'client':
       return v.name || 'New client';
+    case 'company':
+      return v.name || 'New company';
     default:
       return info.title || (schemaType && schemaType.title) || 'Untitled';
   }
@@ -205,7 +208,10 @@ function DocHero({ schemaType, value }) {
   const title = heroTitle(type, info, schemaType, v);
   const link = liveLink(type, v);
   const isEnquiry = type === 'enquiry';
-  const { filled, total } = isEnquiry ? { filled: 0, total: 0 } : countFields(schemaType, v);
+  // clients and companies only count once you press Save
+  const isRecord = type === 'client' || type === 'company';
+  const recordSaved = isRecord && Boolean(v.savedAt || v.kind);
+  const { filled, total } = isEnquiry || isRecord ? { filled: 0, total: 0 } : countFields(schemaType, v);
   const done = total > 0 && filled === total;
   const received = isEnquiry && v.receivedAt
     ? new Date(v.receivedAt).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })
@@ -237,6 +243,11 @@ function DocHero({ schemaType, value }) {
           <span className="lo-status-dot" aria-hidden="true" />
           {v.replied ? 'Replied' : 'Waiting for your reply'}
           {received ? <span className="lo-status-when">· {received}</span> : null}
+        </div>
+      ) : isRecord ? (
+        <div className="lo-hero-status" data-done={recordSaved ? '' : undefined} data-record="">
+          <span className="lo-status-dot" aria-hidden="true" />
+          {recordSaved ? 'Saved · on your Clients page' : `Not saved yet. Press Save ${type} when you’re done.`}
         </div>
       ) : total > 0 ? (
         <div className="lo-progress" data-done={done ? '' : undefined}>

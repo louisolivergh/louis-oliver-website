@@ -172,7 +172,7 @@ export const booking = defineType({
         str('email', 'Email', { placeholder: 'name@business.co.uk' }),
         str('phone', 'Phone', { placeholder: 'e.g. 07700 900123' }),
         str('budget', 'Their budget', { description: 'What they told you they can spend.', placeholder: 'e.g. £1,000 to £2,500' }),
-        str('service', 'What they asked for', { placeholder: 'e.g. Product photography' }),
+        str('service', 'What they asked for', { placeholder: 'e.g. Brand video with drone shots' }),
         txt('message', 'Their enquiry', 4, { hidden: true }),
         defineField({ name: 'enquiredAt', title: 'Enquired', type: 'datetime', hidden: true }),
       ],
@@ -290,7 +290,7 @@ export const booking = defineType({
     txt('brief', 'The brief', 5, {
       group: 'plan',
       description: 'What you’re shooting, the look they want, and what it’s for.',
-      placeholder: 'e.g. New autumn range for their website and Instagram. Bright, natural light, close-up product detail.',
+      placeholder: 'e.g. New menu launch for their website and Instagram. Warm, natural light, close-ups of the food and a short reel.',
     }),
     defineField({
       name: 'schedule',

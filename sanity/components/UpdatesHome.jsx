@@ -28,7 +28,7 @@ export function UpdatesHome(props) {
   const { ChildLink } = usePaneRouter();
   const open = props && props.childItemId ? String(props.childItemId).replace(/^__edit__/, '') : '';
   const { shoots, kit, enquiries, toReply, featured, groups, loading } = useUpdatesData();
-  const { clients, savedIds } = useClientsData();
+  const { companies: clientCompanies, loners, savedIds } = useClientsData();
   const has = (list) => list.some((d) => d._id === open);
   const active = ['shoot', 'equipment', 'clients', 'enquiries'].includes(open)
     ? open
@@ -41,8 +41,8 @@ export function UpdatesHome(props) {
           : has(enquiries)
             ? 'enquiries'
             : '';
-  const companies = clients.filter((c) => c.kind === 'company').length;
-  const people = clients.length - companies;
+  const companies = clientCompanies.length;
+  const people = clientCompanies.reduce((t, c) => t + c.people.length, 0) + loners.length;
   const latest = enquiries[0];
   const who = latest ? [latest.name, latest.company].filter(Boolean).join(' · ') || 'Enquiry' : '';
 
@@ -68,10 +68,10 @@ export function UpdatesHome(props) {
       id: 'clients',
       Icon: UsersIcon,
       title: 'Clients',
-      count: clients.length,
-      text: clients.length
-        ? [companies ? `${companies} ${companies === 1 ? 'company' : 'companies'}` : '', people ? `${people} ${people === 1 ? 'person' : 'people'}` : ''].filter(Boolean).join(' · ')
-        : 'Everyone who books a shoot',
+      count: companies,
+      text:
+        [companies ? `${companies} ${companies === 1 ? 'company' : 'companies'}` : '', people ? `${people} ${people === 1 ? 'person' : 'people'}` : ''].filter(Boolean).join(' · ') ||
+        'Every company you shoot for',
       cta: 'Open clients',
     },
     {

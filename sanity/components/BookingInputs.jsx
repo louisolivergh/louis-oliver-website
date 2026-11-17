@@ -415,7 +415,7 @@ const LOCATIONS = {
   head: (it, i) => it.name || (LOCATION_TYPES.find((t) => t.value === it.kind) || { title: `Location ${i + 1}` }).title,
   total: (it) => (typeof it.hireFee === 'number' && it.hireFee ? <Amount value={it.hireFee} clientPays={it.clientPays} paid={it.paid} /> : null),
   fields: [
-    { name: 'name', kind: 'text', label: 'Place', span: 7, placeholder: 'e.g. Hertford Castle grounds' },
+    { name: 'name', kind: 'text', label: 'Place', span: 7, placeholder: 'e.g. Brighton seafront' },
     { name: 'kind', kind: 'select', label: 'Type', options: LOCATION_TYPES, span: 5 },
     { name: 'address', kind: 'area', label: 'Address', span: 12, placeholder: 'Street, town and postcode' },
     { name: 'contact', kind: 'text', label: 'Contact there', span: 6, placeholder: 'e.g. Tom, the venue manager' },
@@ -535,7 +535,7 @@ const COSTS = {
   total: (it) => <Amount value={lineTotal(it)} clientPays={it.clientPays} paid={it.paid} />,
   fields: [
     { name: 'category', kind: 'select', label: 'Type', options: COST_CATEGORIES, span: 4 },
-    { name: 'label', kind: 'text', label: 'What / who', span: 8, placeholder: 'e.g. Sony FX3 hire from the rental shop' },
+    { name: 'label', kind: 'text', label: 'What / who', span: 8, placeholder: 'e.g. Extra lights hired for the day' },
     { name: 'qty', kind: 'number', label: 'Quantity', span: 3, placeholder: '1' },
     { name: 'unit', kind: 'select', label: 'Per', options: UNIT_OPTIONS, emptyLabel: 'each', span: 3 },
     { name: 'rate', kind: 'money', label: 'Cost', span: 3, placeholder: '0' },

@@ -7,7 +7,7 @@ import { SINGLETONS, schemaTypes } from './sanity/schemaTypes';
 import { theme } from './sanity/theme';
 import { TOOL_TYPES, shootsStructure, updatesStructure, websiteStructure } from './sanity/structure';
 import { clientFromEnquiry } from './sanity/bookingData';
-import { ClientSavedAction, SavedAction } from './sanity/components/BookingActions';
+import { ClientSaveAction, CompanySaveAction, SavedAction } from './sanity/components/BookingActions';
 import { Overview } from './sanity/components/Overview';
 import { ShootPreview } from './sanity/components/ShootPreview';
 import { StudioBrand, StudioLogo } from './sanity/components/StudioLogo';
@@ -23,7 +23,7 @@ const defaultDocumentNode = (S, { schemaType }) => {
   return S.document().views([S.view.form()]);
 };
 
-/* "Peak Gym" + "Brand video" → "Peak Gym brand video"; "Brewhouse Co" + "Food & drink" → "Brewhouse Co food & drink shoot" */
+/* "Otellos" + "Brand video" → "Otellos brand video"; "Ink Heaven" + "Food & drink" → "Ink Heaven food & drink shoot" */
 const shootTitle = (who, service) => {
   const what = typeof service === 'string' ? service.trim() : '';
   if (!what) return who;
@@ -79,6 +79,18 @@ const bookingTemplate = {
   },
 };
 
+/* A new client, opened from a company on the Clients page ("Add a person"): already in that company */
+const clientInCompanyTemplate = {
+  id: 'client-in-company',
+  title: 'Client at a company',
+  schemaType: 'client',
+  parameters: [{ name: 'companyId', type: 'string' }],
+  value: (params) => {
+    const id = params && typeof params.companyId === 'string' ? params.companyId.replace(/^drafts\./, '') : '';
+    return id ? { company: { _type: 'reference', _ref: id, _weak: true } } : {};
+  },
+};
+
 /* Top bar: Dashboard · Updates · Shoots · Website setup */
 const dashboardTool = { name: 'overview', title: 'Dashboard', icon: OverviewIcon, component: Overview };
 
@@ -108,7 +120,7 @@ export default defineConfig({
   theme,
   schema: {
     types: schemaTypes,
-    templates: (templates) => [...templates.filter(({ schemaType }) => !SINGLETONS.includes(schemaType) && schemaType !== 'enquiry'), bookingTemplate],
+    templates: (templates) => [...templates.filter(({ schemaType }) => !SINGLETONS.includes(schemaType) && schemaType !== 'enquiry'), bookingTemplate, clientInCompanyTemplate],
   },
   // the premium editing screens: a header card on every page, plus field hooks for the styles
   form: { components: { input: LoInput, field: LoField } },
@@ -117,12 +129,14 @@ export default defineConfig({
       if (SINGLETONS.includes(schemaType)) return prev.filter(({ action }) => action && ['publish', 'discardChanges', 'restore'].includes(action));
       // booked shoots stay private: nothing to publish, they save as you type
       if (schemaType === 'booking') return [SavedAction, ...prev.filter(({ action }) => action && ['duplicate', 'delete', 'restore'].includes(action))];
-      // clients stay private too
-      if (schemaType === 'client') return [ClientSavedAction, ...prev.filter(({ action }) => action && ['delete', 'restore'].includes(action))];
+      // clients and companies stay private too, and only count once you press Save
+      if (schemaType === 'client') return [ClientSaveAction, ...prev.filter(({ action }) => action && ['delete', 'restore'].includes(action))];
+      if (schemaType === 'company') return [CompanySaveAction, ...prev.filter(({ action }) => action && ['delete', 'restore'].includes(action))];
       return prev;
     },
-    // the calendar's own "book a shoot" template doesn't need its own entry in the + menu
-    newDocumentOptions: (prev) => prev.filter((item) => item.templateId !== 'booking-new'),
+    // the calendar's own "book a shoot" template doesn't need its own entry in the + menu, and a company
+    // is always made along with one of its people (from New client), so it has none either
+    newDocumentOptions: (prev) => prev.filter((item) => !['booking-new', 'client-in-company', 'company'].includes(item.templateId)),
   },
   plugins: [
     structureTool({ name: 'updates', title: 'Updates', icon: CameraIcon, structure: updatesStructure, defaultDocumentNode }),

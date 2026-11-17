@@ -14,7 +14,7 @@ export const equipment = defineType({
     { name: 'place', title: 'Where it appears', description: 'Your About page groups kit by category.' },
   ],
   fields: [
-    defineField({ name: 'name', title: 'Item name', type: 'string', fieldset: 'item', placeholder: 'e.g. Sony FX6', validation: (r) => r.required() }),
+    defineField({ name: 'name', title: 'Item name', type: 'string', fieldset: 'item', placeholder: 'e.g. Sony FX3', validation: (r) => r.required() }),
     defineField({ name: 'spec', title: 'Spec', type: 'string', fieldset: 'item', placeholder: 'e.g. 4K, full frame' }),
     defineField({
       name: 'category',

@@ -14,7 +14,7 @@ import { ClientsPane } from './components/ClientsPane';
 
 /* Which kinds of document each area looks after, so a link to one always opens in the right area */
 export const TOOL_TYPES = {
-  updates: ['shoot', 'equipment', 'client', 'enquiry', 'videoItem'],
+  updates: ['shoot', 'equipment', 'company', 'client', 'enquiry', 'videoItem'],
   shoots: ['booking'],
   website: [...SINGLETONS, 'processStep'],
 };
@@ -46,7 +46,7 @@ export const updatesStructure = (S, context) =>
       if (id === 'equipment') return S.component(KitPane).id('equipment').title('Equipment list');
       if (id === 'clients') return S.component(ClientsPane).id('clients').title('Clients');
       if (id === 'enquiries') return S.component(InboxPane).id('enquiries').title('Enquiries');
-      // a portfolio shoot, piece of kit, client or enquiry (opened from one of the pages above, or from the Dashboard)
+      // a portfolio shoot, piece of kit, company, client or enquiry (opened from one of the pages above, or from the Dashboard)
       const docId = String(id).replace(/^__edit__/, '');
       const p = (options && options.params) || {};
       const types = TOOL_TYPES.updates;
