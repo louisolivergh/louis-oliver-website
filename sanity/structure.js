@@ -3,7 +3,8 @@ import { SINGLETONS } from './schemaTypes';
 import { SINGLETON_TITLES } from './sitePages';
 import { SiteMap } from './components/SiteMap';
 import { ShootsCalendar } from './components/ShootsCalendar';
-import { CameraIcon, CheckIcon, InboxIcon, KitIcon, MailIcon } from './components/DashIcons';
+import { UpdatesHome } from './components/UpdatesHome';
+import { CheckIcon, InboxIcon, MailIcon } from './components/DashIcons';
 
 /* The dashboard's areas (tabs in the top bar):
    - Updates: the things you change often: your portfolio, equipment, enquiries.
@@ -15,12 +16,6 @@ export const TOOL_TYPES = {
   updates: ['shoot', 'equipment', 'enquiry', 'videoItem'],
   shoots: ['booking'],
   website: [...SINGLETONS, 'processStep'],
-};
-
-/* a divider with a small blue label beside its line (styled in app/studio/studio.css) */
-const labelledDivider = (S, title) => {
-  const d = S.divider();
-  return typeof d.title === 'function' ? d.title(title) : d;
 };
 
 /* Lists show text only: no icon placeholders. Shoots still show their thumbnail when they have one. */
@@ -42,24 +37,27 @@ const enquiryList = (S, id, title, filter, icon) =>
         .showIcons(false)
     );
 
-/* ---------- Updates ---------- */
-export const updatesStructure = (S) =>
-  textList(S, 'Updates').items([
-    S.documentTypeListItem('shoot').id('shoot').title('Portfolio').icon(CameraIcon).child(typeList(S, 'shoot', 'Portfolio')),
-    S.documentTypeListItem('equipment').id('equipment').title('Equipment list').icon(KitIcon).child(typeList(S, 'equipment', 'Equipment list')),
-    labelledDivider(S, 'Inbox'),
-    S.listItem()
-      .id('enquiries')
-      .title('Enquiries')
-      .icon(InboxIcon)
-      .child(
-        textList(S, 'Enquiries').items([
-          enquiryList(S, 'toReply', 'To reply', '_type == "enquiry" && replied != true', InboxIcon),
-          enquiryList(S, 'replied', 'Replied', '_type == "enquiry" && replied == true', CheckIcon),
-          enquiryList(S, 'all', 'All enquiries', '_type == "enquiry"', MailIcon),
-        ])
-      ),
+/* ---------- Updates: its own page (portfolio, equipment, enquiries); each list opens beside it ---------- */
+const enquiriesList = (S) =>
+  textList(S, 'Enquiries').items([
+    enquiryList(S, 'toReply', 'To reply', '_type == "enquiry" && replied != true', InboxIcon),
+    enquiryList(S, 'replied', 'Replied', '_type == "enquiry" && replied == true', CheckIcon),
+    enquiryList(S, 'all', 'All enquiries', '_type == "enquiry"', MailIcon),
   ]);
+
+export const updatesStructure = (S) =>
+  S.component(UpdatesHome)
+    .id('updates')
+    .title('Updates')
+    .child((id, options) => {
+      if (id === 'shoot') return typeList(S, 'shoot', 'Portfolio');
+      if (id === 'equipment') return typeList(S, 'equipment', 'Equipment list');
+      if (id === 'enquiries') return enquiriesList(S);
+      // a portfolio shoot, piece of kit or enquiry opened from a link elsewhere (e.g. the Dashboard)
+      const type = (options && options.params && options.params.type) || 'shoot';
+      return S.document().schemaType(type).documentId(String(id).replace(/^__edit__/, ''));
+    })
+    .canHandleIntent((intent, params) => (intent === 'edit' || intent === 'create') && Boolean(params && TOOL_TYPES.updates.includes(params.type)));
 
 /* ---------- Shoots: the calendar; a shoot opens beside it ---------- */
 export const shootsStructure = (S) =>

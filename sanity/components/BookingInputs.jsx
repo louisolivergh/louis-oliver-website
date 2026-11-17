@@ -8,7 +8,7 @@
  * Everything saves as you type, like the rest of the dashboard.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useToast } from '@sanity/ui';
 import { insert, set, setIfMissing, unset, useClient, useFormValue } from 'sanity';
 import { IntentLink } from 'sanity/router';
@@ -30,7 +30,6 @@ import {
   percent,
   personCost,
   RATE_UNITS,
-  relDay,
   REMINDER_OPTIONS,
   reminderDays,
   reminderHour,
@@ -43,6 +42,8 @@ import {
   UNITS,
 } from '../bookingData';
 import { MailIcon, PhoneIcon } from './DashIcons';
+import { tickEnquiry } from './shootData';
+import { ShootMode } from './shootMode';
 
 const makeKey = () => Math.random().toString(36).slice(2, 12);
 
@@ -58,6 +59,8 @@ const IconX = () => <Svg><path d="M4.5 4.5l7 7M11.5 4.5l-7 7" /></Svg>;
 const IconPlus = () => <Svg><path d="M8 3.2v9.6M3.2 8h9.6" /></Svg>;
 const IconTick = () => <Svg size={11}><path d="M3.4 8.4l3.1 3L12.6 4.8" /></Svg>;
 const IconOut = () => <Svg size={12}><path d="M5.5 10.5l5-5M6.5 5.5h4v4" /></Svg>;
+const IconUser = () => <Svg size={13}><circle cx="8" cy="5.6" r="2.6" /><path d="M3 13.6c.7-2.6 2.6-3.9 5-3.9s4.3 1.3 5 3.9" /></Svg>;
+const IconTag = () => <Svg size={13}><path d="M2.5 8.6V3.2c0-.4.3-.7.7-.7h5.4l5 5a1 1 0 0 1 0 1.4l-4.4 4.4a1 1 0 0 1-1.4 0z" /><circle cx="5.6" cy="5.6" r="1" /></Svg>;
 const IconPin = () => <Svg size={13}><path d="M8 14.5s-4.5-4.2-4.5-7.6a4.5 4.5 0 0 1 9 0c0 3.4-4.5 7.6-4.5 7.6z" /><circle cx="8" cy="6.9" r="1.6" /></Svg>;
 
 /* ---------- inputs ---------- */
@@ -215,13 +218,13 @@ function ListInput({ spec, value, onChange, readOnly, ctx }) {
     return () => clearTimeout(t);
   }, [confirm]);
 
-  const add = (preset) => {
+  const add = (preset, opts = {}) => {
     if (readOnly) return;
-    const it = { _type: spec.type, _key: makeKey(), ...(spec.defaults ? spec.defaults(items, ctx || {}) : {}), ...(preset || {}) };
-    if (!items.length) onChange([setIfMissing([]), insert([it], 'after', [-1])]);
-    else if (spec.newestFirst) onChange(insert([it], 'before', [0]));
-    else onChange(insert([it], 'after', [-1]));
-    setFresh(it._key);
+    const list = (Array.isArray(preset) ? preset : [preset]).map((p) => ({ _type: spec.type, _key: makeKey(), ...(spec.defaults ? spec.defaults(items, ctx || {}) : {}), ...(p || {}) }));
+    if (!items.length) onChange([setIfMissing([]), insert(list, 'after', [-1])]);
+    else if (spec.newestFirst) onChange(insert(list, 'before', [0]));
+    else onChange(insert(list, 'after', [-1]));
+    setFresh(opts.quiet ? null : list[list.length - 1]._key);
   };
   const setField = (key, name, v) => {
     if (readOnly) return;
@@ -235,7 +238,11 @@ function ListInput({ spec, value, onChange, readOnly, ctx }) {
       return;
     }
     setConfirm(null);
-    // slide it away first, then remove it
+    removeNow(key);
+  };
+  // slide it away first, then remove it
+  const removeNow = (key) => {
+    if (readOnly || leaving[key] !== undefined) return;
     const el = nodes.current[key];
     const calm = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     setLeaving((m) => ({ ...m, [key]: el ? el.getBoundingClientRect().height : 0 }));
@@ -283,14 +290,15 @@ function ListInput({ spec, value, onChange, readOnly, ctx }) {
             const typeable = (f) => f.kind !== 'check';
             const empty = fields.findIndex((f) => typeable(f) && (it[f.name] === undefined || it[f.name] === ''));
             const focusAt = empty >= 0 ? empty : fields.findIndex(typeable);
+            const asking = confirm === it._key;
             const acts = (
-              <span className="lo-li-acts">
+              <span className="lo-li-acts" data-confirming={asking ? '' : undefined}>
                 {items.length > 1 && !spec.noMove && !readOnly ? (
                   <>
-                    <button type="button" className="lo-li-act" onClick={() => move(i, -1)} disabled={i === 0} aria-label="Move up" title="Move up">
+                    <button type="button" className="lo-li-act" data-dir="up" onClick={() => move(i, -1)} disabled={i === 0 || asking} aria-label="Move up" title="Move up">
                       <IconUp />
                     </button>
-                    <button type="button" className="lo-li-act" onClick={() => move(i, 1)} disabled={i === items.length - 1} aria-label="Move down" title="Move down">
+                    <button type="button" className="lo-li-act" data-dir="down" onClick={() => move(i, 1)} disabled={i === items.length - 1 || asking} aria-label="Move down" title="Move down">
                       <IconDown />
                     </button>
                   </>
@@ -299,13 +307,15 @@ function ListInput({ spec, value, onChange, readOnly, ctx }) {
                   <button
                     type="button"
                     className="lo-li-act lo-li-del"
-                    data-confirm={confirm === it._key ? '' : undefined}
+                    data-confirm={asking ? '' : undefined}
                     onClick={() => remove(it._key)}
-                    aria-label={confirm === it._key ? 'Click again to remove' : 'Remove'}
-                    title={confirm === it._key ? 'Click again to remove' : 'Remove'}
+                    aria-label={asking ? 'Click again to remove' : 'Remove'}
+                    title={asking ? 'Click again to remove' : 'Remove'}
                   >
                     <IconX />
-                    {confirm === it._key ? <span>Remove?</span> : null}
+                    <span className="lo-li-del-say" aria-hidden={asking ? undefined : 'true'}>
+                      Remove?
+                    </span>
                   </button>
                 ) : null}
               </span>
@@ -369,6 +379,8 @@ function ListInput({ spec, value, onChange, readOnly, ctx }) {
           ) : null}
         </div>
       ) : null}
+
+      {spec.picker && !readOnly ? spec.picker(items, ctx || {}, { add, removeNow, onChange }) : null}
 
       {spec.footer ? <div className="lo-li-foot">{spec.footer(items, ctx || {})}</div> : null}
     </div>
@@ -480,6 +492,7 @@ const QUOTE = {
     { name: 'rate', kind: 'money', label: 'Price each', span: 4, placeholder: '0' },
   ],
   total: (it) => <Amount value={lineTotal(it)} />,
+  picker: (items, ctx, api) => <RechargePicker items={items} doc={ctx.doc || {}} b={ctx} api={api} />,
   footer: (items, b) => (
     <>
       <span>Total price</span>
@@ -686,7 +699,6 @@ const useBudget = () => computeBudget(useFormValue([]));
 
 export const LocationsInput = (props) => <ListInput {...props} spec={LOCATIONS} />;
 export const PeopleInput = (props) => <ListInput {...props} spec={PEOPLE} />;
-export const ScheduleInput = (props) => <ListInput {...props} spec={SCHEDULE} />;
 export const ShotListInput = (props) => <ListInput {...props} spec={SHOTS} />;
 export const NotesInput = (props) => <ListInput {...props} spec={NOTES} />;
 export const LinksInput = (props) => <ListInput {...props} spec={LINKS} />;
@@ -695,8 +707,122 @@ export function MoreDaysInput(props) {
   return <ListInput {...props} spec={MORE_DAYS} ctx={doc} />;
 }
 export function QuoteInput(props) {
-  const b = useBudget();
-  return <ListInput {...props} spec={QUOTE} ctx={b} />;
+  const doc = useFormValue([]) || {};
+  const b = computeBudget(doc);
+  return <ListInput {...props} spec={QUOTE} ctx={{ ...b, doc }} />;
+}
+/** on a shoot over more than one day, each time says which day it's for (it shows on that day in the calendar) */
+export function ScheduleInput(props) {
+  const doc = useFormValue([]) || {};
+  const days = shootDays(doc);
+  const key = days.join(',');
+  const spec = useMemo(() => {
+    if (days.length < 2) return SCHEDULE;
+    const dayOf = (s) => parseInt(s && s.dayNo, 10) || 1;
+    return {
+      ...SCHEDULE,
+      defaults: (items) => {
+        const last = items[items.length - 1];
+        return last && last.dayNo ? { dayNo: last.dayNo } : {};
+      },
+      sortBy: (a, b) => dayOf(a) - dayOf(b) || String(a.time || '99').localeCompare(String(b.time || '99')),
+      sortLabel: 'Sort by day and time',
+      fields: [
+        { name: 'dayNo', kind: 'select', label: 'Day', options: days.slice(1).map((d, i) => ({ value: String(i + 2), title: shortDay(d) })), emptyLabel: shortDay(days[0]), span: 3 },
+        { name: 'time', kind: 'time', label: 'Time', span: 3 },
+        { name: 'text', kind: 'text', label: 'What’s happening', span: 6, placeholder: 'e.g. Arrive & set up' },
+      ],
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  return <ListInput {...props} spec={spec} />;
+}
+
+/* ---------- "From this shoot": put what you're paying for on the client's bill ---------- */
+
+const PICK_SOURCES = {
+  locations: { title: 'Location', Icon: IconPin },
+  people: { title: 'Cast & crew', Icon: IconUser },
+  costs: { title: 'Other cost', Icon: IconTag },
+};
+function rechargeLabel(doc, it) {
+  if (it.source === 'locations') return `Location hire: ${it.label}`;
+  if (it.source === 'people') {
+    const p = (Array.isArray(doc.people) ? doc.people : []).find((x) => x && x._key === it.key) || {};
+    const role = roleOf(p.role);
+    if (p.name) return role ? `${role.title}: ${p.name}` : p.name;
+    return role ? role.title : 'Cast & crew';
+  }
+  return it.label;
+}
+function RechargePicker({ items, doc, b, api }) {
+  const picks = (b.items || []).filter((it) => !it.clientPays && it.amount > 0);
+  const lineFor = (p) => items.find((l) => l.from === `${p.source}:${p.key}`);
+  if (!picks.length) {
+    return (
+      <div className="lo-rc" data-empty="">
+        <span className="lo-rc-say">Add a hire fee under Locations or a rate under People, and you can put it on the client’s bill from here in one tap.</span>
+      </div>
+    );
+  }
+  const toLine = (p) => ({ label: rechargeLabel(doc, p), qty: 1, rate: p.amount, from: `${p.source}:${p.key}`, fromAmount: p.amount });
+  const waiting = picks.filter((p) => !lineFor(p));
+  const toggle = (p) => {
+    const line = lineFor(p);
+    if (!line) return api.add(toLine(p), { quiet: true });
+    if (typeof line.fromAmount === 'number' && line.fromAmount !== p.amount) {
+      // the cost changed since you added it: move the price by the same amount, so any mark-up stays
+      const qty = typeof line.qty === 'number' && line.qty > 0 ? line.qty : 1;
+      const rate = Math.round(((lineTotal(line) + (p.amount - line.fromAmount)) / qty) * 100) / 100;
+      return api.onChange([set(rate, [{ _key: line._key }, 'rate']), set(p.amount, [{ _key: line._key }, 'fromAmount'])]);
+    }
+    return api.removeNow(line._key);
+  };
+  return (
+    <div className="lo-rc">
+      <div className="lo-rc-head">
+        <span className="lo-rc-title">From this shoot</span>
+        <span className="lo-rc-say">What you’re paying for. Tap one to put it on the client’s bill, tap again to take it off.</span>
+        {waiting.length > 1 ? (
+          <button type="button" className="lo-rc-all" onClick={() => api.add(waiting.map(toLine), { quiet: true })}>
+            <IconPlus /> Add all
+          </button>
+        ) : null}
+      </div>
+      <div className="lo-rc-picks">
+        {picks.map((p, i) => {
+          const line = lineFor(p);
+          const stale = Boolean(line) && typeof line.fromAmount === 'number' && line.fromAmount !== p.amount;
+          const src = PICK_SOURCES[p.source] || PICK_SOURCES.costs;
+          return (
+            <button
+              key={`${p.source}:${p.key}`}
+              type="button"
+              className="lo-rc-pick"
+              data-on={line ? '' : undefined}
+              data-stale={stale ? '' : undefined}
+              aria-pressed={Boolean(line)}
+              onClick={() => toggle(p)}
+              style={{ '--i': i }}
+              title={stale ? `Now ${money(p.amount)}: tap to update their bill` : line ? 'On their bill. Tap to take it off' : 'Add it to their bill'}
+            >
+              <span className="lo-rc-ic">
+                <src.Icon />
+              </span>
+              <span className="lo-rc-text">
+                <b>{p.label}</b>
+                <small>{stale ? `Now ${money(p.amount)}, tap to update` : line ? 'On their bill' : src.title}</small>
+              </span>
+              <span className="lo-rc-amt">{money(p.amount)}</span>
+              <span className="lo-rc-state" aria-hidden="true">
+                {line && !stale ? <IconTick /> : <IconPlus />}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 export function CostsInput(props) {
   const b = useBudget();
@@ -712,7 +838,8 @@ export function PaymentsInput(props) {
 const TONES = ['#0b1220', '#2b3d66', '#46608f', '#6f87b8', '#9fb2da', '#c9d6f0', '#56607a', '#8e9ab3', '#b9c2d4', '#dfe5f1'];
 
 export function BudgetSummaryInput() {
-  const b = useBudget();
+  const doc = useFormValue([]) || {};
+  const b = computeBudget(doc);
   const scale = Math.max(b.income, b.costs, 1);
   const segs = b.byCategory.map((c, i) => ({ ...c, color: TONES[i % TONES.length], w: (c.amount / scale) * 100 }));
   const profitW = b.profit > 0 ? (b.profit / scale) * 100 : 0;
@@ -731,6 +858,8 @@ export function BudgetSummaryInput() {
   }
   if (b.toPayOut) facts.push({ tone: '', text: `${money(b.toPayOut)} of your costs still to pay out` });
   if (b.covered) facts.push({ tone: '', text: `${money(b.covered)} paid by the client directly, so not in your costs` });
+  const passedOn = (Array.isArray(doc.quote) ? doc.quote : []).filter((l) => l && l.from).reduce((a, l) => a + lineTotal(l), 0);
+  if (passedOn) facts.push({ tone: '', text: `${money(passedOn)} of the price is costs you’re passing on` });
   if (b.days > 1 && b.income) facts.push({ tone: '', text: `${money(b.profit / b.days)} profit per shoot day, over ${b.days} days` });
 
   return (
@@ -894,6 +1023,7 @@ export function ClientInput(props) {
   const v = value && typeof value === 'object' ? value : {};
   const ref = v.enquiry && v.enquiry._ref;
   const docId = String(useFormValue(['_id']) || '').replace(/^drafts\./, '');
+  const client = useClient({ apiVersion: '2024-10-01' });
   const [picking, setPicking] = useState(false);
   const [editing, setEditing] = useState(false);
 
@@ -913,6 +1043,8 @@ export function ClientInput(props) {
     onChange(patches);
     setPicking(false);
     setEditing(false);
+    // the enquiry now has a shoot, so it's ticked off
+    tickEnquiry(client, next.enquiry._ref);
   };
 
   const when = v.enquiredAt ? new Date(v.enquiredAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
@@ -1130,16 +1262,28 @@ export function SaveShootInput(props) {
   const b = computeBudget(doc);
   const days = shootDays(doc);
   const locs = (Array.isArray(doc.locations) ? doc.locations : []).filter((l) => l && (l.name || l.address));
+  const kit = (Array.isArray(doc.kit) ? doc.kit : []).filter((k) => k && k._ref);
+  const notes = (Array.isArray(doc.notes) ? doc.notes : []).filter((n) => n && typeof n.text === 'string' && n.text.trim());
+  const message = Boolean(doc.client && typeof doc.client.message === 'string' && doc.client.message.trim());
   const checks = [
     { label: 'Date', ok: days.length > 0, text: days.length ? `${shortDay(days[0])}${days.length > 1 ? ` + ${days.length - 1} more` : ''}` : 'Not set yet' },
     { label: 'Client', ok: Boolean(clientLine(doc)), text: clientLine(doc) || 'Not added' },
     { label: 'Location', ok: locs.length > 0, text: locs.length ? locs[0].name || locs[0].address : 'Not added' },
     { label: 'Price', ok: b.income > 0, text: b.income > 0 ? money(b.income) : 'Not added' },
+    { label: 'Equipment', ok: kit.length > 0, text: kit.length ? `${kit.length} item${kit.length === 1 ? '' : 's'} to pack` : 'Nothing picked yet' },
+    {
+      label: 'Client notes',
+      ok: notes.length > 0 || Boolean(message),
+      text: notes.length ? `${notes.length} note${notes.length === 1 ? '' : 's'}${message ? ' + their message' : ''}` : message ? 'Their enquiry message' : 'None yet',
+    },
   ];
 
+  const client = useClient({ apiVersion: '2024-10-01' });
+  const mode = useContext(ShootMode);
   const save = () => {
     if (readOnly) return;
     onChange(set(new Date().toISOString()));
+    if (doc.client && doc.client.enquiry && doc.client.enquiry._ref) tickEnquiry(client, doc.client.enquiry._ref);
     toast.push({ status: 'success', title: 'Shoot saved', description: 'It’s booked in your calendar.' });
   };
 
@@ -1158,9 +1302,16 @@ export function SaveShootInput(props) {
           </span>
         </span>
         {!readOnly ? (
-          <button type="button" className="lo-mini-btn" data-quiet="" onClick={() => onChange(unset())}>
-            Undo
-          </button>
+          <span className="lo-save-acts">
+            <button type="button" className="lo-mini-btn" data-quiet="" onClick={() => onChange(unset())}>
+              Undo
+            </button>
+            {mode && mode.done ? (
+              <button type="button" className="lo-mini-btn" data-primary="" onClick={mode.done}>
+                Done editing
+              </button>
+            ) : null}
+          </span>
         ) : null}
       </div>
     );

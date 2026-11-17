@@ -44,10 +44,22 @@ const opts = (list) => list.map(({ value, title }) => ({ value, title }));
 const pick = (name, title, list, extra = {}) => str(name, title, { options: { list: opts(list) }, ...extra });
 const item = (name, title, fields, preview) => defineArrayMember({ type: 'object', name, title, fields, preview });
 
-const quoteLine = item('quoteLine', 'Line', [str('label', 'What for'), nr('qty', 'Quantity'), nr('rate', 'Price each (£)')], {
-  select: { title: 'label', qty: 'qty', rate: 'rate' },
-  prepare: ({ title, qty, rate }) => ({ title: title || 'Line', subtitle: rate ? `${qty || 1} × £${rate}` : '' }),
-});
+const quoteLine = item(
+  'quoteLine',
+  'Line',
+  [
+    str('label', 'What for'),
+    nr('qty', 'Quantity'),
+    nr('rate', 'Price each (£)'),
+    // added from "From this shoot": which location, person or cost it is, and what it cost then
+    defineField({ name: 'from', title: 'Added from', type: 'string', hidden: true }),
+    defineField({ name: 'fromAmount', title: 'Cost when added', type: 'number', hidden: true }),
+  ],
+  {
+    select: { title: 'label', qty: 'qty', rate: 'rate' },
+    prepare: ({ title, qty, rate }) => ({ title: title || 'Line', subtitle: rate ? `${qty || 1} × £${rate}` : '' }),
+  }
+);
 
 const costLine = item(
   'costLine',
@@ -107,7 +119,7 @@ const payment = item('payment', 'Payment', [defineField({ name: 'date', title: '
   prepare: ({ title, amount, date }) => ({ title: title || 'Payment', subtitle: [amount ? `£${amount}` : '', date].filter(Boolean).join(' · ') }),
 });
 
-const slot = item('slot', 'Time slot', [str('time', 'Time'), str('text', 'What’s happening')], { select: { title: 'text', subtitle: 'time' } });
+const slot = item('slot', 'Time slot', [str('dayNo', 'Day'), str('time', 'Time'), str('text', 'What’s happening')], { select: { title: 'text', subtitle: 'time' } });
 const shot = item('shot', 'Shot', [str('text', 'Shot'), yes('done', 'Got it')], { select: { title: 'text' } });
 const note = item('note', 'Note', [defineField({ name: 'date', title: 'Date', type: 'date' }), txt('text', 'Note', 3)], { select: { title: 'text', subtitle: 'date' } });
 const shootDay = item('shootDay', 'Shoot day', [defineField({ name: 'date', title: 'Day', type: 'date' }), str('startTime', 'Start'), str('endTime', 'Finish'), str('note', 'Note')], {
@@ -285,7 +297,7 @@ export const booking = defineType({
       title: 'Schedule for the day',
       type: 'array',
       group: 'plan',
-      description: 'Your call sheet: when everyone arrives and what happens when.',
+      description: 'Your call sheet: when everyone arrives and what happens when. It shows on the calendar too.',
       of: [slot],
       components: { input: ScheduleInput },
     }),

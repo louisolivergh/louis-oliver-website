@@ -47,7 +47,7 @@ function daysLabel(days) {
   return `${fmtDay(days[0], long)} + ${days.length - 1} more day${days.length > 2 ? 's' : ''}`;
 }
 
-export function BookingHero({ value }) {
+export function BookingHero({ value, mode = 'create', onEdit, onDone }) {
   const v = value && typeof value === 'object' ? value : {};
   const b = computeBudget(v);
   const st = statusOf(v.status);
@@ -66,8 +66,20 @@ export function BookingHero({ value }) {
           <span className="lo-eyebrow-dot" aria-hidden="true" />
           {booked ? 'Booked shoot' : 'Creating'}
         </span>
-        <span className="lo-bk-status" data-status={st.value}>
-          {st.title}
+        <span className="lo-bk-top-right">
+          <span className="lo-bk-status" data-status={st.value}>
+            {st.title}
+          </span>
+          {mode === 'summary' && onEdit ? (
+            <button type="button" className="lo-bk-edit" onClick={onEdit}>
+              Edit shoot
+            </button>
+          ) : null}
+          {mode === 'edit' && onDone ? (
+            <button type="button" className="lo-bk-edit" data-done="" onClick={onDone}>
+              Done
+            </button>
+          ) : null}
         </span>
       </div>
       <h1 className="lo-hero-title">{bookingTitle(v)}</h1>
@@ -112,9 +124,11 @@ export function BookingHero({ value }) {
 
       <p className="lo-hero-tip">
         <span className="lo-tip-dot" aria-hidden="true" />
-        {booked
-          ? 'Private. Only you can see this, and everything saves as you type.'
-          : 'Fill in what you know, then press Save shoot at the bottom to book it in. Only you can see this.'}
+        {mode === 'summary'
+          ? 'Private. Only you can see this. Press Edit shoot to change anything.'
+          : booked
+            ? 'Editing. Everything saves as you type. Press Done to go back to the summary.'
+            : 'Fill in what you know, then press Save shoot at the bottom to book it in. Only you can see this.'}
       </p>
     </header>
   );

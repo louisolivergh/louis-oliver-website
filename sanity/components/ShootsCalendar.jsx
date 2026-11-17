@@ -6,12 +6,13 @@
  *  - List → every shoot in a table, with the money
  *  - a shoot open beside it (or a small screen) → a slim month and the agenda
  * Click a day to book a shoot on it. Drag a shoot to another day to move it.
+ * Each shoot shows that day's schedule underneath, and a shoot's delivery date shows as "Due" (drag it to change it).
  * Today has a dotted ring; the day(s) of the shoot you have open are filled in.
  * Shoots still being created (not saved with "Save shoot" yet) show faded, and aren't counted in the money.
  * Styles: app/studio/studio.css (".lo-cal…").
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'sanity/router';
 import { usePaneRouter } from 'sanity/structure';
 import {
@@ -28,6 +29,7 @@ import {
   parseYmd,
   percent,
   relDay,
+  scheduleFor,
   STATUSES,
   statusOf,
   tidyRange,
@@ -36,7 +38,7 @@ import {
   ymd,
 } from '../bookingData';
 import { bookShoot, declineEnquiry, unbookedOf, upcomingOf, useShootData, withMoney } from './shootData';
-import { CalendarIcon, ChevronLeft, ChevronRight, InboxIcon, ListIcon, PlusIcon } from './DashIcons';
+import { CalendarIcon, ChevronLeft, ChevronRight, InboxIcon, ListIcon, PlusIcon, TruckIcon } from './DashIcons';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const DND = 'application/x-lo-shoot';
@@ -62,6 +64,7 @@ const placeOf = (b) => {
 /* you drag one day of a shoot, that day is the one that moves */
 const dragProps = (b, day) => ({
   draggable: true,
+  // "due" drags the delivery date
   onDragStart: (e) => {
     e.dataTransfer.setData(DND, `${b._baseId}|${day || ''}`);
     e.dataTransfer.effectAllowed = 'move';
@@ -153,6 +156,42 @@ function Chip({ b, day, ChildLink, active }) {
           {at + 1}/{b.days.length}
         </span>
       ) : null}
+    </ChildLink>
+  );
+}
+
+/* a delivery date: "Due" (or "Delivered" once it's done) */
+function DueChip({ b, ChildLink, active }) {
+  const done = b.status === 'delivered';
+  return (
+    <ChildLink
+      childId={b._baseId}
+      className="lo-cdue"
+      data-done={done ? '' : undefined}
+      data-active={active ? '' : undefined}
+      data-draft={isBooked(b) ? undefined : ''}
+      title={`${bookingTitle(b)} · ${done ? 'delivered' : 'due to the client'}${done ? '' : '. Drag to change the date'}`}
+      onClick={(e) => e.stopPropagation()}
+      {...dragProps(b, 'due')}
+    >
+      <TruckIcon />
+      <span className="lo-cdue-label">{done ? 'Delivered' : 'Due'}</span>
+      <span className="lo-cdue-title">{bookingTitle(b)}</span>
+    </ChildLink>
+  );
+}
+
+/* that day's schedule, under the shoot */
+function PlanLines({ b, lines, ChildLink }) {
+  if (!lines.length) return null;
+  return (
+    <ChildLink childId={b._baseId} className="lo-plan" draggable={false} onClick={(e) => e.stopPropagation()} title={`${bookingTitle(b)}: the plan for the day`}>
+      {lines.map((s, i) => (
+        <span key={s._key || i}>
+          {s.time ? <b>{s.time}</b> : null}
+          <i>{s.text || 'Something planned'}</i>
+        </span>
+      ))}
     </ChildLink>
   );
 }
@@ -342,6 +381,17 @@ export function ShootsCalendar(props) {
     return m;
   }, [bookings]);
 
+  const dueByDay = useMemo(() => {
+    const m = new Map();
+    bookings.forEach((b) => {
+      if (b.status === 'cancelled' || !parseYmd(b.deliveryDate)) return;
+      const d = b.deliveryDate.slice(0, 10);
+      if (!m.has(d)) m.set(d, []);
+      m.get(d).push(b);
+    });
+    return m;
+  }, [bookings]);
+
   const book = (date, enquiryId) => bookShoot(router, { date, enquiryId });
 
   /* drag a day of a shoot to another day: the first day brings any run of days with it; an extra day moves on its own */
@@ -349,6 +399,16 @@ export function ShootsCalendar(props) {
     const [baseId, fromDay] = String(payload).split('|');
     const b = bookings.find((x) => x._baseId === baseId);
     if (!b || !date) return;
+    if (fromDay === 'due') {
+      if (b.deliveryDate === date) return;
+      setData((d) => d && { ...d, bookings: d.bookings.map((x) => (x._baseId === baseId ? withMoney({ ...x, deliveryDate: date }) : x)) });
+      client
+        .patch(b._id)
+        .set({ deliveryDate: date })
+        .commit()
+        .catch(() => load());
+      return;
+    }
     const extra = fromDay && fromDay !== b.date ? (Array.isArray(b.moreDays) ? b.moreDays : []).find((d) => d && d.date === fromDay) : null;
     let patch;
     let local;
@@ -469,6 +529,8 @@ export function ShootsCalendar(props) {
             ))}
             {cells.map((d) => {
               const list = (byDay.get(d) || []).filter((b) => b.status !== 'cancelled');
+              const dues = dueByDay.get(d) || [];
+              const first = list[0] || dues[0];
               const flags = {
                 'data-out': d.slice(0, 7) !== month.slice(0, 7) ? '' : undefined,
                 'data-today': d === today ? '' : undefined,
@@ -478,17 +540,26 @@ export function ShootsCalendar(props) {
               const inner = (
                 <>
                   <span className="lo-mini-num">{parseYmd(d).getDate()}</span>
-                  {list.length ? (
+                  {list.length || dues.length ? (
                     <i className="lo-mini-dots">
                       {list.slice(0, 3).map((b) => (
                         <i key={b._baseId} data-status={b.status} data-draft={isBooked(b) ? undefined : ''} />
                       ))}
+                      {dues.length && list.length < 3 ? <i data-due="" /> : null}
                     </i>
                   ) : null}
                 </>
               );
-              return list.length ? (
-                <ChildLink key={d} childId={list[0]._baseId} className="lo-mini-day" data-has="" title={list.map((b) => bookingTitle(b)).join(', ')} {...flags} {...dropTarget(d)}>
+              return first ? (
+                <ChildLink
+                  key={d}
+                  childId={first._baseId}
+                  className="lo-mini-day"
+                  data-has=""
+                  title={[...list.map((b) => bookingTitle(b)), ...dues.map((b) => `Due: ${bookingTitle(b)}`)].join(', ')}
+                  {...flags}
+                  {...dropTarget(d)}
+                >
                   {inner}
                 </ChildLink>
               ) : (
@@ -586,9 +657,17 @@ export function ShootsCalendar(props) {
               <div className="lo-month-grid" style={{ '--rows': cells.length / 7 }}>
                 {cells.map((d, i) => {
                   const list = byDay.get(d) || [];
+                  const dues = dueByDay.get(d) || [];
                   const open = expanded === d;
                   const shown = open ? list : list.slice(0, 3);
-                  const more = list.length - shown.length;
+                  // the plan for the day under each shoot: a few lines when it's closed, all of it when it's open
+                  const cap = open ? Infinity : shown.length > 1 ? 2 : 4;
+                  const plans = shown.map((b) => {
+                    const all = b.status === 'cancelled' ? [] : scheduleFor(b, d);
+                    return { b, lines: all.slice(0, cap), hidden: Math.max(0, all.length - cap) };
+                  });
+                  const duesShown = open ? dues : dues.slice(0, Math.max(1, 3 - shown.length));
+                  const more = list.length - shown.length + (dues.length - duesShown.length) + plans.reduce((a, p) => a + p.hidden, 0);
                   const date = parseYmd(d);
                   const wd = (date.getDay() + 6) % 7;
                   return (
@@ -625,8 +704,14 @@ export function ShootsCalendar(props) {
                         </button>
                       </div>
                       <div className="lo-day-chips">
-                        {shown.map((b) => (
-                          <Chip key={b._baseId} b={b} day={d} ChildLink={ChildLink} active={openId === b._baseId} />
+                        {plans.map(({ b, lines }) => (
+                          <Fragment key={b._baseId}>
+                            <Chip b={b} day={d} ChildLink={ChildLink} active={openId === b._baseId} />
+                            <PlanLines b={b} lines={lines} ChildLink={ChildLink} />
+                          </Fragment>
+                        ))}
+                        {duesShown.map((b) => (
+                          <DueChip key={`due-${b._baseId}`} b={b} ChildLink={ChildLink} active={openId === b._baseId} />
                         ))}
                         {more > 0 || open ? (
                           <button
@@ -652,7 +737,11 @@ export function ShootsCalendar(props) {
                     {s.title}
                   </span>
                 ))}
-                <span className="lo-legend-tip">Click a day to book a shoot · drag a shoot to move it</span>
+                <span data-due="">
+                  <i />
+                  Due to the client
+                </span>
+                <span className="lo-legend-tip">Click a day to book a shoot · drag a shoot or due date to move it</span>
               </div>
             </div>
           )}

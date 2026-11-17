@@ -1,7 +1,8 @@
 'use client';
 
 import { useToast } from '@sanity/ui';
-import { useDocumentOperation } from 'sanity';
+import { useClient, useDocumentOperation } from 'sanity';
+import { tickEnquiry } from './shootData';
 import { CheckIcon } from './DashIcons';
 
 /* Booked shoots are never published (that keeps them private, they hold client details and money).
@@ -9,6 +10,7 @@ import { CheckIcon } from './DashIcons';
 export function SavedAction(props) {
   const toast = useToast();
   const { patch } = useDocumentOperation(props.id, props.type);
+  const client = useClient({ apiVersion: '2024-10-01' });
   const doc = (props && (props.draft || props.published)) || null;
 
   if (!doc) {
@@ -28,6 +30,7 @@ export function SavedAction(props) {
       title: 'Book this shoot in. You can keep changing it afterwards.',
       onHandle: () => {
         patch.execute([{ set: { bookedAt: new Date().toISOString() } }]);
+        if (doc.client && doc.client.enquiry && doc.client.enquiry._ref) tickEnquiry(client, doc.client.enquiry._ref);
         toast.push({ status: 'success', title: 'Shoot saved', description: 'It’s booked in your calendar.' });
         if (typeof props.onComplete === 'function') props.onComplete();
       },

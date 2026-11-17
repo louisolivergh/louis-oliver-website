@@ -20,6 +20,7 @@ import {
   mapsUrl,
   money,
   moneyShort,
+  nextStatus,
   parseYmd,
   percent,
   relDay,
@@ -28,7 +29,7 @@ import {
   timeRange,
   todayYmd,
 } from '../bookingData';
-import { bookShoot, declineEnquiry, unbookedOf, upcomingOf } from './shootData';
+import { bookShoot, declineEnquiry, setShootStatus, unbookedOf, upcomingOf } from './shootData';
 import { CalendarIcon, ClockIcon, InboxIcon, KitIcon, PinIcon, PlusIcon, TruckIcon, UsersIcon } from './DashIcons';
 
 /** money totals for a list of (saved, not cancelled) shoots */
@@ -97,7 +98,7 @@ export function ShootsDash({ base = '/studio', data, setData }) {
   const last = totalsOf(counted.filter((b) => b.days[0] && b.days[0].slice(0, 7) === lastKey));
   const all = totalsOf(counted.filter((b) => b.days[0] && b.days[0] <= today));
   const toDeliver = counted
-    .filter((b) => b.status === 'shot' || ((b.status === 'pencilled' || b.status === 'confirmed') && b.days.length && b.days[b.days.length - 1] < today))
+    .filter((b) => b.status === 'shot' || b.status === 'edited' || ((b.status === 'pencilled' || b.status === 'confirmed') && b.days.length && b.days[b.days.length - 1] < today))
     .sort((a, b) => String(a.deliveryDate || a.date || '').localeCompare(String(b.deliveryDate || b.date || '')));
   const notBooked = unbookedOf(data && data.enquiries, bookings).slice(0, 4);
   const live = bookings.filter((b) => b.status !== 'cancelled');
@@ -286,22 +287,6 @@ export function ShootsDash({ base = '/studio', data, setData }) {
           </div>
         </article>
 
-        {/* coming up */}
-        <article className="lo-dash-card lo-dash-list">
-          <div className="lo-dc-head">
-            <span className="lo-dc-title">Coming up</span>
-            <span className="lo-dc-sub">{upcoming.length ? `${upcoming.length} in the diary` : ''}</span>
-          </div>
-          {rest.length ? (
-            rest.slice(0, 5).map((b, i) => <Row key={b._baseId} b={b} i={i} today={today} right={b.money.income ? <span className="lo-ag-money">{moneyShort(b.money.profit)}</span> : null} />)
-          ) : (
-            <p className="lo-dc-empty">{next ? 'Just the one above for now.' : 'Nothing coming up yet.'}</p>
-          )}
-          <button type="button" className="lo-dc-add" onClick={() => bookShoot(router)}>
-            <PlusIcon /> Book a shoot
-          </button>
-        </article>
-
         {/* enquiries with no shoot yet */}
         <article className="lo-dash-card lo-dash-list">
           <div className="lo-dc-head">
@@ -335,6 +320,22 @@ export function ShootsDash({ base = '/studio', data, setData }) {
           )}
         </article>
 
+        {/* coming up */}
+        <article className="lo-dash-card lo-dash-list">
+          <div className="lo-dc-head">
+            <span className="lo-dc-title">Coming up</span>
+            <span className="lo-dc-sub">{upcoming.length ? `${upcoming.length} in the diary` : ''}</span>
+          </div>
+          {rest.length ? (
+            rest.slice(0, 5).map((b, i) => <Row key={b._baseId} b={b} i={i} today={today} right={b.money.income ? <span className="lo-ag-money">{moneyShort(b.money.profit)}</span> : null} />)
+          ) : (
+            <p className="lo-dc-empty">{next ? 'Just the one above for now.' : 'Nothing coming up yet.'}</p>
+          )}
+          <button type="button" className="lo-dc-add" onClick={() => bookShoot(router)}>
+            <PlusIcon /> Book a shoot
+          </button>
+        </article>
+
         {/* to edit & deliver */}
         <article className="lo-dash-card lo-dash-list">
           <div className="lo-dc-head">
@@ -344,19 +345,33 @@ export function ShootsDash({ base = '/studio', data, setData }) {
           {toDeliver.length ? (
             toDeliver.slice(0, 5).map((b, i) => {
               const due = b.deliveryDate ? daysBetween(today, b.deliveryDate) : null;
+              // where it's up to, and one tap to move it on: shot → edited → delivered
+              const now = b.status === 'pencilled' || b.status === 'confirmed' ? 'booked' : b.status;
+              const next = now === 'booked' ? 'shot' : nextStatus(b.status);
               return (
-                <Row
-                  key={b._baseId}
-                  b={b}
-                  i={i}
-                  today={today}
-                  right={
-                    <span className="lo-due" data-late={due !== null && due < 0 ? '' : undefined}>
-                      <TruckIcon />
-                      {due === null ? 'No due date' : due < 0 ? `${-due}d late` : due === 0 ? 'Due today' : `Due in ${due}d`}
+                <div key={b._baseId} className="lo-dl-item">
+                  <Row
+                    b={b}
+                    i={i}
+                    today={today}
+                    right={
+                      <span className="lo-due" data-late={due !== null && due < 0 ? '' : undefined}>
+                        <TruckIcon />
+                        {due === null ? 'No due date' : due < 0 ? `${-due}d late` : due === 0 ? 'Due today' : `Due in ${due}d`}
+                      </span>
+                    }
+                  />
+                  <span className="lo-dl-acts">
+                    <span className="lo-dl-now" data-status={b.status}>
+                      {now === 'booked' ? 'Not marked as shot' : statusOf(b.status).title}
                     </span>
-                  }
-                />
+                    {next && setData ? (
+                      <button type="button" className="lo-dl-next" onClick={() => setShootStatus(client, setData, b, next)}>
+                        Mark as {statusOf(next).short.toLowerCase()}
+                      </button>
+                    ) : null}
+                  </span>
+                </div>
               );
             })
           ) : (

@@ -8,8 +8,12 @@
  * Everything else about the fields is Sanity's own, so editing works exactly as before.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { set } from 'sanity';
+import { isBooked } from '../bookingData';
 import { BookingHero, EnquiryActions } from './BookingHero';
+import { ShootMode } from './shootMode';
+import { ShootSummary } from './ShootSummary';
 
 /* The section tabs (All fields · Overview · …): a white pill that slides to the tab you pick.
    Sanity draws the tabs; this adds one pill behind them and moves it whenever the choice changes. */
@@ -257,13 +261,45 @@ function DocHero({ schemaType, value }) {
 
 /* ---------- form components (registered in sanity.config.js) ---------- */
 
+/* A shoot: the full form while you're creating it. Once it's saved it opens as a calm summary
+   (everything, nothing to type in), with "Edit shoot" to open the form again and "Done" to go back. */
+function BookingRoot(props) {
+  const v = props.value && typeof props.value === 'object' ? props.value : {};
+  const booked = isBooked(v);
+  const [editing, setEditing] = useState(!booked);
+  const was = useRef(booked);
+  const top = useRef(null);
+  useEffect(() => {
+    if (was.current === booked) return;
+    was.current = booked;
+    setEditing(!booked); // just saved: show the summary. Save undone: back to the form
+  }, [booked]);
+  const go = (next) => {
+    setEditing(next);
+    requestAnimationFrame(() => {
+      if (top.current) top.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
+  const mode = !booked ? 'create' : editing ? 'edit' : 'summary';
+  const ctx = { mode, edit: () => go(true), done: () => go(false) };
+  return (
+    <ShootMode.Provider value={ctx}>
+      <DocShell kind="booking">
+        <span ref={top} className="lo-doc-top" aria-hidden="true" />
+        <BookingHero value={v} mode={mode} onEdit={ctx.edit} onDone={ctx.done} />
+        {mode === 'summary' ? <ShootSummary value={v} onEdit={ctx.edit} onStatus={(s) => props.onChange(set(s, ['status']))} /> : props.renderDefault(props)}
+      </DocShell>
+    </ShootMode.Provider>
+  );
+}
+
 export function LoInput(props) {
   const isRoot = props.id === 'root' || (Array.isArray(props.path) && props.path.length === 0);
   if (!isRoot) return props.renderDefault(props);
-  const booking = Boolean(props.schemaType && props.schemaType.name === 'booking');
+  if (props.schemaType && props.schemaType.name === 'booking') return <BookingRoot {...props} />;
   return (
-    <DocShell kind={booking ? 'booking' : undefined}>
-      {booking ? <BookingHero value={props.value} /> : <DocHero schemaType={props.schemaType} value={props.value} />}
+    <DocShell>
+      <DocHero schemaType={props.schemaType} value={props.value} />
       {props.renderDefault(props)}
     </DocShell>
   );

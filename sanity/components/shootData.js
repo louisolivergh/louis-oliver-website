@@ -16,6 +16,7 @@ export const SHOOTS_QUERY = `{
     "costs": costs[]{ category, qty, rate, clientPays, paid },
     "quote": quote[]{ qty, rate },
     "payments": payments[]{ amount },
+    "schedule": schedule[]{ _key, dayNo, time, text },
     "kit": kit[]->name
   },
   "enquiries": *[_type == "enquiry"] | order(receivedAt desc)[0...80]{ _id, name, company, service, budget, details, receivedAt, replied, declined }
@@ -83,6 +84,29 @@ export function upcomingOf(bookings, today) {
 export function unbookedOf(enquiries, bookings) {
   const booked = new Set((bookings || []).map((b) => b.client && b.client.enquiry).filter(Boolean));
   return (enquiries || []).filter((e) => !booked.has(e._baseId) && !e.declined);
+}
+
+/** tick an enquiry off (as replied to) once a shoot is linked to it; quietly does nothing if it can't */
+export async function tickEnquiry(client, id) {
+  const base = String(id || '').replace(/^drafts\./, '');
+  if (!client || !base) return;
+  try {
+    const ids = await client.fetch('*[_id in [$id, $draft] && replied != true]._id', { id: base, draft: `drafts.${base}` });
+    await Promise.all((ids || []).map((x) => client.patch(x).set({ replied: true }).commit()));
+  } catch {
+    // not worth interrupting you for: you can still tick it yourself
+  }
+}
+
+/** move a shoot on (e.g. shot → edited) straight from a list */
+export function setShootStatus(client, setData, b, status) {
+  const put = (st) => setData((d) => d && { ...d, bookings: d.bookings.map((x) => (x._baseId === b._baseId ? { ...x, status: st } : x)) });
+  put(status);
+  return client
+    .patch(b._id)
+    .set({ status })
+    .commit()
+    .catch(() => put(b.status));
 }
 
 /** mark an enquiry as "Not going ahead" so it drops off the lists */

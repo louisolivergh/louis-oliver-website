@@ -25,11 +25,6 @@ const QUERY = `{
 }`;
 const LISTEN = '*[_type in ["shoot", "equipment", "enquiry"]]';
 
-const Arrow = () => (
-  <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
-    <path d="M2 7h10M8 3l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
 const Plus = () => (
   <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
     <path d="M7 2.5v9M2.5 7h9" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
@@ -63,11 +58,10 @@ function useStudioPath() {
   });
 }
 
-/* ---------- the panel itself ---------- */
+/* ---------- the numbers behind Updates (also used by UpdatesHome.jsx) ---------- */
 
-function Canvas({ view }) {
+export function useUpdatesData() {
   const client = useClient({ apiVersion: '2024-10-01' });
-  const link = useStudioPath();
   const [data, setData] = useState(null);
 
   useEffect(() => {
@@ -112,8 +106,14 @@ function Canvas({ view }) {
   const groups = EQUIPMENT_CATEGORIES.map((c) => ({ ...c, items: kit.filter((k) => k.category === c.value) })).filter((g) => g.items.length);
   const other = kit.filter((k) => !EQUIPMENT_CATEGORIES.some((c) => c.value === k.category));
   if (other.length) groups.push({ value: 'other', title: 'Other', items: other });
+  return { shoots, kit, enquiries, toReply, featured, groups, loading: !data };
+}
 
-  const loading = !data;
+/* ---------- the panel itself ---------- */
+
+function Canvas({ view }) {
+  const link = useStudioPath();
+  const { shoots, kit, enquiries, toReply, featured, groups, loading } = useUpdatesData();
 
   /* ----- Shoots open: a gallery ----- */
   if (view === 'shoots') {
@@ -238,65 +238,8 @@ function Canvas({ view }) {
     );
   }
 
-  /* ----- nothing open yet: the three areas ----- */
-  const latestEnquiry = enquiries[0];
-  return (
-    <div className="lo-cv" key="home">
-      <header className="lo-cv-hero">
-        <span className="lo-eyebrow"><span className="lo-eyebrow-dot" aria-hidden="true" />Updates</span>
-        <h1 className="lo-cv-title">Keep your portfolio fresh.</h1>
-        <p className="lo-cv-text">Add finished shoots to your portfolio, keep your kit list current and reply to enquiries. Booked shoots live in the Shoots tab.</p>
-      </header>
-
-      <div className="lo-cv-cards">
-        <a className="lo-cv-card" {...link('/updates/shoot')} style={{ '--i': 0 }}>
-          <span className="lo-cv-card-top">
-            <span className="lo-cv-ic"><CameraIcon /></span>
-            <span className="lo-cv-count">{loading ? '…' : shoots.length}</span>
-          </span>
-          <span className="lo-cv-card-title">Portfolio</span>
-          <span className="lo-cv-card-text">{loading ? ' ' : shoots.length ? `${featured} featured on your homepage` : 'No shoots yet'}</span>
-          <span className="lo-cv-strip">
-            {shoots.filter((s) => s.thumb).slice(0, 4).map((s) => (
-              <img key={s._id} src={`${s.thumb}?w=160&h=120&fit=crop&auto=format`} alt="" loading="lazy" />
-            ))}
-          </span>
-          <span className="lo-cv-card-cta">Open portfolio <Arrow /></span>
-        </a>
-
-        <a className="lo-cv-card" {...link('/updates/equipment')} style={{ '--i': 1 }}>
-          <span className="lo-cv-card-top">
-            <span className="lo-cv-ic"><KitIcon /></span>
-            <span className="lo-cv-count">{loading ? '…' : kit.length}</span>
-          </span>
-          <span className="lo-cv-card-title">Equipment list</span>
-          <span className="lo-cv-card-text">{loading ? ' ' : groups.length ? groups.map((g) => g.title).join(' · ') : 'Nothing added yet'}</span>
-          <span className="lo-cv-card-cta">Open kit list <Arrow /></span>
-        </a>
-
-        <a className="lo-cv-card" data-accent={toReply.length ? '' : undefined} {...link('/updates/enquiries')} style={{ '--i': 2 }}>
-          <span className="lo-cv-card-top">
-            <span className="lo-cv-ic"><InboxIcon /></span>
-            <span className="lo-cv-count">{loading ? '…' : toReply.length}</span>
-          </span>
-          <span className="lo-cv-card-title">{toReply.length === 1 ? 'Enquiry to reply to' : 'Enquiries to reply to'}</span>
-          <span className="lo-cv-card-text">
-            {loading ? ' ' : latestEnquiry ? `Latest: ${[latestEnquiry.name, latestEnquiry.company].filter(Boolean).join(' · ') || 'Enquiry'}` : 'None yet'}
-          </span>
-          <span className="lo-cv-card-cta">Open inbox <Arrow /></span>
-        </a>
-      </div>
-
-      <div className="lo-cv-actions">
-        <IntentLink intent="create" params={{ type: 'shoot' }} className="lo-cv-btn" data-primary="">
-          <Plus /> Add to portfolio
-        </IntentLink>
-        <IntentLink intent="create" params={{ type: 'equipment' }} className="lo-cv-btn">
-          <Plus /> Add equipment
-        </IntentLink>
-      </div>
-    </div>
-  );
+  /* nothing open: the Updates pane itself is the page (UpdatesHome.jsx) */
+  return null;
 }
 
 /* ---------- putting it in place ---------- */
@@ -346,6 +289,7 @@ function CanvasHost() {
   if (!host) return null;
   const first = panes[0] && panes[0][0] ? panes[0][0].id : '';
   const view = first === 'shoot' ? 'shoots' : first === 'equipment' ? 'kit' : first === 'enquiries' ? 'inbox' : 'home';
+  if (view === 'home') return null; // nothing open: the Updates pane is the whole page (UpdatesHome.jsx)
   return createPortal(<Canvas view={view} />, host);
 }
 

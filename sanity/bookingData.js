@@ -7,11 +7,19 @@
 export const STATUSES = [
   { value: 'pencilled', title: 'Pencilled in', short: 'Pencilled in' },
   { value: 'confirmed', title: 'Confirmed', short: 'Confirmed' },
-  { value: 'shot', title: 'Shot, now editing', short: 'Editing' },
+  { value: 'shot', title: 'Shot, now editing', short: 'Shot' },
+  { value: 'edited', title: 'Edited, ready to send', short: 'Edited' },
   { value: 'delivered', title: 'Delivered', short: 'Delivered' },
   { value: 'cancelled', title: 'Cancelled', short: 'Cancelled' },
 ];
 export const statusOf = (v) => STATUSES.find((s) => s.value === v) || STATUSES[0];
+/** the steps a shoot goes through, in order (cancelled sits outside them) */
+export const STATUS_FLOW = ['pencilled', 'confirmed', 'shot', 'edited', 'delivered'];
+/** the next step for a shoot, e.g. shot → edited, or null once it's delivered or cancelled */
+export function nextStatus(v) {
+  const at = STATUS_FLOW.indexOf(v || 'pencilled');
+  return at >= 0 && at < STATUS_FLOW.length - 1 ? STATUS_FLOW[at + 1] : null;
+}
 
 export const KINDS = [
   { value: 'photo', title: 'Photo' },
@@ -258,6 +266,18 @@ export function dayInfo(b, day) {
   const extra = (Array.isArray(b && b.moreDays) ? b.moreDays : []).find((d) => d && d.date === day);
   if (extra && day !== b.date) return { start: extra.startTime || '', end: extra.endTime || '', note: extra.note || '', key: extra._key };
   return { start: (b && b.startTime) || '', end: (b && b.endTime) || '', note: '', key: null };
+}
+
+/** the schedule for one day of a shoot, in time order. Each time can say which day it's for
+    ("1" is the first day); times with no day, or a day the shoot no longer has, go on the first or last day */
+export function scheduleFor(b, day) {
+  const days = shootDays(b);
+  const at = days.indexOf(day);
+  if (at < 0) return [];
+  return (Array.isArray(b && b.schedule) ? b.schedule : [])
+    .filter((s) => s && (s.time || s.text))
+    .filter((s) => Math.min(Math.max(parseInt(s.dayNo, 10) || 1, 1), days.length) === at + 1)
+    .sort((x, y) => String(x.time || '99').localeCompare(String(y.time || '99')));
 }
 
 /** the next day this shoot happens (today counts), or its last day if it's all in the past */
