@@ -34,12 +34,27 @@ function Empty({ children, ratio = '16 / 9', dark = false }) {
   );
 }
 
+const CLIP = { position: 'relative', overflow: 'hidden', borderRadius: 12, isolation: 'isolate', lineHeight: 0, transform: 'translateZ(0)', WebkitMaskImage: '-webkit-radial-gradient(white, black)' };
+
 function Video({ v, inGrid }) {
   if (!v) return <Empty dark>Add a video</Empty>;
   const fileUrl = v.file && v.file.asset ? fileFromRef(v.file.asset._ref) : null;
   if (fileUrl) {
     const poster = v.poster && v.poster.asset ? imageFromRef(v.poster.asset._ref, 1000) : null;
-    return <video src={`${fileUrl}#t=0.1`} poster={poster ? poster.url : undefined} controls playsInline preload="metadata" style={{ display: 'block', width: inGrid ? '100%' : 'auto', maxWidth: '100%', maxHeight: 480, margin: '0 auto', borderRadius: 12, background: '#000' }} />;
+    // The rounded corners are cut by a wrapper (Safari doesn't round a video cleanly on its own), and nothing
+    // black sits behind the video, so no dark hairlines show at its edges.
+    return (
+      <div style={{ ...CLIP, width: inGrid ? '100%' : 'fit-content', maxWidth: '100%', margin: '0 auto' }}>
+        <video
+          src={`${fileUrl}#t=0.1`}
+          poster={poster ? poster.url : undefined}
+          controls
+          playsInline
+          preload="metadata"
+          style={{ display: 'block', width: inGrid ? '100%' : 'auto', maxWidth: '100%', height: 'auto', maxHeight: 480, objectFit: 'cover', background: 'transparent' }}
+        />
+      </div>
+    );
   }
   const embed = embedUrl(v.url);
   if (embed) {
