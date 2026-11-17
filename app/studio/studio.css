@@ -3774,3 +3774,16 @@ html body .lo-cl-site { align-self: flex-start; color: var(--lo-blue) !important
 @media (prefers-reduced-motion: reduce) {
   html body :is(.lo-cl-tools, .lo-cl-filters, .lo-cl-row, .lo-cl-detail) { animation: none !important; }
 }
+
+/* ---------- 23. Updates home: the four cards always fill their rows (4 across, 2 by 2, or 1 per row) ---------- */
+html body .lo-up[data-mode="home"] .lo-cv { max-width: 1240px; }
+html body .lo-up[data-mode="home"] .lo-cv-cards { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@container (max-width: 1060px) {
+  html body .lo-up[data-mode="home"] .lo-cv-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container (max-width: 560px) {
+  html body .lo-up[data-mode="home"] .lo-cv-cards { grid-template-columns: minmax(0, 1fr); }
+}
+/* the portfolio thumbnails shrink a little rather than spill out of a narrower card */
+html body .lo-cv-strip { min-width: 0; }
+html body .lo-cv-strip img { flex: 0 1 52px; min-width: 0; }

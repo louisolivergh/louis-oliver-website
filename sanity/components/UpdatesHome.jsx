@@ -138,8 +138,8 @@ export function UpdatesHome(props) {
             <span className="lo-eyebrow-dot" aria-hidden="true" />
             Updates
           </span>
-          <h1 className="lo-cv-title">Keep your portfolio fresh.</h1>
-          <p className="lo-cv-text">Add finished shoots to your portfolio, keep your kit list current, see your clients and reply to enquiries. Booked shoots live in the Shoots tab.</p>
+          <h1 className="lo-cv-title">Keep everything up to date.</h1>
+          <p className="lo-cv-text">Your portfolio, kit list, clients and enquiries, all in one place. Add new work, keep your kit current, see who you’ve shot for and reply to anyone new. Booked shoots live in the Shoots tab.</p>
         </header>
 
         <div className="lo-cv-cards">
