@@ -169,7 +169,7 @@ const textBlock = defineArrayMember({
 
 export const shoot = defineType({
   name: 'shoot',
-  title: 'Shoot',
+  title: 'Portfolio shoot',
   type: 'document',
   // the dashboard shows its own header card instead (sanity/components/FormChrome.jsx)
   __experimental_formPreviewTitle: false,

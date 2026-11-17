@@ -2,15 +2,18 @@ import { apiVersion } from './env';
 import { SINGLETONS } from './schemaTypes';
 import { SINGLETON_TITLES } from './sitePages';
 import { SiteMap } from './components/SiteMap';
+import { ShootsCalendar } from './components/ShootsCalendar';
 import { CameraIcon, CheckIcon, InboxIcon, KitIcon, MailIcon } from './components/DashIcons';
 
-/* The dashboard has two editing areas (tabs in the top bar):
-   - Updates: the things you change often — shoots, equipment, enquiries.
+/* The dashboard's areas (tabs in the top bar):
+   - Updates: the things you change often — your portfolio, equipment, enquiries.
+   - Shoots: your calendar of booked shoots — private, never on the website.
    - Website setup: the pages themselves — set them up once, then rarely touched. */
 
 /* Which kinds of document each area looks after, so a link to one always opens in the right area */
 export const TOOL_TYPES = {
   updates: ['shoot', 'equipment', 'enquiry', 'videoItem'],
+  shoots: ['booking'],
   website: [...SINGLETONS, 'processStep'],
 };
 
@@ -42,7 +45,7 @@ const enquiryList = (S, id, title, filter, icon) =>
 /* ---------- Updates ---------- */
 export const updatesStructure = (S) =>
   textList(S, 'Updates').items([
-    S.documentTypeListItem('shoot').id('shoot').title('Shoots & portfolio').icon(CameraIcon).child(typeList(S, 'shoot', 'Shoots & portfolio')),
+    S.documentTypeListItem('shoot').id('shoot').title('Portfolio').icon(CameraIcon).child(typeList(S, 'shoot', 'Portfolio')),
     S.documentTypeListItem('equipment').id('equipment').title('Equipment list').icon(KitIcon).child(typeList(S, 'equipment', 'Equipment list')),
     labelledDivider(S, 'Inbox'),
     S.listItem()
@@ -57,6 +60,13 @@ export const updatesStructure = (S) =>
         ])
       ),
   ]);
+
+/* ---------- Shoots: the calendar; a shoot opens beside it ---------- */
+export const shootsStructure = (S) =>
+  S.component(ShootsCalendar)
+    .id('calendar')
+    .title('Shoots')
+    .child((id) => S.document().schemaType('booking').documentId(String(id).replace(/^__edit__/, '')));
 
 /* ---------- Website setup: a visual map of your pages; each opens its editor beside it ---------- */
 export const websiteStructure = (S) =>

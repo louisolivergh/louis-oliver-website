@@ -8,6 +8,8 @@
  * Everything else about the fields is Sanity's own, so editing works exactly as before.
  */
 
+import { BookingHero, EnquiryActions } from './BookingHero';
+
 /* Where each page lives on the website */
 const PAGE_URL = {
   homePage: '/',
@@ -25,11 +27,11 @@ const INFO = {
   servicesPage: { eyebrow: 'Website page', text: 'Your three services, what each one includes, and why clients choose you.' },
   aboutPage: { eyebrow: 'Website page', text: 'Your story, your values and the kit you shoot with.' },
   processPage: { eyebrow: 'Website page', text: 'The headline and questions on your Process page. The steps themselves live under Process steps.' },
-  workPage: { eyebrow: 'Website page', title: 'Work page layout', text: 'The heading and layout of your portfolio. Shoots are added under Regular updates → Shoots & portfolio.' },
+  workPage: { eyebrow: 'Website page', title: 'Work page layout', text: 'The heading and layout of your portfolio. Shoots are added under Updates → Portfolio.' },
   contactPage: { eyebrow: 'Website page', text: 'Your contact details, the enquiry form and the questions at the bottom of the page.' },
   siteSettings: { eyebrow: 'Across every page', title: 'Logo & footer', text: 'Your logo, the footer, the call-to-action band, and the icons for the browser tab and this dashboard.' },
-  shoot: { eyebrow: 'Shoot', text: 'Fill in the details for its card on the Work page, then build its page under Page sections.' },
-  equipment: { eyebrow: 'Equipment', text: 'Shows in the kit list on your About page, and can be ticked on any shoot.' },
+  shoot: { eyebrow: 'Portfolio shoot', text: 'Fill in the details for its card on the Work page, then build its page under Page sections.' },
+  equipment: { eyebrow: 'Equipment', text: 'Shows in the kit list on your About page, and can be ticked on any shoot or booking.' },
   processStep: { eyebrow: 'Process step', text: 'One step in your process. Steps appear in order of their position number.' },
   enquiry: { eyebrow: 'Enquiry', text: 'Sent from the contact form on your website.' },
 };
@@ -175,6 +177,8 @@ function DocHero({ schemaType, value }) {
         </div>
       ) : null}
 
+      {isEnquiry ? <EnquiryActions value={v} /> : null}
+
       {PAGE_URL[type] ? (
         <p className="lo-hero-tip">
           <span className="lo-tip-dot" aria-hidden="true" />
@@ -190,6 +194,14 @@ function DocHero({ schemaType, value }) {
 export function LoInput(props) {
   const isRoot = props.id === 'root' || (Array.isArray(props.path) && props.path.length === 0);
   if (!isRoot) return props.renderDefault(props);
+  if (props.schemaType && props.schemaType.name === 'booking') {
+    return (
+      <div className="lo-doc" data-lo-doc="booking">
+        <BookingHero value={props.value} />
+        {props.renderDefault(props)}
+      </div>
+    );
+  }
   return (
     <div className="lo-doc">
       <DocHero schemaType={props.schemaType} value={props.value} />

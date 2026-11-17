@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useClient } from 'sanity';
 import { IntentLink } from 'sanity/router';
 import {
+  CalendarIcon,
   CameraIcon,
   CheckIcon,
   EyeIcon,
@@ -18,6 +19,8 @@ import {
   StarIcon,
   StepsIcon,
 } from './DashIcons';
+import { ShootsDash } from './ShootsDash';
+import { bookingTitle, relDay, todayYmd } from '../bookingData';
 
 /* Name shown in the greeting */
 const OWNER_NAME = 'Louis Jones';
@@ -42,7 +45,8 @@ const QUERY = `{
   "enquiries": count(*[_type == "enquiry" && ${PUB}]),
   "newEnquiries": count(*[_type == "enquiry" && ${PUB} && replied != true]),
   "latest": *[_type == "enquiry" && ${PUB}] | order(receivedAt desc)[0...8]{ _id, name, company, email, phone, service, budget, details, receivedAt, replied },
-  "recent": *[_type == "shoot" && ${PUB}] | order(_updatedAt desc)[0...5]{ _id, title, client, category, featured, "thumb": thumbnail.asset->url }
+  "recent": *[_type == "shoot" && ${PUB}] | order(_updatedAt desc)[0...5]{ _id, title, client, category, featured, "thumb": thumbnail.asset->url },
+  "nextShoot": *[_type == "booking" && status != "cancelled" && date >= $today] | order(date asc, startTime asc)[0]{ title, date, client{ name, company } }
 }`;
 
 
@@ -129,6 +133,12 @@ function CountUp({ value }) {
     return () => cancelAnimationFrame(raf);
   }, [value]);
   return typeof value === 'number' ? shown : '–';
+}
+
+/* "in 3 days", "tomorrow", or "on 12 Dec 2026" */
+function nextWhen(date) {
+  const r = relDay(date);
+  return /^(In |Today|Tomorrow)/.test(r) ? r.toLowerCase() : `on ${r}`;
 }
 
 function greeting() {
@@ -233,7 +243,7 @@ export function Overview() {
 
   const load = useCallback(() => {
     client
-      .fetch(QUERY)
+      .fetch(QUERY, { today: todayYmd() })
       .then((res) => { setData(res); setError(''); })
       .catch(() => setError('Could not load your stats. Check your connection and refresh.'));
   }, [client]);
@@ -241,7 +251,7 @@ export function Overview() {
   useEffect(() => {
     load();
     const sub = client
-      .listen('*[_type in ["shoot", "equipment", "processStep", "enquiry"]]', {}, { visibility: 'query' })
+      .listen('*[_type in ["shoot", "equipment", "processStep", "enquiry", "booking"]]', {}, { visibility: 'query' })
       .subscribe({ next: () => setTimeout(load, 600), error: () => {} });
     return () => sub.unsubscribe();
   }, [client, load]);
@@ -303,6 +313,7 @@ export function Overview() {
                   ? `You have ${data.newEnquiries} enquir${data.newEnquiries === 1 ? 'y' : 'ies'} waiting for a reply.`
                   : 'You’re all caught up on enquiries.'
                 : 'Loading your overview…'}
+              {data && data.nextShoot ? ` Next shoot: ${bookingTitle(data.nextShoot)}, ${nextWhen(data.nextShoot.date)}.` : ''}
             </span>
           </div>
           <div className="lo-ov-in" style={{ '--d': '380ms', position: 'relative', display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -317,11 +328,13 @@ export function Overview() {
         {/* stats */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 14 }}>
           <Stat icon={InboxIcon} label="To reply" delay={200} value={data && data.newEnquiries} sub={data ? `${data.enquiries} enquiries in total` : ''} accent onClick={() => { setFilter('new'); const el = document.getElementById('lo-enquiries'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} />
-          <Stat icon={CameraIcon} label="Shoots" delay={270} value={data && data.shoots} sub={data ? `${data.featured} on homepage${data.unpublished ? ` · ${data.unpublished} unpublished` : ''}` : ''} href={`${base}/updates/shoot`} />
+          <Stat icon={CameraIcon} label="Portfolio" delay={270} value={data && data.shoots} sub={data ? `${data.featured} on homepage${data.unpublished ? ` · ${data.unpublished} unpublished` : ''}` : ''} href={`${base}/updates/shoot`} />
           <Stat icon={PhotoIcon} label="Photos" delay={340} value={data && data.photos} sub="across all shoots" href={`${base}/updates/shoot`} />
           <Stat icon={PlayIcon} label="Videos" delay={410} value={data && data.videos} sub="across all shoots" href={`${base}/updates/shoot`} />
           <Stat icon={KitIcon} label="Equipment" delay={480} value={data && data.equipment} sub="items in your kit" href={`${base}/updates/equipment`} />
         </div>
+
+        <ShootsDash base={base || '/studio'} />
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 420px), 1fr))', gap: 24, alignItems: 'start' }}>
           {/* enquiries */}
@@ -408,7 +421,8 @@ export function Overview() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             <div className="lo-ov-in" style={{ '--d': '620ms', ...card, display: 'flex', flexDirection: 'column', gap: 12 }}>
               <h2 style={h2}>Quick add</h2>
-              <Quick icon={CameraIcon} label="New shoot" intent="create" params={{ type: 'shoot' }} primary />
+              <Quick icon={CalendarIcon} label="Book a shoot" intent="create" params={[{ type: 'booking', template: 'booking-new' }, {}]} primary />
+              <Quick icon={CameraIcon} label="Add to your portfolio" intent="create" params={{ type: 'shoot' }} />
               <Quick icon={KitIcon} label="Add equipment" intent="create" params={{ type: 'equipment' }} />
               <span style={{ ...eyebrow, color: MUTED, marginTop: 8 }}>Edit pages</span>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 10 }}>
@@ -422,9 +436,9 @@ export function Overview() {
             </div>
 
             <div className="lo-ov-in" style={{ '--d': '700ms', ...card, display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <h2 style={h2}>Recently edited shoots</h2>
+              <h2 style={h2}>Recently edited portfolio</h2>
               {data && !data.recent.length ? (
-                <div style={{ padding: '24px 16px', textAlign: 'center', color: MUTED, fontSize: 14, border: `1.5px dashed ${LINE}`, borderRadius: 16 }}>No shoots yet — add your first one above.</div>
+                <div style={{ padding: '24px 16px', textAlign: 'center', color: MUTED, fontSize: 14, border: `1.5px dashed ${LINE}`, borderRadius: 16 }}>Nothing in your portfolio yet — add your first shoot above.</div>
               ) : null}
               {(data ? data.recent : []).map((s) => (
                 <IntentLink key={s._id} intent="edit" params={{ id: s._id, type: 'shoot' }} className="lo-ov-shoot" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: 8, borderRadius: 16, textDecoration: 'none', color: INK }}>
@@ -443,7 +457,7 @@ export function Overview() {
             <div className="lo-ov-in" style={{ '--d': '780ms', ...card, display: 'flex', alignItems: 'center', gap: 14, background: INK, borderColor: INK, color: '#fff' }}>
               <span style={{ fontSize: 22, display: 'flex', color: '#fff' }}><CheckIcon /></span>
               <span style={{ fontSize: 14, lineHeight: 1.5, color: 'rgba(255,255,255,0.85)' }}>
-                Changes go live about 30 seconds after you press <strong style={{ color: '#fff' }}>Publish</strong>.
+                Website changes go live about 30 seconds after you press <strong style={{ color: '#fff' }}>Publish</strong>. Shoots in your calendar are private and save as you type.
               </span>
             </div>
           </div>

@@ -9,8 +9,8 @@ import { CameraIcon, InboxIcon, KitIcon } from './DashIcons';
 
 /**
  * Fills the empty space beside the lists in Updates with something useful:
- *  - nothing open → three cards (shoots, equipment, enquiries) and quick actions
- *  - Shoots open → your shoots as a gallery
+ *  - nothing open → three cards (portfolio, equipment, enquiries) and quick actions
+ *  - Portfolio open → your portfolio shoots as a gallery
  *  - Equipment open → your kit, grouped
  *  - Enquiries open → your inbox at a glance
  * It sits after the open lists and disappears as soon as an editor opens (see app/studio/studio.css, ".lo-canvas").
@@ -119,11 +119,11 @@ function Canvas({ view }) {
     return (
       <div className="lo-cv" key="shoots">
         <header className="lo-cv-hero">
-          <span className="lo-eyebrow"><span className="lo-eyebrow-dot" aria-hidden="true" />Shoots &amp; portfolio</span>
+          <span className="lo-eyebrow"><span className="lo-eyebrow-dot" aria-hidden="true" />Portfolio</span>
           <div className="lo-cv-headrow">
-            <h1 className="lo-cv-title">Your shoots</h1>
+            <h1 className="lo-cv-title">Your portfolio</h1>
             <IntentLink intent="create" params={{ type: 'shoot' }} className="lo-cv-btn" data-primary="">
-              <Plus /> New shoot
+              <Plus /> Add a shoot
             </IntentLink>
           </div>
           <p className="lo-cv-text">Pick one to edit it, or start a new one. Newest first — the same order as your Work page.</p>
@@ -147,7 +147,7 @@ function Canvas({ view }) {
         ) : (
           <div className="lo-cv-empty">
             <span className="lo-cv-ic"><CameraIcon /></span>
-            <p>No shoots yet. Your first one will appear here — and on your Work page once it’s published.</p>
+            <p>Nothing in your portfolio yet. Your first shoot will appear here — and on your Work page once it’s published.</p>
             <IntentLink intent="create" params={{ type: 'shoot' }} className="lo-cv-btn" data-primary="">
               <Plus /> Add your first shoot
             </IntentLink>
@@ -244,7 +244,7 @@ function Canvas({ view }) {
       <header className="lo-cv-hero">
         <span className="lo-eyebrow"><span className="lo-eyebrow-dot" aria-hidden="true" />Updates</span>
         <h1 className="lo-cv-title">Keep your portfolio fresh.</h1>
-        <p className="lo-cv-text">Add new shoots, keep your kit list current and reply to enquiries — everything you’ll come back to.</p>
+        <p className="lo-cv-text">Add finished shoots to your portfolio, keep your kit list current and reply to enquiries. Booked shoots live in the Shoots tab.</p>
       </header>
 
       <div className="lo-cv-cards">
@@ -253,14 +253,14 @@ function Canvas({ view }) {
             <span className="lo-cv-ic"><CameraIcon /></span>
             <span className="lo-cv-count">{loading ? '–' : shoots.length}</span>
           </span>
-          <span className="lo-cv-card-title">Shoots &amp; portfolio</span>
+          <span className="lo-cv-card-title">Portfolio</span>
           <span className="lo-cv-card-text">{loading ? ' ' : shoots.length ? `${featured} featured on your homepage` : 'No shoots yet'}</span>
           <span className="lo-cv-strip">
             {shoots.filter((s) => s.thumb).slice(0, 4).map((s) => (
               <img key={s._id} src={`${s.thumb}?w=160&h=120&fit=crop&auto=format`} alt="" loading="lazy" />
             ))}
           </span>
-          <span className="lo-cv-card-cta">Open shoots <Arrow /></span>
+          <span className="lo-cv-card-cta">Open portfolio <Arrow /></span>
         </a>
 
         <a className="lo-cv-card" {...link('/updates/equipment')} style={{ '--i': 1 }}>
@@ -288,7 +288,7 @@ function Canvas({ view }) {
 
       <div className="lo-cv-actions">
         <IntentLink intent="create" params={{ type: 'shoot' }} className="lo-cv-btn" data-primary="">
-          <Plus /> New shoot
+          <Plus /> Add to portfolio
         </IntentLink>
         <IntentLink intent="create" params={{ type: 'equipment' }} className="lo-cv-btn">
           <Plus /> Add equipment

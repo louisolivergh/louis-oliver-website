@@ -212,7 +212,7 @@ export function SiteMap(props) {
   /* a page is open beside the map (or it's narrow): show the slim list */
   if (!wide || childItemId) {
     return (
-      <div className="lo-site" data-mode="list" ref={rootRef}>
+      <div className="lo-site" data-mode="list" data-open={childItemId ? '' : undefined} ref={rootRef}>
         <nav className="lo-site-list" aria-label="Website pages">
           {SITE_PAGES.map((p, i) => (
             <ChildLink key={p.id} childId={p.id} className="lo-site-row" data-active={childItemId === p.id ? '' : undefined} style={{ '--i': i }}>

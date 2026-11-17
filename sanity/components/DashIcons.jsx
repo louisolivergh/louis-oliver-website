@@ -36,3 +36,16 @@ export const PlayIcon = make(<><circle cx="12" cy="12" r="9" /><path d="M10 8.5l
 export const PhotoIcon = make(<><rect x="3" y="4" width="18" height="16" rx="2.5" /><circle cx="9" cy="10" r="2" /><path d="M21 16l-5-5-9 9" /></>);
 export const StarIcon = make(<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3z" />);
 export const EyeIcon = make(<><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></>);
+
+export const CalendarIcon = make(<><rect x="3" y="4.5" width="18" height="16.5" rx="2.5" /><path d="M3 9.5h18M8 2.5v4M16 2.5v4" /><path d="M7.5 13.5h2M11 13.5h2M14.5 13.5h2M7.5 17h2M11 17h2" /></>);
+export const ClockIcon = make(<><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3.2 2" /></>);
+export const PinIcon = make(<><path d="M12 21s-6.5-6.2-6.5-11.2a6.5 6.5 0 0 1 13 0C18.5 14.8 12 21 12 21z" /><circle cx="12" cy="9.8" r="2.4" /></>);
+export const UsersIcon = make(<><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c1.2-3.6 3.6-5.4 6.5-5.4s5.3 1.8 6.5 5.4" /><path d="M16 4.8a3.3 3.3 0 0 1 0 6.4M18.2 14.9c1.6.7 2.7 2.4 3.3 5.1" /></>);
+export const PoundIcon = make(<><path d="M16.5 6.2A4.2 4.2 0 0 0 8.8 8.5V19H17" /><path d="M6.5 13.2h7" /><path d="M6.5 19h3" /></>);
+export const ListIcon = make(<><path d="M9 6h11M9 12h11M9 18h11" /><circle cx="4.5" cy="6" r="1" /><circle cx="4.5" cy="12" r="1" /><circle cx="4.5" cy="18" r="1" /></>);
+export const LinkIcon = make(<><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3.2-3.2a4.5 4.5 0 0 0-6.4-6.4L11.7 6" /><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3.2 3.2a4.5 4.5 0 0 0 6.4 6.4l1.5-1.5" /></>);
+export const NoteIcon = make(<><path d="M5 3.5h10l4 4V20.5H5z" /><path d="M15 3.5v4h4M8.5 12h7M8.5 16h5" /></>);
+export const ChevronLeft = make(<path d="M14.5 5.5 8 12l6.5 6.5" />);
+export const ChevronRight = make(<path d="M9.5 5.5 16 12l-6.5 6.5" />);
+export const PlusIcon = make(<path d="M12 5v14M5 12h14" />);
+export const TruckIcon = make(<><path d="M2.5 6.5h11v10h-11z" /><path d="M13.5 10h4.5l3 3.5v3h-7.5" /><circle cx="6.5" cy="17.5" r="1.8" /><circle cx="17" cy="17.5" r="1.8" /></>);

@@ -32,12 +32,15 @@ export function EquipmentTickInput(props) {
   }, [client]);
 
   const selected = useMemo(() => new Set(list.map((v) => v && v._ref)), [list]);
+  // booked shoots use weak links, so kit can still be removed from your list later
+  const member = props.schemaType && Array.isArray(props.schemaType.of) ? props.schemaType.of[0] : null;
+  const weak = Boolean(member && member.weak);
 
   const toggle = (id) => {
     if (readOnly) return;
     const next = selected.has(id)
       ? list.filter((v) => v._ref !== id)
-      : [...list, { _type: 'reference', _ref: id, _key: makeKey() }];
+      : [...list, { _type: 'reference', _ref: id, _key: makeKey(), ...(weak ? { _weak: true } : {}) }];
     onChange(next.length ? set(next) : unset());
   };
 
