@@ -36,15 +36,15 @@ function Empty({ children, ratio = '16 / 9', dark = false }) {
 
 const CLIP = { position: 'relative', overflow: 'hidden', borderRadius: 12, isolation: 'isolate', lineHeight: 0, transform: 'translateZ(0)', WebkitMaskImage: '-webkit-radial-gradient(white, black)' };
 
-function Video({ v, inGrid }) {
-  if (!v) return <Empty dark>Add a video</Empty>;
+function Video({ v, inGrid, radius = 12 }) {
+  if (!v) return <Empty>Add a video</Empty>;
   const fileUrl = v.file && v.file.asset ? fileFromRef(v.file.asset._ref) : null;
   if (fileUrl) {
     const poster = v.poster && v.poster.asset ? imageFromRef(v.poster.asset._ref, 1000) : null;
     // The rounded corners are cut by a wrapper (Safari doesn't round a video cleanly on its own), and nothing
     // black sits behind the video, so no dark hairlines show at its edges.
     return (
-      <div style={{ ...CLIP, width: inGrid ? '100%' : 'fit-content', maxWidth: '100%', margin: '0 auto' }}>
+      <div style={{ ...CLIP, borderRadius: radius, width: inGrid ? '100%' : 'fit-content', maxWidth: '100%', margin: '0 auto' }}>
         <video
           src={`${fileUrl}#t=0.1`}
           poster={poster ? poster.url : undefined}
@@ -60,12 +60,12 @@ function Video({ v, inGrid }) {
   if (embed) {
     const vertical = v.shape === 'vertical' || v.shape === 'portrait';
     return (
-      <div style={{ position: 'relative', aspectRatio: SHAPE[v.shape] || SHAPE.landscape, width: inGrid ? '100%' : vertical ? 'min(100%, 300px)' : '100%', margin: '0 auto', borderRadius: 12, overflow: 'hidden', background: '#000' }}>
+      <div style={{ position: 'relative', aspectRatio: SHAPE[v.shape] || SHAPE.landscape, width: inGrid ? '100%' : vertical ? 'min(100%, 300px)' : '100%', margin: '0 auto', borderRadius: radius, overflow: 'hidden', background: '#000' }}>
         <iframe src={embed} title="Video" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
       </div>
     );
   }
-  return <Empty dark>{v.url ? 'That link isn’t a YouTube or Vimeo link' : 'Add a video'}</Empty>;
+  return <Empty>{v.url ? 'That link isn’t a YouTube or Vimeo link' : 'Add a video'}</Empty>;
 }
 
 function Equip({ refs, extra, names }) {
@@ -145,7 +145,7 @@ export function ShootPreview(props) {
             case 'featureVideo':
               return (
                 <section key={s._key} style={{ display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'center' }}>
-                  <div style={{ flex: '999 1 380px', minWidth: 0, borderRadius: 20, background: INK, padding: 14 }}><Video v={s.video} /></div>
+                  <div style={{ flex: '999 1 380px', minWidth: 0 }}><Video v={s.video} radius={20} /></div>
                   <div style={{ flex: '1 1 220px', display: 'flex', flexDirection: 'column', gap: 16 }}>
                     {s.heading ? <h2 style={{ margin: 0, fontFamily: DISPLAY, fontSize: 24, fontWeight: 600, letterSpacing: '-0.03em' }}>{s.heading}</h2> : null}
                     {s.info ? (
@@ -162,7 +162,7 @@ export function ShootPreview(props) {
               return (
                 <section key={s._key}>
                   {heading}
-                  <div style={{ borderRadius: 20, background: INK, padding: 14 }}><Video v={s.video} /></div>
+                  <Video v={s.video} radius={20} />
                   {s.caption ? <p style={{ margin: '12px 0 0', fontSize: 14, color: TEXT, whiteSpace: 'pre-line' }}>{s.caption}</p> : null}
                 </section>
               );
