@@ -393,7 +393,7 @@ export const enquiry = defineType({
       type: 'boolean',
       initialValue: false,
       fieldset: 'status',
-      description: 'Tick if it won’t become a shoot: spam, not a fit, or they said no. It drops off your “Not booked yet” lists.',
+      description: 'Tick if it won’t become a shoot: spam, not a fit, or they said no. It drops off your “Quick book” lists.',
     }),
     t('notes', 'Your notes', 3, { fieldset: 'status', description: 'Private. Only visible in the dashboard.', placeholder: 'e.g. Called back on Tuesday, sending a quote Friday.' }),
     s('name', 'Name', { readOnly: true, fieldset: 'from' }),

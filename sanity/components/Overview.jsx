@@ -14,10 +14,10 @@ import {
   KitIcon,
   MailIcon,
   PageIcon,
-  PoundIcon,
   SettingsIcon,
   StarIcon,
   StepsIcon,
+  TargetIcon,
   TrendIcon,
 } from './DashIcons';
 import { ShootsDash, totalsOf } from './ShootsDash';
@@ -163,13 +163,16 @@ const h2 = { margin: 0, fontFamily: DISPLAY, fontSize: 20, fontWeight: 600, lett
 const eyebrow = { fontSize: 12, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: BLUE };
 
 function Stat({ icon: I, label, value, sub, accent, href, onClick, format, delay = 0 }) {
+  // label with its icon on the first line, then the number and the small print across the whole card
   const style = {
     ...card,
     padding: '20px 22px',
-    display: 'flex',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: 12,
+    display: 'grid',
+    gridTemplateColumns: 'minmax(0, 1fr) auto',
+    columnGap: 12,
+    rowGap: 6,
+    alignItems: 'center',
+    alignContent: 'start',
     background: accent ? BLUE : '#fff',
     borderColor: accent ? BLUE : LINE,
     color: accent ? '#fff' : INK,
@@ -181,14 +184,12 @@ function Stat({ icon: I, label, value, sub, accent, href, onClick, format, delay
   };
   const inner = (
     <>
-      <span style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: accent ? 'rgba(255,255,255,0.85)' : MUTED }}>{label}</span>
-        <span style={{ fontFamily: DISPLAY, fontSize: 34, fontWeight: 600, letterSpacing: '-0.04em', lineHeight: 1, whiteSpace: 'nowrap' }}><CountUp value={value} format={format} /></span>
-        {sub ? <span style={{ fontSize: 12, color: accent ? 'rgba(255,255,255,0.8)' : MUTED, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub}</span> : null}
-      </span>
-      <span className="lo-ov-ic" style={{ flex: 'none', width: 36, height: 36, borderRadius: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, background: accent ? 'rgba(255,255,255,0.16)' : TINT, color: accent ? '#fff' : BLUE }}>
+      <span style={{ gridColumn: 1, gridRow: 1, minWidth: 0, fontSize: 13, fontWeight: 600, lineHeight: 1.25, color: accent ? 'rgba(255,255,255,0.85)' : MUTED, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{label}</span>
+      <span style={{ gridColumn: '1 / -1', gridRow: 2, minWidth: 0, marginTop: -2, fontFamily: DISPLAY, fontSize: 34, fontWeight: 600, letterSpacing: '-0.04em', lineHeight: 1, whiteSpace: 'nowrap' }}><CountUp value={value} format={format} /></span>
+      <span className="lo-ov-ic" style={{ gridColumn: 2, gridRow: 1, flex: 'none', width: 36, height: 36, borderRadius: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, background: accent ? 'rgba(255,255,255,0.16)' : TINT, color: accent ? '#fff' : BLUE }}>
         <I />
       </span>
+      {sub ? <span style={{ gridColumn: '1 / -1', gridRow: 3, minWidth: 0, fontSize: 12, color: accent ? 'rgba(255,255,255,0.8)' : MUTED, lineHeight: 1.35, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{sub}</span> : null}
     </>
   );
   const cls = `lo-ov-stat lo-ov-in${accent ? ' lo-ov-accent' : ''}`;
@@ -294,15 +295,23 @@ export function Overview() {
 
   /* the business, at a glance, saved shoots only, cancelled ones left out */
   const today = todayYmd();
-  const monthName = new Date().toLocaleDateString('en-GB', { month: 'long' });
   const counted = shoots.data ? shoots.data.bookings.filter((b) => b.status !== 'cancelled' && isBooked(b)) : [];
   const upcoming = upcomingOf(counted, today);
   const nextShoot = upcoming[0] || null;
-  const thisMonth = totalsOf(counted.filter((b) => b.days[0] && b.days[0].slice(0, 7) === today.slice(0, 7)));
   const thisYear = totalsOf(counted.filter((b) => b.days[0] && b.days[0].slice(0, 4) === today.slice(0, 4)));
   const owed = counted.reduce((a, b) => a + b.money.outstanding, 0);
   const owedCount = counted.filter((b) => b.money.outstanding > 0).length;
   const openShoots = () => router.navigateUrl({ path: `${base || '/studio'}/shoots` });
+  // win rate: how many enquiries ended up as a saved shoot
+  const enqList = shoots.data ? shoots.data.enquiries : [];
+  const wonIds = new Set(counted.map((b) => b.client && b.client.enquiry).filter(Boolean));
+  const won = enqList.filter((e) => wonIds.has(e._baseId)).length;
+  const winRate = enqList.length ? Math.round((won / enqList.length) * 100) : 0;
+  const showEnquiries = (id) => {
+    setFilter(id);
+    const el = document.getElementById('lo-enquiries');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   return (
     <div style={{ height: '100%', overflow: 'auto', background: SOFT, fontFamily: BODY, color: INK }}>
@@ -339,10 +348,10 @@ export function Overview() {
 
         {/* stats */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 14 }}>
-          <Stat icon={InboxIcon} label="To reply" delay={200} value={data && data.newEnquiries} sub={data ? `${data.enquiries} enquiries in total` : ''} accent onClick={() => { setFilter('new'); const el = document.getElementById('lo-enquiries'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} />
+          <Stat icon={InboxIcon} label="To reply" delay={200} value={data && data.newEnquiries} sub={data ? `${data.enquiries} enquiries in total` : ''} accent onClick={() => showEnquiries('new')} />
           <Stat icon={CalendarIcon} label="Upcoming shoots" delay={270} value={shoots.data ? upcoming.length : undefined} sub={shoots.data ? (nextShoot ? `Next: ${['Today', 'Tomorrow'].includes(relDay(nextShoot.next)) ? relDay(nextShoot.next).toLowerCase() : fmtDay(nextShoot.next, { weekday: 'short', day: 'numeric', month: 'short' })}` : 'None booked yet') : ''} onClick={openShoots} />
-          <Stat icon={PoundIcon} label={`Booked in ${monthName}`} delay={340} value={shoots.data ? Math.round(thisMonth.income) : undefined} format={money} sub={shoots.data ? `${thisMonth.count} shoot${thisMonth.count === 1 ? '' : 's'} · ${money(Math.round(thisMonth.profit))} profit` : ''} onClick={openShoots} />
-          <Stat icon={TrendIcon} label={`Profit in ${today.slice(0, 4)}`} delay={410} value={shoots.data ? Math.round(thisYear.profit) : undefined} format={money} sub={shoots.data ? (thisYear.count ? `${thisYear.count} shoot${thisYear.count === 1 ? '' : 's'} ${thisYear.income ? ` · ${percent(thisYear.profit / thisYear.income)} margin` : ''}` : 'No shoots yet this year') : ''} onClick={openShoots} />
+          <Stat icon={TargetIcon} label="Win rate" delay={340} value={shoots.data ? winRate : undefined} format={(n) => `${n}%`} sub={shoots.data ? (enqList.length ? `${won} of ${enqList.length} enquir${enqList.length === 1 ? 'y' : 'ies'} booked` : 'No enquiries yet') : ''} onClick={() => showEnquiries('all')} />
+          <Stat icon={TrendIcon} label={`Profit in ${today.slice(0, 4)}`} delay={410} value={shoots.data ? Math.round(thisYear.profit) : undefined} format={money} sub={shoots.data ? (thisYear.count ? `${thisYear.count} shoot${thisYear.count === 1 ? '' : 's'} ${thisYear.income ? ` · ${percent(thisYear.profit / thisYear.income)} margin` : ''}` : 'No shoots yet') : ''} onClick={openShoots} />
           <Stat icon={ClockIcon} label="Still to come in" delay={480} value={shoots.data ? Math.round(owed) : undefined} format={money} sub={shoots.data ? (owedCount ? `from ${owedCount} shoot${owedCount === 1 ? '' : 's'}` : 'Everyone’s paid up') : ''} onClick={openShoots} />
         </div>
 

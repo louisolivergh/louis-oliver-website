@@ -49,4 +49,5 @@ export const ChevronLeft = make(<path d="M14.5 5.5 8 12l6.5 6.5" />);
 export const ChevronRight = make(<path d="M9.5 5.5 16 12l-6.5 6.5" />);
 export const PlusIcon = make(<path d="M12 5v14M5 12h14" />);
 export const TruckIcon = make(<><path d="M2.5 6.5h11v10h-11z" /><path d="M13.5 10h4.5l3 3.5v3h-7.5" /><circle cx="6.5" cy="17.5" r="1.8" /><circle cx="17" cy="17.5" r="1.8" /></>);
+export const TargetIcon = make(<><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.2" /></>);
 export const TrendIcon = make(<><path d="M3 17.5l5.5-5.5 4 4L21 7.5" /><path d="M15 7.5h6v6" /></>);

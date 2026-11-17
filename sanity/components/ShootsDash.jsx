@@ -2,7 +2,7 @@
 
 /**
  * The shoots part of the Dashboard (sanity/components/Overview.jsx):
- * your next shoot, the next 7 days, this month's money, what's coming up, enquiries not booked yet,
+ * your next shoot, the next 7 days, this month's money, what's coming up, enquiries to quick book,
  * and shoots still to edit and deliver. Styles: app/studio/studio.css (".lo-dash…").
  * Shoots still being created (not saved yet) are marked, and left out of the money.
  */
@@ -305,7 +305,7 @@ export function ShootsDash({ base = '/studio', data, setData }) {
         {/* enquiries with no shoot yet */}
         <article className="lo-dash-card lo-dash-list">
           <div className="lo-dc-head">
-            <span className="lo-dc-title">Not booked yet</span>
+            <span className="lo-dc-title">Quick book</span>
             <span className="lo-dc-sub">Enquiries with no shoot</span>
           </div>
           {notBooked.length ? (

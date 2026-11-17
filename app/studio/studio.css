@@ -1514,8 +1514,9 @@ html body .lo-day {
 }
 html body .lo-day[data-weekend] { background: #f1f4fa; }
 html body .lo-day[data-out] { background: transparent; box-shadow: inset 0 0 0 1px #eef1f6; }
-html body .lo-day:hover { background: var(--lo-tint); box-shadow: inset 0 0 0 1px #d3dff9; }
-html body .lo-day[data-drop] { background: var(--lo-tint); box-shadow: inset 0 0 0 2px var(--lo-blue); transform: scale(1.02); }
+/* hovering or dropping a shoot on a day lights up its date circle, never the square */
+html body .lo-day:not([data-selected]):hover .lo-day-n { background: var(--lo-tint); color: var(--lo-blue); box-shadow: 0 0 0 1px #d3dff9; }
+html body .lo-day[data-drop]:not([data-selected]) .lo-day-n { background: var(--lo-tint); color: var(--lo-blue); box-shadow: 0 0 0 2px var(--lo-blue); transform: scale(1.12); }
 html body .lo-day[data-open] { z-index: 2; box-shadow: inset 0 0 0 1px #d3dff9, 0 24px 40px -28px rgba(11, 18, 32, .5); }
 html body .lo-day-top { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
 html body .lo-day-num {
@@ -1532,8 +1533,8 @@ html body :is(.lo-day-n, .lo-mini-num) {
   flex: none;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border: 1.5px dashed transparent;
   border-radius: 50%;
   transition: background-color .35s ease, color .35s ease, border-color .35s ease, box-shadow .45s var(--lo-ease), transform .45s var(--lo-spring);
@@ -1777,23 +1778,28 @@ html body .lo-mini-day {
   align-items: center;
   justify-content: center;
   gap: 3px;
-  height: 40px;
+  height: 48px;
   padding: 0;
   border: 0;
-  border-radius: 10px;
+  border-radius: 0;
+  outline: none;
   background: transparent;
   color: var(--lo-ink) !important;
-  font: 600 12.5px/1 var(--lo-body);
+  font: 600 13.5px/1 var(--lo-body);
   font-variant-numeric: tabular-nums;
   text-decoration: none !important;
   cursor: pointer;
   transition: background-color .25s ease, color .25s ease, box-shadow .25s ease;
 }
-html body .lo-mini-day:hover { background: #ffffff; }
 html body .lo-mini-day[data-out] { color: var(--lo-faint) !important; }
-html body .lo-mini-day[data-has] { background: #ffffff; box-shadow: inset 0 0 0 1px var(--lo-edge); }
-html body .lo-mini .lo-mini-num { width: 26px; height: 26px; }
-html body .lo-mini-day[data-drop] { box-shadow: inset 0 0 0 2px var(--lo-blue); }
+html body .lo-mini .lo-mini-num { width: min(36px, 100%); height: auto; aspect-ratio: 1; }
+/* a day with a shoot: a white circle (its dots sit underneath) */
+html body .lo-mini-day[data-has]:not([data-selected]) .lo-mini-num { background: #ffffff; }
+html body .lo-mini-day[data-has]:not([data-selected]):not([data-today]) .lo-mini-num { box-shadow: 0 0 0 1px var(--lo-edge); }
+/* hover: a light blue circle, a preview of the filled one you get when you click */
+html body .lo-mini-day:not([data-selected]):hover .lo-mini-num { background: var(--lo-tint); color: var(--lo-blue); box-shadow: 0 0 0 1px #c9d8fb; transform: scale(1.06); }
+html body .lo-mini-day[data-drop]:not([data-selected]) .lo-mini-num { background: var(--lo-tint); color: var(--lo-blue); box-shadow: 0 0 0 2px var(--lo-blue); transform: scale(1.1); }
+html body .lo-mini-day:focus-visible .lo-mini-num { box-shadow: 0 0 0 3px rgba(16, 77, 230, .35); }
 html body .lo-mini-dots { display: flex; gap: 2px; }
 html body .lo-mini-dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--st-bg); box-shadow: inset 0 0 0 1px var(--st-line); }
 html body .lo-mini-dots i[data-draft] { opacity: .45; }
@@ -2439,7 +2445,7 @@ html body .lo-due svg { font-size: 14px; }
 
 /* ================================================================
    12. Shoots, round two: saving, more days, reminders, sliding tabs,
-       animated removal, the date box, "not booked yet"
+       animated removal, the date box, "quick book"
    ================================================================ */
 
 /* ---------- section tabs: a white pill slides to the tab you pick (sanity/components/FormChrome.jsx) ---------- */
@@ -2537,7 +2543,7 @@ html body .lo-unsaved {
   white-space: nowrap;
 }
 
-/* ---------- "Not booked yet": take an enquiry off the list ---------- */
+/* ---------- "Quick book": take an enquiry off the list ---------- */
 html body .lo-enq-x {
   display: inline-flex;
   flex: none;

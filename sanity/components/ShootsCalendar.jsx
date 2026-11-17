@@ -423,7 +423,7 @@ export function ShootsCalendar(props) {
 
   const notBookedCard = (
     <div className="lo-side-card">
-      <span className="lo-side-label">Not booked yet</span>
+      <span className="lo-side-label">Quick book</span>
       {data && !notBooked.length ? <p className="lo-side-empty">No enquiries waiting. Every one has a shoot or isn’t going ahead.</p> : null}
       {notBooked.map((e, i) => (
         <div key={e._baseId} className="lo-enq" style={{ '--i': i }}>
