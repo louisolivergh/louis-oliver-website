@@ -8,6 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@sanity/ui": "^2.16.4",
     "next": "^15.3.0",
     "next-sanity": "^9.8.0",
     "react": "^19.0.0",

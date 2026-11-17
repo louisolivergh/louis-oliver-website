@@ -24,6 +24,12 @@ import {
   GridIcon,
 } from './sanity/components/DashIcons';
 
+/* a divider with a small blue label above the line (styled in app/studio/studio.css) */
+const labelledDivider = (S, title) => {
+  const d = S.divider();
+  return typeof d.title === 'function' ? d.title(title) : d;
+};
+
 const singleton = (S, id, title, icon) =>
   S.listItem().title(title).id(id).icon(icon).child(S.document().schemaType(id).documentId(id).title(title));
 
@@ -54,7 +60,7 @@ const structure = (S) =>
             .items([
               S.documentTypeListItem('shoot').id('shoot').title('Shoots & portfolio').icon(CameraIcon),
               S.documentTypeListItem('equipment').id('equipment').title('Equipment list').icon(KitIcon),
-              S.divider(),
+              labelledDivider(S, 'Inbox'),
               S.listItem()
                 .id('enquiries')
                 .title('Enquiries')
@@ -85,7 +91,7 @@ const structure = (S) =>
               S.documentTypeListItem('processStep').title('Process steps').icon(StepsIcon),
               singleton(S, 'workPage', 'Work page layout', CameraIcon),
               singleton(S, 'contactPage', 'Contact page', MailIcon),
-              S.divider(),
+              labelledDivider(S, 'Brand'),
               singleton(S, 'siteSettings', 'Logo & footer', SettingsIcon),
             ])
         ),

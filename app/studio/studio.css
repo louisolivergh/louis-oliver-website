@@ -1,0 +1,126 @@
+/* ================================================================
+   Dashboard (/studio) — the "Content" section, styled like the website.
+
+   Fonts, colours and corner rounding come from sanity/theme.js.
+   This file adds the website's finishing touches to the lists, headers,
+   tabs and buttons. Every rule is scoped to the Content section
+   ([data-ui="PaneLayout"]), so the rest of the dashboard and the
+   website itself are untouched. If Sanity ever changes its markup,
+   these rules simply stop applying — nothing breaks.
+   ================================================================ */
+
+/* ---------- list rows (Shoots, Equipment, Enquiries, pages…) ---------- */
+html body [data-ui="PaneLayout"] [data-ui="PreviewCard"][data-as="a"] {
+  border-radius: 14px !important;
+  /* keeps the row's text colour correct on hover (the website's link colours don't apply here) */
+  color: var(--card-fg-color) !important;
+  transition: background-color .35s ease, color .35s ease, box-shadow .5s cubic-bezier(.16, 1, .3, 1);
+}
+
+/* resting rows sit straight on the page (so the selected row's glow shows cleanly) */
+html body [data-ui="PaneLayout"] [data-ui="PreviewCard"][data-as="a"]:not([data-pressed]):not([data-selected]) {
+  --card-bg-color: transparent !important;
+}
+
+/* hover: soft wash, like the website */
+@media (hover: hover) {
+  html body [data-ui="PaneLayout"] [data-ui="PreviewCard"][data-as="a"]:not([data-pressed]):not([data-selected]):is(:hover, [data-hovered]) {
+    --card-bg-color: #f4f7fd !important;
+    --card-fg-color: #0b1220 !important;
+    --card-icon-color: #104de6 !important;
+  }
+}
+
+/* the row you came through (its page is open to the right): light brand tint */
+html body [data-ui="PaneLayout"] [data-ui="PreviewCard"][data-as="a"][data-pressed] {
+  --card-bg-color: #eef3fe !important;
+  --card-fg-color: #104de6 !important;
+  --card-icon-color: #104de6 !important;
+}
+
+/* the row you're on: solid brand blue with a soft glow, like the website's main buttons */
+html body [data-ui="PaneLayout"] [data-ui="PreviewCard"][data-as="a"][data-selected] {
+  --card-bg-color: #104de6 !important;
+  --card-fg-color: #ffffff !important;
+  --card-muted-fg-color: rgba(255, 255, 255, .78) !important;
+  --card-icon-color: #ffffff !important;
+  box-shadow: var(--card-focus-ring-box-shadow, 0 0 0 0 transparent), 0 12px 26px -14px rgba(16, 77, 230, .6) !important;
+}
+
+/* icon chips: rounded tint squares with a blue icon (same as the Overview page and the website's cards) */
+html body [data-ui="PaneLayout"] [data-ui="PreviewCard"] [data-testid="Media"] {
+  border-radius: 10px;
+  background-color: #eef3fe;
+  --card-icon-color: #104de6;
+  transition: background-color .35s ease;
+}
+html body [data-ui="PaneLayout"] [data-ui="PreviewCard"] [data-testid="compact-preview"] [data-testid="Media"] {
+  border-radius: 8px;
+}
+html body [data-ui="PaneLayout"] [data-ui="PreviewCard"] [data-testid="Media"]:not(:has(img)) > [data-border] {
+  opacity: 0;
+}
+@media (hover: hover) {
+  html body [data-ui="PaneLayout"] [data-ui="PreviewCard"][data-as="a"]:not([data-selected]):is(:hover, [data-hovered]) [data-testid="Media"] {
+    background-color: #ffffff;
+  }
+}
+html body [data-ui="PaneLayout"] [data-ui="PreviewCard"][data-as="a"][data-pressed] [data-testid="Media"] {
+  background-color: #ffffff;
+}
+html body [data-ui="PaneLayout"] [data-ui="PreviewCard"][data-as="a"][data-selected] [data-testid="Media"] {
+  background-color: rgba(255, 255, 255, .16);
+  --card-icon-color: #ffffff;
+}
+
+/* thumbnails ease in a touch on hover, and the row's content glides slightly — like the website */
+html body [data-ui="PaneLayout"] [data-ui="PreviewCard"] [data-testid="Media"] img {
+  transition: transform .8s cubic-bezier(.16, 1, .3, 1);
+}
+html body [data-ui="PaneLayout"] [data-ui="PreviewCard"] :is([data-testid="default-preview"], [data-testid="compact-preview"]) {
+  transition: transform .5s cubic-bezier(.16, 1, .3, 1);
+}
+@media (hover: hover) {
+  html body [data-ui="PaneLayout"] [data-ui="PreviewCard"][data-as="a"]:is(:hover, [data-hovered]) [data-testid="Media"] img {
+    transform: scale(1.08);
+  }
+  html body [data-ui="PaneLayout"] [data-ui="PreviewCard"][data-as="a"]:is(:hover, [data-hovered]) :is([data-testid="default-preview"], [data-testid="compact-preview"]) {
+    transform: translateX(3px);
+  }
+}
+
+/* ---------- column titles ("Regular updates", "Shoots & portfolio", the page you're editing…) ---------- */
+html body [data-ui="PaneLayout"] [data-testid="pane-header"] [data-ui="Card"] > [data-ui="Flex"] > [data-ui="Text"] {
+  font-family: var(--font-sora, Sora), var(--font-inter, Inter), system-ui, sans-serif !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em !important;
+  color: #0b1220 !important;
+}
+
+/* group labels inside a list ("Inbox", "Brand") — the website's small blue eyebrow style */
+html body [data-ui="PaneLayout"] [data-ui="ListPane"] [data-ui="Text"]:has(+ hr) {
+  font-size: 0.6875rem !important;
+  font-weight: 600 !important;
+  letter-spacing: .14em !important;
+  text-transform: uppercase;
+  color: #104de6 !important;
+  padding-bottom: 0 !important; /* sits level with its line */
+}
+
+/* ---------- search box above lists: a soft rounded pill ---------- */
+html body [data-ui="PaneLayout"] [data-ui="DocumentListPane"] [data-ui="TextInput"] input + span {
+  border-radius: 999px !important;
+  --card-bg-color: #f4f7fd !important;
+}
+
+/* ---------- tabs (Edit / Preview, field groups) and buttons: pill shapes like the website ---------- */
+html body [data-ui="PaneLayout"] [data-ui="Tab"],
+html body [data-ui="PaneLayout"] [data-ui="Button"] {
+  border-radius: 999px !important;
+}
+
+/* tick boxes stay crisp squares with soft corners */
+html body [data-ui="PaneLayout"] [data-ui="Checkbox"] input + span {
+  border-radius: 6px !important;
+}
