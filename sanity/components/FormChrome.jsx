@@ -62,7 +62,7 @@ function isHidden(hidden, doc, name) {
 }
 
 /* How many of the page's boxes are filled (switches and read-only boxes don't count) */
-function countFields(schemaType, doc) {
+export function countFields(schemaType, doc) {
   const fields = Array.isArray(schemaType && schemaType.fields) ? schemaType.fields : [];
   let filled = 0;
   let total = 0;

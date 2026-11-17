@@ -317,10 +317,10 @@ export function Overview() {
         {/* stats */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 14 }}>
           <Stat icon={InboxIcon} label="To reply" delay={200} value={data && data.newEnquiries} sub={data ? `${data.enquiries} enquiries in total` : ''} accent onClick={() => { setFilter('new'); const el = document.getElementById('lo-enquiries'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} />
-          <Stat icon={CameraIcon} label="Shoots" delay={270} value={data && data.shoots} sub={data ? `${data.featured} on homepage${data.unpublished ? ` · ${data.unpublished} unpublished` : ''}` : ''} href={`${base}/structure/regular;shoot`} />
-          <Stat icon={PhotoIcon} label="Photos" delay={340} value={data && data.photos} sub="across all shoots" href={`${base}/structure/regular;shoot`} />
-          <Stat icon={PlayIcon} label="Videos" delay={410} value={data && data.videos} sub="across all shoots" href={`${base}/structure/regular;shoot`} />
-          <Stat icon={KitIcon} label="Equipment" delay={480} value={data && data.equipment} sub="items in your kit" href={`${base}/structure/regular;equipment`} />
+          <Stat icon={CameraIcon} label="Shoots" delay={270} value={data && data.shoots} sub={data ? `${data.featured} on homepage${data.unpublished ? ` · ${data.unpublished} unpublished` : ''}` : ''} href={`${base}/updates/shoot`} />
+          <Stat icon={PhotoIcon} label="Photos" delay={340} value={data && data.photos} sub="across all shoots" href={`${base}/updates/shoot`} />
+          <Stat icon={PlayIcon} label="Videos" delay={410} value={data && data.videos} sub="across all shoots" href={`${base}/updates/shoot`} />
+          <Stat icon={KitIcon} label="Equipment" delay={480} value={data && data.equipment} sub="items in your kit" href={`${base}/updates/equipment`} />
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 420px), 1fr))', gap: 24, alignItems: 'start' }}>

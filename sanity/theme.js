@@ -2,7 +2,7 @@ import { buildLegacyTheme } from 'sanity';
 import * as uiTheme from '@sanity/ui/theme';
 
 /* Dashboard colours, fonts and corner rounding matched to the website.
-   (The finishing touches for the Content section live in app/studio/studio.css.) */
+   (The finishing touches for the editing areas live in app/studio/studio.css.) */
 const brand = '#104de6';
 const ink = '#0b1220';
 
