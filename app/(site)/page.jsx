@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import ContactForm from '@/components/ContactForm';
 import FeaturedWork from '@/components/FeaturedWork';
-import { Arrow, Icon, Rings } from '@/components/Icons';
+import { Arrow, Icon, Rings, serviceIcon } from '@/components/Icons';
 import { two } from '@/lib/content';
 import { Q, focus, img, logoSrc, pick, sanityFetch } from '@/lib/sanity';
 
@@ -12,7 +12,6 @@ const DEFAULT_SERVICES = [
   { name: '[Service two]', promise: '[Describe this service in two or three sentences. Focus on the outcome for the client.]' },
   { name: '[Service three]', promise: '[Describe this service in two or three sentences. Focus on the outcome for the client.]' },
 ];
-const ICONS = ['box', 'target', 'chart'];
 
 export default async function HomePage() {
   const [h, svc, steps, featured, contact, reviews] = await Promise.all([
@@ -173,7 +172,7 @@ export default async function HomePage() {
         <div className="grid-3">
           {services.map((s, i) => (
             <Link key={i} href={`/services#service-${i + 1}`} className={`card ${rv[i % 3]}`}>
-              <span className="card-icon"><Icon name={ICONS[i % 3]} /></span>
+              <span className="card-icon"><Icon name={serviceIcon(s.name, i)} /></span>
               <h3 className="h3" style={{ fontSize: 26 }}>{s.name}</h3>
               <p className="card-text">{s.promise}</p>
               <span className="text-link" style={{ marginTop: 'auto', color: 'var(--blue)' }}>Learn more <span aria-hidden="true">→</span></span>

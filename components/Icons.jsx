@@ -88,7 +88,35 @@ const PATHS = {
     </>
   ),
   trend: <path d="M2 13l4-4 3 3 7-7M11 5h5v5" stroke="currentColor" strokeWidth="1.8" />,
+  /* the three services: videography, photography, drone piloting */
+  video: (
+    <>
+      <rect x="2.5" y="6.5" width="13" height="11" rx="2.5" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M15.5 10.5l6-3v9l-6-3" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+      <circle cx="6.5" cy="10" r="1" fill="currentColor" />
+    </>
+  ),
+  quad: (
+    <>
+      <rect x="9.5" y="9.5" width="5" height="5" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M9.5 9.5L7 7M14.5 9.5L17 7M9.5 14.5L7 17M14.5 14.5L17 17" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M2 5h6M16 5h6M2 19h6M16 19h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <circle cx="5" cy="5" r="1" fill="currentColor" />
+      <circle cx="19" cy="5" r="1" fill="currentColor" />
+      <circle cx="5" cy="19" r="1" fill="currentColor" />
+      <circle cx="19" cy="19" r="1" fill="currentColor" />
+    </>
+  ),
 };
+
+/** the icon for a service: worked out from its name, else by its place (1 videography, 2 photography, 3 drone) */
+export function serviceIcon(name, i = 0) {
+  const n = String(name || '').toLowerCase();
+  if (/drone|aerial|fpv|pilot/.test(n)) return 'quad';
+  if (/video|film|motion|reel/.test(n)) return 'video';
+  if (/photo|still|portrait|headshot/.test(n)) return 'camera';
+  return ['video', 'camera', 'quad'][i % 3];
+}
 
 export function Icon({ name, size = 24 }) {
   const vb = name === 'trend' ? '0 0 18 18' : '0 0 24 24';

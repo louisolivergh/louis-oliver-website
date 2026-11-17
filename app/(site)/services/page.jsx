@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import CtaBand from '@/components/CtaBand';
-import { Arrow, Icon, Rings } from '@/components/Icons';
+import { Arrow, Icon, Rings, serviceIcon } from '@/components/Icons';
 import PageHero from '@/components/PageHero';
 import { getSettings, two } from '@/lib/content';
 import { Q, pick, sanityFetch } from '@/lib/sanity';
@@ -23,7 +23,6 @@ const THEMES = [
   { cls: 'svc-blue', btn: 'btn-white', visualBg: '#fff', ring: 'rgba(16,77,230,0.35)', fg: 'var(--blue)' },
   { cls: 'svc-navy', btn: 'btn-white', visualBg: 'var(--blue)', ring: 'rgba(255,255,255,0.45)', fg: '#fff' },
 ];
-const ICONS = ['box', 'target', 'chart'];
 
 export default async function ServicesPage() {
   const [p, settings] = await Promise.all([sanityFetch(Q.services, {}, {}), getSettings()]);
@@ -96,7 +95,7 @@ export default async function ServicesPage() {
               <div className="svc-visual reveal-2" style={{ background: th.visualBg, order: i === 1 ? 2 : undefined }}>
                 <Rings stroke={th.ring} dot={th.fg} />
                 <div className="svc-icon" style={{ color: th.fg }}>
-                  <Icon name={ICONS[i % 3]} size={120} />
+                  <Icon name={serviceIcon(s.name, i)} size={120} />
                 </div>
                 <span className="svc-num" style={{ color: th.fg }}>{two(i + 1)}</span>
                 {s.resultValue ? (
