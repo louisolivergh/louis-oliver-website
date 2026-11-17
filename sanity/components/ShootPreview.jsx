@@ -42,7 +42,7 @@ function Video({ v, inGrid, radius = 12 }) {
   if (fileUrl) {
     const poster = v.poster && v.poster.asset ? imageFromRef(v.poster.asset._ref, 1000) : null;
     // The rounded corners are cut by a wrapper (Safari doesn't round a video cleanly on its own), and nothing
-    // black sits behind the video, so no dark hairlines show at its edges.
+    // black sits behind the video. It's grown a touch past the box, which trims the hairline Safari draws along a video's top edge.
     return (
       <div style={{ ...CLIP, borderRadius: radius, width: inGrid ? '100%' : 'fit-content', maxWidth: '100%', margin: '0 auto' }}>
         <video
@@ -51,7 +51,7 @@ function Video({ v, inGrid, radius = 12 }) {
           controls
           playsInline
           preload="metadata"
-          style={{ display: 'block', width: inGrid ? '100%' : 'auto', maxWidth: '100%', height: 'auto', maxHeight: 480, objectFit: 'cover', background: 'transparent' }}
+          style={{ display: 'block', width: inGrid ? '100%' : 'auto', maxWidth: '100%', height: 'auto', maxHeight: 480, objectFit: 'cover', background: 'transparent', transform: 'scale(1.015)' }}
         />
       </div>
     );
