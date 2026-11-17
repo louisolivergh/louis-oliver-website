@@ -2,25 +2,27 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useClient } from 'sanity';
-import { IntentLink } from 'sanity/router';
+import { IntentLink, useRouter } from 'sanity/router';
 import {
   CalendarIcon,
   CameraIcon,
   CheckIcon,
+  ClockIcon,
   EyeIcon,
   HomeIcon,
   InboxIcon,
   KitIcon,
   MailIcon,
   PageIcon,
-  PhotoIcon,
-  PlayIcon,
+  PoundIcon,
   SettingsIcon,
   StarIcon,
   StepsIcon,
+  TrendIcon,
 } from './DashIcons';
-import { ShootsDash } from './ShootsDash';
-import { bookingTitle, relDay, todayYmd } from '../bookingData';
+import { ShootsDash, totalsOf } from './ShootsDash';
+import { upcomingOf, useShootData } from './shootData';
+import { bookingTitle, fmtDay, isBooked, money, percent, relDay, tidyRange, todayYmd } from '../bookingData';
 
 /* Name shown in the greeting */
 const OWNER_NAME = 'Louis Jones';
@@ -36,21 +38,15 @@ const BODY = 'var(--font-inter), Inter, system-ui, sans-serif';
 
 const PUB = '!(_id in path("drafts.**"))';
 const QUERY = `{
-  "shoots": count(*[_type == "shoot" && ${PUB}]),
-  "featured": count(*[_type == "shoot" && featured == true && ${PUB}]),
-  "unpublished": count(*[_type == "shoot" && _id in path("drafts.**")]),
-  "photos": count(*[_type == "shoot" && ${PUB}].sections[_type == "gallery"].images[]) + count(*[_type == "shoot" && ${PUB}].sections[_type == "fullPhoto"]),
-  "videos": count(*[_type == "shoot" && ${PUB}].sections[_type in ["featureVideo", "fullVideo"]]) + count(*[_type == "shoot" && ${PUB}].sections[_type == "videoGrid"].videos[]),
-  "equipment": count(*[_type == "equipment" && ${PUB}]),
   "enquiries": count(*[_type == "enquiry" && ${PUB}]),
-  "newEnquiries": count(*[_type == "enquiry" && ${PUB} && replied != true]),
-  "latest": *[_type == "enquiry" && ${PUB}] | order(receivedAt desc)[0...8]{ _id, name, company, email, phone, service, budget, details, receivedAt, replied },
-  "recent": *[_type == "shoot" && ${PUB}] | order(_updatedAt desc)[0...5]{ _id, title, client, category, featured, "thumb": thumbnail.asset->url },
-  "nextShoot": *[_type == "booking" && status != "cancelled" && date >= $today] | order(date asc, startTime asc)[0]{ title, date, client{ name, company } }
+  "newEnquiries": count(*[_type == "enquiry" && ${PUB} && replied != true && declined != true]),
+  "repliedEnquiries": count(*[_type == "enquiry" && ${PUB} && replied == true]),
+  "latest": *[_type == "enquiry" && ${PUB}] | order(receivedAt desc)[0...8]{ _id, name, company, email, phone, service, budget, details, receivedAt, replied, declined },
+  "recent": *[_type == "shoot" && ${PUB}] | order(_updatedAt desc)[0...5]{ _id, title, client, category, featured, "thumb": thumbnail.asset->url }
 }`;
 
 
-/* Overview animations — all prefixed lo-ov- so they don't touch the rest of the dashboard */
+/* Overview animations, all prefixed lo-ov- so they don't touch the rest of the dashboard */
 const CSS = `
 @keyframes loOvUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
 @keyframes loOvScale { from { opacity: 0; transform: scale(.97); } to { opacity: 1; transform: none; } }
@@ -111,7 +107,7 @@ const CSS = `
 `;
 
 /* Numbers count up smoothly when the page loads or a value changes */
-function CountUp({ value }) {
+function CountUp({ value, format }) {
   const [shown, setShown] = useState(0);
   const from = useRef(0);
   useEffect(() => {
@@ -132,7 +128,8 @@ function CountUp({ value }) {
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [value]);
-  return typeof value === 'number' ? shown : '–';
+  if (typeof value !== 'number') return '…';
+  return format ? format(shown) : shown;
 }
 
 /* "in 3 days", "tomorrow", or "on 12 Dec 2026" */
@@ -165,7 +162,7 @@ const card = { background: '#fff', border: `1px solid ${LINE}`, borderRadius: 24
 const h2 = { margin: 0, fontFamily: DISPLAY, fontSize: 20, fontWeight: 600, letterSpacing: '-0.02em', color: INK };
 const eyebrow = { fontSize: 12, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: BLUE };
 
-function Stat({ icon: I, label, value, sub, accent, href, onClick, delay = 0 }) {
+function Stat({ icon: I, label, value, sub, accent, href, onClick, format, delay = 0 }) {
   const style = {
     ...card,
     padding: '20px 22px',
@@ -186,7 +183,7 @@ function Stat({ icon: I, label, value, sub, accent, href, onClick, delay = 0 }) 
     <>
       <span style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }}>
         <span style={{ fontSize: 13, fontWeight: 600, color: accent ? 'rgba(255,255,255,0.85)' : MUTED }}>{label}</span>
-        <span style={{ fontFamily: DISPLAY, fontSize: 34, fontWeight: 600, letterSpacing: '-0.04em', lineHeight: 1 }}><CountUp value={value} /></span>
+        <span style={{ fontFamily: DISPLAY, fontSize: 34, fontWeight: 600, letterSpacing: '-0.04em', lineHeight: 1, whiteSpace: 'nowrap' }}><CountUp value={value} format={format} /></span>
         {sub ? <span style={{ fontSize: 12, color: accent ? 'rgba(255,255,255,0.8)' : MUTED, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub}</span> : null}
       </span>
       <span className="lo-ov-ic" style={{ flex: 'none', width: 36, height: 36, borderRadius: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, background: accent ? 'rgba(255,255,255,0.16)' : TINT, color: accent ? '#fff' : BLUE }}>
@@ -240,10 +237,12 @@ export function Overview() {
   const [leaving, setLeaving] = useState({});
   const [flash, setFlash] = useState(null);
   const [bump, setBump] = useState(null);
+  const router = useRouter();
+  const shoots = useShootData();
 
   const load = useCallback(() => {
     client
-      .fetch(QUERY, { today: todayYmd() })
+      .fetch(QUERY)
       .then((res) => { setData(res); setError(''); })
       .catch(() => setError('Could not load your stats. Check your connection and refresh.'));
   }, [client]);
@@ -263,7 +262,8 @@ export function Overview() {
     const apply = () =>
       setData((d) => ({
         ...d,
-        newEnquiries: Math.max(0, d.newEnquiries + (next ? -1 : 1)),
+        newEnquiries: e.declined ? d.newEnquiries : Math.max(0, d.newEnquiries + (next ? -1 : 1)),
+        repliedEnquiries: Math.max(0, (d.repliedEnquiries || 0) + (next ? 1 : -1)),
         latest: d.latest.map((x) => (x._id === e._id ? { ...x, replied: next } : x)),
       }));
     setBump(next ? 'replied' : 'new');
@@ -290,7 +290,19 @@ export function Overview() {
   const site = typeof window !== 'undefined' ? window.location.origin : '';
   const base = typeof window !== 'undefined' && window.location.pathname.startsWith('/studio') ? '/studio' : '';
   const first = OWNER_NAME;
-  const enquiries = data ? data.latest.filter((e) => (filter === 'new' ? !e.replied : filter === 'replied' ? e.replied : true)) : [];
+  const enquiries = data ? data.latest.filter((e) => (filter === 'new' ? !e.replied && !e.declined : filter === 'replied' ? e.replied : true)) : [];
+
+  /* the business, at a glance, saved shoots only, cancelled ones left out */
+  const today = todayYmd();
+  const monthName = new Date().toLocaleDateString('en-GB', { month: 'long' });
+  const counted = shoots.data ? shoots.data.bookings.filter((b) => b.status !== 'cancelled' && isBooked(b)) : [];
+  const upcoming = upcomingOf(counted, today);
+  const nextShoot = upcoming[0] || null;
+  const thisMonth = totalsOf(counted.filter((b) => b.days[0] && b.days[0].slice(0, 7) === today.slice(0, 7)));
+  const thisYear = totalsOf(counted.filter((b) => b.days[0] && b.days[0].slice(0, 4) === today.slice(0, 4)));
+  const owed = counted.reduce((a, b) => a + b.money.outstanding, 0);
+  const owedCount = counted.filter((b) => b.money.outstanding > 0).length;
+  const openShoots = () => router.navigateUrl({ path: `${base || '/studio'}/shoots` });
 
   return (
     <div style={{ height: '100%', overflow: 'auto', background: SOFT, fontFamily: BODY, color: INK }}>
@@ -313,7 +325,7 @@ export function Overview() {
                   ? `You have ${data.newEnquiries} enquir${data.newEnquiries === 1 ? 'y' : 'ies'} waiting for a reply.`
                   : 'You’re all caught up on enquiries.'
                 : 'Loading your overview…'}
-              {data && data.nextShoot ? ` Next shoot: ${bookingTitle(data.nextShoot)}, ${nextWhen(data.nextShoot.date)}.` : ''}
+              {data && nextShoot ? ` Next shoot: ${bookingTitle(nextShoot)}, ${nextWhen(nextShoot.next)}.` : ''}
             </span>
           </div>
           <div className="lo-ov-in" style={{ '--d': '380ms', position: 'relative', display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -328,13 +340,13 @@ export function Overview() {
         {/* stats */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 14 }}>
           <Stat icon={InboxIcon} label="To reply" delay={200} value={data && data.newEnquiries} sub={data ? `${data.enquiries} enquiries in total` : ''} accent onClick={() => { setFilter('new'); const el = document.getElementById('lo-enquiries'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} />
-          <Stat icon={CameraIcon} label="Portfolio" delay={270} value={data && data.shoots} sub={data ? `${data.featured} on homepage${data.unpublished ? ` · ${data.unpublished} unpublished` : ''}` : ''} href={`${base}/updates/shoot`} />
-          <Stat icon={PhotoIcon} label="Photos" delay={340} value={data && data.photos} sub="across all shoots" href={`${base}/updates/shoot`} />
-          <Stat icon={PlayIcon} label="Videos" delay={410} value={data && data.videos} sub="across all shoots" href={`${base}/updates/shoot`} />
-          <Stat icon={KitIcon} label="Equipment" delay={480} value={data && data.equipment} sub="items in your kit" href={`${base}/updates/equipment`} />
+          <Stat icon={CalendarIcon} label="Upcoming shoots" delay={270} value={shoots.data ? upcoming.length : undefined} sub={shoots.data ? (nextShoot ? `Next: ${['Today', 'Tomorrow'].includes(relDay(nextShoot.next)) ? relDay(nextShoot.next).toLowerCase() : fmtDay(nextShoot.next, { weekday: 'short', day: 'numeric', month: 'short' })}` : 'None booked yet') : ''} onClick={openShoots} />
+          <Stat icon={PoundIcon} label={`Booked in ${monthName}`} delay={340} value={shoots.data ? Math.round(thisMonth.income) : undefined} format={money} sub={shoots.data ? `${thisMonth.count} shoot${thisMonth.count === 1 ? '' : 's'} · ${money(Math.round(thisMonth.profit))} profit` : ''} onClick={openShoots} />
+          <Stat icon={TrendIcon} label={`Profit in ${today.slice(0, 4)}`} delay={410} value={shoots.data ? Math.round(thisYear.profit) : undefined} format={money} sub={shoots.data ? (thisYear.count ? `${thisYear.count} shoot${thisYear.count === 1 ? '' : 's'} ${thisYear.income ? ` · ${percent(thisYear.profit / thisYear.income)} margin` : ''}` : 'No shoots yet this year') : ''} onClick={openShoots} />
+          <Stat icon={ClockIcon} label="Still to come in" delay={480} value={shoots.data ? Math.round(owed) : undefined} format={money} sub={shoots.data ? (owedCount ? `from ${owedCount} shoot${owedCount === 1 ? '' : 's'}` : 'Everyone’s paid up') : ''} onClick={openShoots} />
         </div>
 
-        <ShootsDash base={base || '/studio'} />
+        <ShootsDash base={base || '/studio'} data={shoots.data} setData={shoots.setData} />
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 420px), 1fr))', gap: 24, alignItems: 'start' }}>
           {/* enquiries */}
@@ -342,7 +354,7 @@ export function Overview() {
             <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
               <h2 style={h2}>Enquiries</h2>
               <div style={{ display: 'flex', gap: 6, background: SOFT, padding: 4, borderRadius: 999 }}>
-                {[['new', 'To reply', data ? data.newEnquiries : 0], ['replied', 'Replied', data ? data.enquiries - data.newEnquiries : 0], ['all', 'All', data ? data.enquiries : 0]].map(([id, label, n]) => (
+                {[['new', 'To reply', data ? data.newEnquiries : 0], ['replied', 'Replied', data ? data.repliedEnquiries : 0], ['all', 'All', data ? data.enquiries : 0]].map(([id, label, n]) => (
                   <button
                     key={id}
                     type="button"
@@ -358,7 +370,7 @@ export function Overview() {
             </div>
             {data && !enquiries.length ? (
               <div style={{ padding: '28px 16px', textAlign: 'center', color: MUTED, fontSize: 14, border: `1.5px dashed ${LINE}`, borderRadius: 16 }}>
-                {filter === 'new' ? 'Nothing waiting — nice work.' : 'No enquiries here yet.'}
+                {filter === 'new' ? 'Nothing waiting. Nice work.' : 'No enquiries here yet.'}
               </div>
             ) : null}
             <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -400,7 +412,7 @@ export function Overview() {
                     {isOpen ? (
                       <div className="lo-ov-open" style={{ marginLeft: 40, padding: 16, borderRadius: 16, background: SOFT, display: 'flex', flexDirection: 'column', gap: 10, fontSize: 14 }}>
                         {e.details ? <p style={{ margin: 0, lineHeight: 1.6, whiteSpace: 'pre-line' }}>{e.details}</p> : <p style={{ margin: 0, color: MUTED }}>No project details given.</p>}
-                        {e.budget ? <span style={{ color: MUTED }}>Budget: <strong style={{ color: INK }}>{e.budget}</strong></span> : null}
+                        {e.budget ? <span style={{ color: MUTED }}>Budget: <strong style={{ color: INK }}>{tidyRange(e.budget)}</strong></span> : null}
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                           {e.email ? (
                             <a href={`mailto:${e.email}?subject=${encodeURIComponent('Re: your enquiry')}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '9px 14px', borderRadius: 999, background: BLUE, color: '#fff', textDecoration: 'none', fontWeight: 600 }}>
@@ -438,7 +450,7 @@ export function Overview() {
             <div className="lo-ov-in" style={{ '--d': '700ms', ...card, display: 'flex', flexDirection: 'column', gap: 12 }}>
               <h2 style={h2}>Recently edited portfolio</h2>
               {data && !data.recent.length ? (
-                <div style={{ padding: '24px 16px', textAlign: 'center', color: MUTED, fontSize: 14, border: `1.5px dashed ${LINE}`, borderRadius: 16 }}>Nothing in your portfolio yet — add your first shoot above.</div>
+                <div style={{ padding: '24px 16px', textAlign: 'center', color: MUTED, fontSize: 14, border: `1.5px dashed ${LINE}`, borderRadius: 16 }}>Nothing in your portfolio yet. Add your first shoot above.</div>
               ) : null}
               {(data ? data.recent : []).map((s) => (
                 <IntentLink key={s._id} intent="edit" params={{ id: s._id, type: 'shoot' }} className="lo-ov-shoot" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: 8, borderRadius: 16, textDecoration: 'none', color: INK }}>

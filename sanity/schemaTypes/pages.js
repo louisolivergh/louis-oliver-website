@@ -1,6 +1,6 @@
 import { defineArrayMember, defineField, defineType } from 'sanity';
 
-/* Small helpers so every text box is quick to define. Empty fields fall back to placeholder text on the site —
+/* Small helpers so every text box is quick to define. Empty fields fall back to placeholder text on the site,
    the same text is shown faintly inside each empty box in the dashboard, so you can see what's live. */
 const s = (name, title, extra = {}) => defineField({ name, title, type: 'string', ...extra });
 const t = (name, title, rows = 3, extra = {}) => defineField({ name, title, type: 'text', rows, ...extra });
@@ -14,8 +14,8 @@ const page = { __experimental_formPreviewTitle: false };
 /* "Top of the page" section, used by most pages */
 const TOP = { name: 'top', title: 'Top of the page', description: 'The big headline and the short intro under it.' };
 const heroFields = (line1, line2, intro) => [
-  s('heroLine1', 'Headline — line 1', { fieldset: 'top', placeholder: line1 }),
-  s('heroLine2', 'Headline — line 2', { fieldset: 'top', description: 'Shown in blue.', placeholder: line2 }),
+  s('heroLine1', 'Headline line 1', { fieldset: 'top', placeholder: line1 }),
+  s('heroLine2', 'Headline line 2', { fieldset: 'top', description: 'Shown in blue.', placeholder: line2 }),
   t('intro', 'Intro text', 3, { fieldset: 'top', placeholder: intro }),
 ];
 
@@ -25,7 +25,7 @@ const stat = defineArrayMember({
   fields: [s('value', 'Number', { placeholder: 'e.g. 250+' }), s('label', 'Label', { placeholder: 'e.g. Shoots delivered' }), show()],
   preview: {
     select: { value: 'value', label: 'label', show: 'show' },
-    prepare: ({ value, label, show: on }) => ({ title: `${on === false ? '◌ Hidden — ' : ''}${value || 'Stat'}`, subtitle: label }),
+    prepare: ({ value, label, show: on }) => ({ title: `${on === false ? '◌ Hidden: ' : ''}${value || 'Stat'}`, subtitle: label }),
   },
 });
 
@@ -40,7 +40,7 @@ const clientLogo = defineArrayMember({
   ],
   preview: {
     select: { name: 'name', media: 'logo', show: 'show' },
-    prepare: ({ name, media, show: on }) => ({ title: `${on === false ? '◌ Hidden — ' : ''}${name || 'Client'}`, media }),
+    prepare: ({ name, media, show: on }) => ({ title: `${on === false ? '◌ Hidden: ' : ''}${name || 'Client'}`, media }),
   },
 });
 
@@ -68,14 +68,14 @@ export const siteSettings = defineType({
     defineField({ name: 'showMark', title: 'Show the small blue “LO” square next to the logo text', type: 'boolean', initialValue: true, fieldset: 'logoBlock' }),
     defineField({ name: 'logo', title: 'Logo image', type: 'image', description: 'Replaces the logo text when added.', fieldset: 'logoBlock' }),
     defineField({ name: 'logoHeight', title: 'Logo height', type: 'number', initialValue: 40, description: 'In pixels. 40 is a good starting point.', fieldset: 'logoBlock' }),
-    defineField({ name: 'logoFooter', title: 'Footer logo image', type: 'image', description: 'Optional — e.g. a white version for the dark footer.', fieldset: 'footer' }),
+    defineField({ name: 'logoFooter', title: 'Footer logo image', type: 'image', description: 'Optional, e.g. a white version for the dark footer.', fieldset: 'footer' }),
     t('footerText', 'Footer description', 2, { fieldset: 'footer', placeholder: '[One-line company description for the footer.]' }),
     defineField({
       name: 'socials',
       title: 'Social links',
       type: 'array',
       fieldset: 'footer',
-      placeholder: 'No social links yet — add Instagram, LinkedIn and so on below.',
+      placeholder: 'No social links yet. Add Instagram, LinkedIn and so on below.',
       of: [defineArrayMember({ type: 'object', name: 'social', fields: [s('label', 'Name', { placeholder: 'e.g. Instagram' }), defineField({ name: 'url', title: 'Link', type: 'url' })], preview: { select: { title: 'label', subtitle: 'url' } } })],
     }),
     s('ctaTitle', 'Heading', { fieldset: 'cta', placeholder: '[Ready to work together?]' }),
@@ -118,14 +118,14 @@ export const homePage = defineType({
     { name: 'services', title: 'Services', description: 'The heading above your three service cards.' },
     { name: 'about', title: 'Blue section', description: 'The big blue panel about you and your company.' },
     { name: 'process', title: 'Process', description: 'The heading above your steps. The steps themselves are under Process steps.' },
-    { name: 'testimonial', title: 'Backup review', description: 'Only shown until one of your shoots has a client review — after that, those rotate here automatically.' },
+    { name: 'testimonial', title: 'Backup review', description: 'Only shown until one of your shoots has a client review. After that, those rotate here automatically.' },
     { name: 'contact', title: 'Contact', description: 'The heading and text beside the enquiry form at the bottom.' },
   ],
   fields: [
-    s('heroTagline', 'Small tagline above the headline', { group: 'hero', fieldset: 'headline', placeholder: '[Short tagline — e.g. your category]' }),
-    s('heroLine1', 'Headline — line 1', { group: 'hero', fieldset: 'headline', placeholder: '[Your bold' }),
-    s('heroLine2', 'Headline — line 2', { group: 'hero', fieldset: 'headline', placeholder: 'headline goes' }),
-    s('heroLine3', 'Headline — line 3', { group: 'hero', fieldset: 'headline', description: 'Shown in blue.', placeholder: 'right here.]' }),
+    s('heroTagline', 'Small tagline above the headline', { group: 'hero', fieldset: 'headline', placeholder: '[Short tagline, e.g. your category]' }),
+    s('heroLine1', 'Headline line 1', { group: 'hero', fieldset: 'headline', placeholder: '[Your bold' }),
+    s('heroLine2', 'Headline line 2', { group: 'hero', fieldset: 'headline', placeholder: 'headline goes' }),
+    s('heroLine3', 'Headline line 3', { group: 'hero', fieldset: 'headline', description: 'Shown in blue.', placeholder: 'right here.]' }),
     t('heroText', 'Text under the headline', 3, { group: 'hero', fieldset: 'headline', placeholder: '[Supporting sentence. One or two lines explaining what Louis Oliver does and who it does it for.]' }),
     s('primaryButton', 'Main button', { group: 'hero', fieldset: 'buttons', placeholder: '[Primary action]' }),
     s('secondaryButton', 'Second button', { group: 'hero', fieldset: 'buttons', placeholder: '[Secondary action]' }),
@@ -139,13 +139,13 @@ export const homePage = defineType({
       fieldset: 'photo',
       validation: (r) => r.max(3),
       description: 'Up to three. Untick “Show on website” to hide one. If all are hidden, the row disappears.',
-      placeholder: 'No stats yet — the website shows example numbers until you add your own.',
+      placeholder: 'No stats yet. The website shows example numbers until you add your own.',
     }),
     defineField({ name: 'showMetric', title: 'Show the white floating card', type: 'boolean', initialValue: true, group: 'hero', fieldset: 'floating' }),
-    s('metricLabel', 'White card — label', { group: 'hero', fieldset: 'floating', placeholder: '[Metric label]', hidden: ({ document }) => document && document.showMetric === false }),
-    s('metricValue', 'White card — number', { group: 'hero', fieldset: 'floating', placeholder: '[+000%]', hidden: ({ document }) => document && document.showMetric === false }),
+    s('metricLabel', 'White card label', { group: 'hero', fieldset: 'floating', placeholder: '[Metric label]', hidden: ({ document }) => document && document.showMetric === false }),
+    s('metricValue', 'White card number', { group: 'hero', fieldset: 'floating', placeholder: '[+000%]', hidden: ({ document }) => document && document.showMetric === false }),
     defineField({ name: 'showStatus', title: 'Show the floating status line', type: 'boolean', initialValue: true, group: 'hero', fieldset: 'floating' }),
-    s('statusLine', 'Status line', { group: 'hero', fieldset: 'floating', placeholder: '[Status line — e.g. now booking]', hidden: ({ document }) => document && document.showStatus === false }),
+    s('statusLine', 'Status line', { group: 'hero', fieldset: 'floating', placeholder: '[Status line, e.g. now booking]', hidden: ({ document }) => document && document.showStatus === false }),
 
     defineField({ name: 'showClients', title: 'Show the client logo strip', type: 'boolean', initialValue: true, group: 'rest', fieldset: 'clientStrip' }),
     s('clientsTitle', 'Heading', { group: 'rest', fieldset: 'clientStrip', placeholder: '[Trusted by industry leaders]', hidden: ({ document }) => document && document.showClients === false }),
@@ -157,7 +157,7 @@ export const homePage = defineType({
       group: 'rest',
       fieldset: 'clientStrip',
       description: 'Add each client’s logo. Untick “Show on website” to hide one. If all are hidden, the strip disappears.',
-      placeholder: 'No logos yet — add your first client below.',
+      placeholder: 'No logos yet. Add your first client below.',
       hidden: ({ document }) => document && document.showClients === false,
     }),
     defineField({ name: 'clients', title: 'Client names (old)', type: 'array', of: [defineArrayMember({ type: 'string' })], options: { layout: 'tags' }, group: 'rest', fieldset: 'clientStrip', hidden: true }),
@@ -176,7 +176,7 @@ export const homePage = defineType({
       fieldset: 'about',
       validation: (r) => r.max(4),
       description: 'Up to four.',
-      placeholder: 'No stats yet — the website shows example numbers until you add your own.',
+      placeholder: 'No stats yet. The website shows example numbers until you add your own.',
     }),
     s('processTitle', 'Heading', { group: 'rest', fieldset: 'process', placeholder: '[A clear process from first call to results.]' }),
     t('testimonialQuote', 'Review', 3, { group: 'rest', fieldset: 'testimonial', placeholder: '[Client testimonial goes here. A short, powerful quote about the results Louis Oliver delivered.]' }),
@@ -203,7 +203,7 @@ export const servicesPage = defineType({
       type: 'array',
       validation: (r) => r.max(3),
       description: 'Your three services, in the order they appear. Drag to reorder.',
-      placeholder: 'No services yet — the website shows three example services until you add yours.',
+      placeholder: 'No services yet. The website shows three example services until you add yours.',
       of: [
         defineArrayMember({
           type: 'object',
@@ -219,8 +219,8 @@ export const servicesPage = defineType({
               of: [defineArrayMember({ type: 'object', name: 'include', fields: [s('title', 'Item'), t('detail', 'Detail shown when opened', 3)], preview: { select: { title: 'title' } } })],
             }),
             s('price', 'Price line', { description: 'e.g. From £2,000 · or price on request' }),
-            s('resultLabel', 'Floating card — label'),
-            s('resultValue', 'Floating card — number'),
+            s('resultLabel', 'Floating card label'),
+            s('resultValue', 'Floating card number'),
           ],
           preview: { select: { title: 'name', subtitle: 'promise' } },
         }),
@@ -233,7 +233,7 @@ export const servicesPage = defineType({
       type: 'array',
       fieldset: 'why',
       validation: (r) => r.max(3),
-      placeholder: 'No reasons yet — add up to three below.',
+      placeholder: 'No reasons yet. Add up to three below.',
       of: [defineArrayMember({ type: 'object', name: 'reason', fields: [s('title', 'Title'), t('text', 'Text', 2)], preview: { select: { title: 'title' } } })],
     }),
   ],
@@ -264,7 +264,7 @@ export const aboutPage = defineType({
       type: 'array',
       fieldset: 'valuesBlock',
       validation: (r) => r.max(3),
-      placeholder: 'No values yet — add up to three below.',
+      placeholder: 'No values yet. Add up to three below.',
       of: [defineArrayMember({ type: 'object', name: 'value', fields: [s('title', 'Title'), t('text', 'Text', 2)], preview: { select: { title: 'title' } } })],
     }),
     s('equipmentTitle', 'Heading', { fieldset: 'equipment', placeholder: '[The kit behind every shoot.]' }),
@@ -283,7 +283,7 @@ export const processPage = defineType({
   fields: [
     ...heroFields('[A proven path from', 'idea to impact.]', '[Explain how you work with clients and why your process gets results.]'),
     s('faqTitle', 'Heading', { fieldset: 'faq', placeholder: '[Everything you need to know.]' }),
-    defineField({ name: 'faqs', title: 'Questions', type: 'array', of: [faq], fieldset: 'faq', placeholder: 'No questions yet — add your first one below.' }),
+    defineField({ name: 'faqs', title: 'Questions', type: 'array', of: [faq], fieldset: 'faq', placeholder: 'No questions yet. Add your first one below.' }),
   ],
   preview: { prepare: () => ({ title: 'Process page' }) },
 });
@@ -301,7 +301,7 @@ export const processStep = defineType({
     s('title', 'Step name', { fieldset: 'step', placeholder: 'e.g. Discovery call', validation: (r) => r.required() }),
     t('description', 'Description', 5, { fieldset: 'step', placeholder: 'What happens in this step, and what the client is involved in.' }),
     defineField({ name: 'order', title: 'Position', type: 'number', description: '1 = first step.', fieldset: 'when', validation: (r) => r.required().min(1) }),
-    s('duration', 'Duration', { fieldset: 'when', placeholder: 'e.g. 1–2 days' }),
+    s('duration', 'Duration', { fieldset: 'when', placeholder: 'e.g. 1 to 2 days' }),
     defineField({
       name: 'outputs',
       title: 'What the client gets',
@@ -314,7 +314,7 @@ export const processStep = defineType({
   orderings: [{ title: 'Position', name: 'pos', by: [{ field: 'order', direction: 'asc' }] }],
   preview: {
     select: { title: 'title', order: 'order', duration: 'duration' },
-    prepare: ({ title, order, duration }) => ({ title: `${order ? String(order).padStart(2, '0') + ' — ' : ''}${title || 'Step'}`, subtitle: duration }),
+    prepare: ({ title, order, duration }) => ({ title: `${order ? String(order).padStart(2, '0') + ' · ' : ''}${title || 'Step'}`, subtitle: duration }),
   },
 });
 
@@ -364,12 +364,12 @@ export const contactPage = defineType({
     s('email', 'Email', { fieldset: 'details', placeholder: '[hello@yourdomain.com]' }),
     s('phone', 'Phone', { fieldset: 'details', placeholder: '[+00 0000 000000]' }),
     t('address', 'Office / base address', 2, { fieldset: 'details', placeholder: '[City, Postcode]' }),
-    s('hours', 'Hours', { fieldset: 'details', placeholder: '[Mon–Fri, 9:00–18:00]' }),
+    s('hours', 'Hours', { fieldset: 'details', placeholder: '[Mon to Fri, 9:00 to 18:00]' }),
     s('formTitle', 'Form heading', { fieldset: 'form', placeholder: 'Start a project' }),
     defineField({ name: 'services', title: 'Services in the drop-down', type: 'array', of: [defineArrayMember({ type: 'string' })], options: { layout: 'tags' }, fieldset: 'form', description: 'Type one and press Enter.' }),
-    defineField({ name: 'budgets', title: 'Budget ranges in the drop-down', type: 'array', of: [defineArrayMember({ type: 'string' })], options: { layout: 'tags' }, fieldset: 'form', description: 'Type one and press Enter, e.g. £2k–£5k.' }),
+    defineField({ name: 'budgets', title: 'Budget ranges in the drop-down', type: 'array', of: [defineArrayMember({ type: 'string' })], options: { layout: 'tags' }, fieldset: 'form', description: 'Type one and press Enter, e.g. £2k to £5k.' }),
     s('faqTitle', 'Heading', { fieldset: 'faq', placeholder: '[Common questions from new clients.]' }),
-    defineField({ name: 'faqs', title: 'Questions', type: 'array', of: [faq], fieldset: 'faq', placeholder: 'No questions yet — add your first one below.' }),
+    defineField({ name: 'faqs', title: 'Questions', type: 'array', of: [faq], fieldset: 'faq', placeholder: 'No questions yet. Add your first one below.' }),
   ],
   preview: { prepare: () => ({ title: 'Contact page' }) },
 });
@@ -387,7 +387,15 @@ export const enquiry = defineType({
   ],
   fields: [
     defineField({ name: 'replied', title: 'Replied', type: 'boolean', initialValue: false, fieldset: 'status', description: 'Tick once you’ve replied, so you can keep track.' }),
-    t('notes', 'Your notes', 3, { fieldset: 'status', description: 'Private — only visible in the dashboard.', placeholder: 'e.g. Called back on Tuesday, sending a quote Friday.' }),
+    defineField({
+      name: 'declined',
+      title: 'Not going ahead',
+      type: 'boolean',
+      initialValue: false,
+      fieldset: 'status',
+      description: 'Tick if it won’t become a shoot: spam, not a fit, or they said no. It drops off your “Not booked yet” lists.',
+    }),
+    t('notes', 'Your notes', 3, { fieldset: 'status', description: 'Private. Only visible in the dashboard.', placeholder: 'e.g. Called back on Tuesday, sending a quote Friday.' }),
     s('name', 'Name', { readOnly: true, fieldset: 'from' }),
     s('company', 'Company', { readOnly: true, fieldset: 'from' }),
     s('email', 'Email', { readOnly: true, fieldset: 'from' }),
@@ -401,7 +409,7 @@ export const enquiry = defineType({
   preview: {
     select: { name: 'name', company: 'company', at: 'receivedAt', replied: 'replied' },
     prepare: ({ name, company, at, replied }) => ({
-      title: `${replied ? '✓ ' : '● '}${[name, company].filter(Boolean).join(' — ') || 'Enquiry'}`,
+      title: `${replied ? '✓ ' : '● '}${[name, company].filter(Boolean).join(' · ') || 'Enquiry'}`,
       subtitle: `${replied ? 'Replied' : 'To reply'}${at ? ' · ' + new Date(at).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }) : ''}`,
     }),
   },

@@ -1,33 +1,39 @@
 import { defineArrayMember, defineField, defineType } from 'sanity';
 import {
   COST_CATEGORIES,
+  fmtDay,
   KINDS,
   LINK_KINDS,
   LOCATION_TYPES,
   RATE_UNITS,
+  REMINDER_OPTIONS,
   ROLES,
   STATUSES,
+  statusOf,
+  tidyTitle,
   TIME_OPTIONS,
   UNITS,
-  fmtDay,
-  statusOf,
 } from '../bookingData';
 import { EquipmentTickInput } from '../components/EquipmentTickInput';
 import {
+  BareField,
   BudgetSummaryInput,
   ClientInput,
   CostsInput,
   LinksInput,
   LocationsInput,
+  MoreDaysInput,
   NotesInput,
   PaymentsInput,
   PeopleInput,
   QuoteInput,
+  RemindersInput,
+  SaveShootInput,
   ScheduleInput,
   ShotListInput,
 } from '../components/BookingInputs';
 
-/* A booked shoot: everything about one job in one place — who it's for, when and where, who's on set,
+/* A booked shoot: everything about one job in one place, who it's for, when and where, who's on set,
    the money, the plan, the kit and the notes. Shoots are private: they're never published to the website. */
 
 const str = (name, title, extra = {}) => defineField({ name, title, type: 'string', ...extra });
@@ -104,6 +110,9 @@ const payment = item('payment', 'Payment', [defineField({ name: 'date', title: '
 const slot = item('slot', 'Time slot', [str('time', 'Time'), str('text', 'What’s happening')], { select: { title: 'text', subtitle: 'time' } });
 const shot = item('shot', 'Shot', [str('text', 'Shot'), yes('done', 'Got it')], { select: { title: 'text' } });
 const note = item('note', 'Note', [defineField({ name: 'date', title: 'Date', type: 'date' }), txt('text', 'Note', 3)], { select: { title: 'text', subtitle: 'date' } });
+const shootDay = item('shootDay', 'Shoot day', [defineField({ name: 'date', title: 'Day', type: 'date' }), str('startTime', 'Start'), str('endTime', 'Finish'), str('note', 'Note')], {
+  select: { title: 'date', subtitle: 'startTime' },
+});
 const link = item('link', 'Link', [pick('kind', 'Type', LINK_KINDS), str('label', 'Name'), str('url', 'Link')], { select: { title: 'label', subtitle: 'url' } });
 
 export const booking = defineType({
@@ -122,12 +131,12 @@ export const booking = defineType({
   ],
   fieldsets: [
     { name: 'job', title: 'The shoot', description: 'A name you’ll recognise, where it’s up to, and what you’re shooting.' },
-    { name: 'when', title: 'When', description: 'It appears on your calendar on these days.', options: { columns: 2 } },
+    { name: 'when', title: 'When', description: 'It appears on your calendar on these days.', options: { columns: 3 } },
     { name: 'delivery', title: 'Delivery', description: 'What the client gets, and when it’s due.' },
   ],
   fields: [
     /* ---------- Overview ---------- */
-    str('title', 'Shoot name', { group: 'overview', fieldset: 'job', placeholder: 'e.g. Ink Heaven — autumn product shoot' }),
+    str('title', 'Shoot name', { group: 'overview', fieldset: 'job' }),
     str('status', 'Where it’s up to', {
       group: 'overview',
       fieldset: 'job',
@@ -146,11 +155,11 @@ export const booking = defineType({
       options: { columns: 2 },
       fields: [
         defineField({ name: 'enquiry', title: 'Enquiry', type: 'reference', to: [{ type: 'enquiry' }], weak: true, hidden: true }),
-        str('name', 'Name', { placeholder: 'e.g. Sarah Cole' }),
-        str('company', 'Business', { placeholder: 'e.g. Ink Heaven' }),
+        str('name', 'Name'),
+        str('company', 'Business'),
         str('email', 'Email', { placeholder: 'name@business.co.uk' }),
         str('phone', 'Phone', { placeholder: 'e.g. 07700 900123' }),
-        str('budget', 'Their budget', { description: 'What they told you they can spend.', placeholder: 'e.g. £1,000–£2,500' }),
+        str('budget', 'Their budget', { description: 'What they told you they can spend.', placeholder: 'e.g. £1,000 to £2,500' }),
         str('service', 'What they asked for', { placeholder: 'e.g. Product photography' }),
         txt('message', 'Their enquiry', 4, { hidden: true }),
         defineField({ name: 'enquiredAt', title: 'Enquired', type: 'datetime', hidden: true }),
@@ -174,11 +183,35 @@ export const booking = defineType({
       fieldset: 'when',
       description: 'Only if it runs over more than one day.',
       options: { dateFormat: 'ddd D MMM YYYY' },
+      // replaced by "More days" below, still shown on any shoot that already uses it
+      hidden: ({ value }) => !value,
       validation: (r) =>
         r.custom((end, ctx) => (end && ctx.document && ctx.document.date && end < ctx.document.date ? 'The last day is before the first day.' : true)).warning(),
     }),
     str('startTime', 'Start', { group: 'overview', fieldset: 'when', options: { list: TIME_OPTIONS } }),
     str('endTime', 'Finish', { group: 'overview', fieldset: 'when', options: { list: TIME_OPTIONS } }),
+    defineField({
+      name: 'moreDays',
+      title: 'More days',
+      type: 'array',
+      group: 'overview',
+      fieldset: 'when',
+      description: 'Shooting on more than one day? Add each extra day, back to back or weeks apart, each with its own times.',
+      of: [shootDay],
+      components: { input: MoreDaysInput },
+    }),
+    defineField({
+      name: 'reminders',
+      title: 'Email reminders',
+      type: 'array',
+      group: 'overview',
+      description: 'Pick when you’d like an email about this shoot. It goes to contact@louisoliver.co.uk first thing that morning (around 7am, or 8am in summer).',
+      of: [defineArrayMember({ type: 'string' })],
+      options: { list: REMINDER_OPTIONS.map(({ value, title }) => ({ value, title })) },
+      initialValue: ['1'],
+      components: { input: RemindersInput },
+    }),
+    defineField({ name: 'remindersSent', title: 'Reminders sent', type: 'array', of: [defineArrayMember({ type: 'string' })], hidden: true, readOnly: true }),
 
     /* ---------- Locations ---------- */
     defineField({
@@ -197,7 +230,7 @@ export const booking = defineType({
       title: 'Cast & crew',
       type: 'array',
       group: 'crew',
-      description: 'Models, actors, assistants, makeup — anyone on the shoot. Their fees count towards your costs automatically.',
+      description: 'Models, actors, assistants, makeup: anyone on the shoot. Their fees count towards your costs automatically.',
       of: [person],
       components: { input: PeopleInput },
     }),
@@ -205,7 +238,7 @@ export const booking = defineType({
     /* ---------- Budget ---------- */
     str('numbers', 'The numbers', {
       group: 'money',
-      description: 'Worked out from everything on this shoot — your price, locations, people and costs.',
+      description: 'Worked out from everything on this shoot: your price, locations, people and costs.',
       components: { input: BudgetSummaryInput },
     }),
     defineField({
@@ -222,7 +255,7 @@ export const booking = defineType({
       title: 'Other costs',
       type: 'array',
       group: 'money',
-      description: 'Studio or kit hire, travel, props, food — anything else you pay for. Location and people fees are added from their tabs.',
+      description: 'Studio or kit hire, travel, props, food: anything else you pay for. Location and people fees are added from their tabs.',
       of: [costLine],
       components: { input: CostsInput },
     }),
@@ -236,7 +269,7 @@ export const booking = defineType({
       title: 'Payments received',
       type: 'array',
       group: 'money',
-      description: 'Deposits and payments from the client — what’s still owed is worked out for you.',
+      description: 'Deposits and payments from the client. What’s still owed is worked out for you.',
       of: [payment],
       components: { input: PaymentsInput },
     }),
@@ -245,7 +278,7 @@ export const booking = defineType({
     txt('brief', 'The brief', 5, {
       group: 'plan',
       description: 'What you’re shooting, the look they want, and what it’s for.',
-      placeholder: 'e.g. New autumn range for their website and Instagram — bright, natural light, close-up product detail.',
+      placeholder: 'e.g. New autumn range for their website and Instagram. Bright, natural light, close-up product detail.',
     }),
     defineField({
       name: 'schedule',
@@ -283,7 +316,7 @@ export const booking = defineType({
       title: 'Notes from the client',
       type: 'array',
       group: 'files',
-      description: 'Anything they tell you along the way — newest at the top.',
+      description: 'Anything they tell you along the way, newest at the top.',
       of: [note],
       components: { input: NotesInput },
     }),
@@ -292,9 +325,18 @@ export const booking = defineType({
       title: 'Links & files',
       type: 'array',
       group: 'files',
-      description: 'Moodboards, contracts, invoices, galleries — paste the link.',
+      description: 'Moodboards, contracts, invoices, galleries: paste the link.',
       of: [link],
       components: { input: LinksInput },
+    }),
+
+    /* ---------- the Save button, at the bottom of every tab ---------- */
+    defineField({
+      name: 'bookedAt',
+      title: 'Save the shoot',
+      type: 'datetime',
+      group: ['overview', 'places', 'crew', 'money', 'plan', 'files'],
+      components: { input: SaveShootInput, field: BareField },
     }),
   ],
   orderings: [
@@ -304,7 +346,7 @@ export const booking = defineType({
   preview: {
     select: { title: 'title', name: 'client.name', company: 'client.company', date: 'date', status: 'status', start: 'startTime' },
     prepare: ({ title, name, company, date, status, start }) => ({
-      title: title || company || name || 'New shoot',
+      title: tidyTitle(title || company || name || 'New shoot'),
       subtitle: [date ? fmtDay(date, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) : 'No date yet', start, statusOf(status).title]
         .filter(Boolean)
         .join(' · '),

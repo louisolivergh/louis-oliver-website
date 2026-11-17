@@ -37,7 +37,7 @@ export function StudioLogo() {
   }, [client]);
 
   /* Drawn at its real size (not scaled up afterwards, which blurs it) but with negative margins,
-     so it looks larger yet takes the same space — the title text never moves. */
+     so it looks larger yet takes the same space, so the title text never moves. */
   const style = {
     display: 'block',
     width: '1.65em',

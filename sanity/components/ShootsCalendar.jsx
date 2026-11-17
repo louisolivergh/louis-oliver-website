@@ -2,10 +2,12 @@
 
 /**
  * The Shoots tab: a full calendar of your booked shoots (sanity/structure.js → shootsStructure).
- *  - nothing open → the month, plus what's coming up, shoots without a date and enquiries ready to book
+ *  - nothing open → the month, plus what's coming up, shoots without a date and enquiries not booked yet
  *  - List → every shoot in a table, with the money
  *  - a shoot open beside it (or a small screen) → a slim month and the agenda
  * Click a day to book a shoot on it. Drag a shoot to another day to move it.
+ * Today has a dotted ring; the day(s) of the shoot you have open are filled in.
+ * Shoots still being created (not saved with "Save shoot" yet) show faded, and aren't counted in the money.
  * Styles: app/studio/studio.css (".lo-cal…").
  */
 
@@ -13,23 +15,27 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'sanity/router';
 import { usePaneRouter } from 'sanity/structure';
 import {
-  STATUSES,
   addDays,
   bookingTitle,
   clientLine,
+  dayInfo,
   daysBetween,
   fmtDay,
+  isBooked,
   money,
   moneyShort,
+  nextDayOf,
   parseYmd,
   percent,
   relDay,
+  STATUSES,
   statusOf,
+  tidyRange,
   timeRange,
   todayYmd,
   ymd,
 } from '../bookingData';
-import { bookShoot, unbookedOf, upcomingOf, useShootData, withMoney } from './shootData';
+import { bookShoot, declineEnquiry, unbookedOf, upcomingOf, useShootData, withMoney } from './shootData';
 import { CalendarIcon, ChevronLeft, ChevronRight, InboxIcon, ListIcon, PlusIcon } from './DashIcons';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -53,10 +59,11 @@ const placeOf = (b) => {
   const l = (Array.isArray(b.locations) ? b.locations : []).find((x) => x && (x.name || x.address));
   return l ? l.name || l.address : '';
 };
-const dragProps = (b) => ({
+/* you drag one day of a shoot, that day is the one that moves */
+const dragProps = (b, day) => ({
   draggable: true,
   onDragStart: (e) => {
-    e.dataTransfer.setData(DND, b._baseId);
+    e.dataTransfer.setData(DND, `${b._baseId}|${day || ''}`);
     e.dataTransfer.effectAllowed = 'move';
   },
 });
@@ -71,11 +78,30 @@ function Stat({ label, value, sub, main }) {
   );
 }
 
-function AgendaRow({ b, ChildLink, active, showMoney, i = 0 }) {
-  const d = parseYmd(b.date);
-  const st = statusOf(b.status);
+function Unsaved() {
   return (
-    <ChildLink childId={b._baseId} className="lo-ag" data-status={st.value} data-active={active ? '' : undefined} style={{ '--i': Math.min(i, 12) }} {...dragProps(b)}>
+    <span className="lo-unsaved" title="Still being created. Press Save shoot on it to book it in.">
+      Not saved
+    </span>
+  );
+}
+
+function AgendaRow({ b, ChildLink, active, showMoney, i = 0, today }) {
+  const day = b.date ? nextDayOf(b, today) : '';
+  const d = parseYmd(day);
+  const st = statusOf(b.status);
+  const info = day ? dayInfo(b, day) : { start: '', end: '' };
+  const more = b.days.length > 1 ? `${b.days.length} days` : '';
+  return (
+    <ChildLink
+      childId={b._baseId}
+      className="lo-ag"
+      data-status={st.value}
+      data-active={active ? '' : undefined}
+      data-draft={isBooked(b) ? undefined : ''}
+      style={{ '--i': Math.min(i, 12) }}
+      {...dragProps(b, day)}
+    >
       <span className="lo-ag-date">
         {d ? (
           <>
@@ -88,13 +114,17 @@ function AgendaRow({ b, ChildLink, active, showMoney, i = 0 }) {
       </span>
       <span className="lo-ag-main">
         <span className="lo-ag-title">{bookingTitle(b)}</span>
-        <span className="lo-ag-meta">{[d ? relDay(b.date) : '', timeRange(b.startTime, b.endTime), placeOf(b)].filter(Boolean).join(' · ') || clientLine(b) || 'Add the details'}</span>
+        <span className="lo-ag-meta">{[d ? relDay(day) : '', timeRange(info.start, info.end), more, placeOf(b)].filter(Boolean).join(' · ') || clientLine(b) || 'Add the details'}</span>
       </span>
       <span className="lo-ag-side">
-        <span className="lo-ag-status" data-status={st.value}>
-          {st.short}
-        </span>
-        {showMoney && (b.money.income || b.money.costs) ? <span className="lo-ag-money">{moneyShort(b.money.profit)} profit</span> : null}
+        {isBooked(b) ? (
+          <span className="lo-ag-status" data-status={st.value}>
+            {st.short}
+          </span>
+        ) : (
+          <Unsaved />
+        )}
+        {showMoney && isBooked(b) && (b.money.income || b.money.costs) ? <span className="lo-ag-money">{moneyShort(b.money.profit)} profit</span> : null}
       </span>
     </ChildLink>
   );
@@ -103,20 +133,26 @@ function AgendaRow({ b, ChildLink, active, showMoney, i = 0 }) {
 function Chip({ b, day, ChildLink, active }) {
   const at = b.days.indexOf(day);
   const st = statusOf(b.status);
+  const info = dayInfo(b, day);
+  const draft = !isBooked(b);
   return (
     <ChildLink
       childId={b._baseId}
       className="lo-chip"
       data-status={st.value}
       data-active={active ? '' : undefined}
-      data-cont={at > 0 ? '' : undefined}
-      title={`${bookingTitle(b)} — ${st.title}${b.startTime ? ` · ${timeRange(b.startTime, b.endTime)}` : ''}${b.days.length > 1 ? ` · day ${at + 1} of ${b.days.length}` : ''}`}
+      data-draft={draft ? '' : undefined}
+      title={`${bookingTitle(b)} · ${draft ? 'Not saved yet' : st.title}${info.start ? ` · ${timeRange(info.start, info.end)}` : ''}${b.days.length > 1 ? ` · day ${at + 1} of ${b.days.length}` : ''}${info.note ? ` · ${info.note}` : ''}`}
       onClick={(e) => e.stopPropagation()}
-      {...dragProps(b)}
+      {...dragProps(b, day)}
     >
-      {at <= 0 && b.startTime ? <span className="lo-chip-time">{b.startTime}</span> : null}
+      {info.start ? <span className="lo-chip-time">{info.start}</span> : null}
       <span className="lo-chip-title">{bookingTitle(b)}</span>
-      {b.days.length > 1 ? <span className="lo-chip-day">{at + 1}/{b.days.length}</span> : null}
+      {b.days.length > 1 ? (
+        <span className="lo-chip-day">
+          {at + 1}/{b.days.length}
+        </span>
+      ) : null}
     </ChildLink>
   );
 }
@@ -126,13 +162,12 @@ function ListView({ bookings, openId, ChildLink, today }) {
   const rows = useMemo(() => {
     const last = (b) => (b.days.length ? b.days[b.days.length - 1] : '');
     let list = bookings;
-    if (filter === 'upcoming') list = bookings.filter((b) => !b.date || last(b) >= today);
-    if (filter === 'past') list = bookings.filter((b) => b.date && last(b) < today);
-    return [...list].sort((a, b) =>
-      filter === 'past' ? String(b.date).localeCompare(String(a.date)) : String(a.date || '9999').localeCompare(String(b.date || '9999'))
-    );
+    if (filter === 'upcoming') list = bookings.filter((b) => !b.days.length || last(b) >= today);
+    if (filter === 'past') list = bookings.filter((b) => b.days.length && last(b) < today);
+    const key = (b) => (filter === 'past' ? last(b) : b.days.length ? nextDayOf(b, today) : '9999');
+    return [...list].sort((a, b) => (filter === 'past' ? key(b).localeCompare(key(a)) : key(a).localeCompare(key(b))));
   }, [bookings, filter, today]);
-  const live = rows.filter((b) => b.status !== 'cancelled');
+  const live = rows.filter((b) => b.status !== 'cancelled' && isBooked(b));
   const tot = {
     income: sumOf(live, (b) => b.money.income),
     costs: sumOf(live, (b) => b.money.costs),
@@ -164,7 +199,9 @@ function ListView({ bookings, openId, ChildLink, today }) {
           <span data-wide="">Where</span>
           <span>Status</span>
           <span data-num="">Price</span>
-          <span data-num="" data-wide="">Costs</span>
+          <span data-num="" data-wide="">
+            Costs
+          </span>
           <span data-num="">Profit</span>
           <span data-num="">To come in</span>
         </div>
@@ -172,47 +209,60 @@ function ListView({ bookings, openId, ChildLink, today }) {
           rows.map((b, i) => {
             const st = statusOf(b.status);
             const m = b.money;
+            const day = b.days.length ? nextDayOf(b, today) : '';
             return (
-              <ChildLink key={b._baseId} childId={b._baseId} className="lo-tbl-row" data-status={st.value} data-active={openId === b._baseId ? '' : undefined} style={{ '--i': Math.min(i, 14) }}>
+              <ChildLink
+                key={b._baseId}
+                childId={b._baseId}
+                className="lo-tbl-row"
+                data-status={st.value}
+                data-active={openId === b._baseId ? '' : undefined}
+                data-draft={isBooked(b) ? undefined : ''}
+                style={{ '--i': Math.min(i, 14) }}
+              >
                 <span className="lo-tbl-date">
-                  {b.date ? fmtDay(b.date, { day: 'numeric', month: 'short', year: 'numeric' }) : 'No date'}
-                  <small>{b.date ? relDay(b.date) : 'Add a date'}</small>
+                  {day ? fmtDay(day, { day: 'numeric', month: 'short', year: 'numeric' }) : 'No date'}
+                  <small>{day ? `${relDay(day)}${b.days.length > 1 ? ` · ${b.days.length} days` : ''}` : 'Add a date'}</small>
                 </span>
                 <span className="lo-tbl-shoot">
                   <b>{bookingTitle(b)}</b>
-                  <small>{clientLine(b) || '—'}</small>
+                  <small>{clientLine(b) || 'No client yet'}</small>
                 </span>
                 <span className="lo-tbl-where" data-wide="">
-                  {placeOf(b) || '—'}
+                  {placeOf(b) || <span className="lo-tbl-none">No location yet</span>}
                 </span>
                 <span>
-                  <span className="lo-ag-status" data-status={st.value}>
-                    {st.short}
-                  </span>
+                  {isBooked(b) ? (
+                    <span className="lo-ag-status" data-status={st.value}>
+                      {st.short}
+                    </span>
+                  ) : (
+                    <Unsaved />
+                  )}
                 </span>
-                <span data-num="">{m.income ? money(m.income) : '—'}</span>
+                <span data-num="">{m.income ? money(m.income) : <span className="lo-tbl-none">No price</span>}</span>
                 <span data-num="" data-wide="">
-                  {m.costs ? money(m.costs) : '—'}
+                  {m.costs ? money(m.costs) : <span className="lo-tbl-none">None</span>}
                 </span>
                 <span data-num="" data-neg={m.profit < 0 ? '' : undefined}>
-                  <b>{m.income || m.costs ? money(m.profit) : '—'}</b>
+                  {m.income || m.costs ? <b>{money(m.profit)}</b> : null}
                   {m.margin !== null ? <small>{percent(m.margin)}</small> : null}
                 </span>
                 <span data-num="" data-ok={m.payState === 'paid' ? '' : undefined}>
-                  {m.income ? (m.payState === 'paid' ? 'Paid' : money(m.outstanding)) : '—'}
+                  {m.income ? (m.payState === 'paid' ? 'Paid' : money(m.outstanding)) : null}
                 </span>
               </ChildLink>
             );
           })
         ) : (
-          <div className="lo-tbl-empty">{filter === 'past' ? 'No past shoots yet.' : 'Nothing booked yet — click “Book a shoot” to add your first.'}</div>
+          <div className="lo-tbl-empty">{filter === 'past' ? 'No past shoots yet.' : 'Nothing booked yet. Click “Book a shoot” to add your first.'}</div>
         )}
         {live.length ? (
           <div className="lo-tbl-foot">
             <span>Total</span>
             <span>
               {live.length} shoot{live.length === 1 ? '' : 's'}
-              {rows.length !== live.length ? <small>cancelled ones not counted</small> : null}
+              {rows.length !== live.length ? <small>cancelled and unsaved ones not counted</small> : null}
             </span>
             <span data-wide="" />
             <span />
@@ -234,7 +284,7 @@ function ListView({ bookings, openId, ChildLink, today }) {
 
 export function ShootsCalendar(props) {
   const openId = String(props.childItemId || '').replace(/^__edit__/, '');
-  const { ChildLink } = usePaneRouter();
+  const { ChildLink, routerPanesState } = usePaneRouter();
   const router = useRouter();
   const { data, setData, load, client } = useShootData();
   const today = todayYmd();
@@ -261,6 +311,18 @@ export function ShootsCalendar(props) {
   const enquiries = data ? data.enquiries : [];
   const mode = openId || !wide ? 'side' : 'full';
 
+  /* the day(s) you've got open: the open shoot's days, or the day you clicked for a new one */
+  const openPane = Array.isArray(routerPanesState) && Array.isArray(routerPanesState[0]) ? routerPanesState[0][0] : null;
+  const pendingDate = openPane && openPane.payload && typeof openPane.payload.date === 'string' ? openPane.payload.date : '';
+  const openShoot = openId ? bookings.find((b) => b._baseId === openId) : null;
+  const selected = useMemo(() => new Set(openShoot && openShoot.days.length ? openShoot.days : pendingDate ? [pendingDate] : []), [openShoot, pendingDate]);
+
+  /* jump to the month of the shoot you open */
+  const firstSelected = [...selected][0] || '';
+  useEffect(() => {
+    if (firstSelected) setMonth(firstOfMonth(firstSelected));
+  }, [firstSelected]);
+
   const byDay = useMemo(() => {
     const m = new Map();
     bookings.forEach((b) => {
@@ -269,11 +331,11 @@ export function ShootsCalendar(props) {
         m.get(d).push(b);
       });
     });
-    m.forEach((list) =>
+    m.forEach((list, d) =>
       list.sort(
         (a, b) =>
           (a.status === 'cancelled') - (b.status === 'cancelled') ||
-          String(a.startTime || '99').localeCompare(String(b.startTime || '99')) ||
+          String(dayInfo(a, d).start || '99').localeCompare(String(dayInfo(b, d).start || '99')) ||
           bookingTitle(a).localeCompare(bookingTitle(b))
       )
     );
@@ -282,12 +344,25 @@ export function ShootsCalendar(props) {
 
   const book = (date, enquiryId) => bookShoot(router, { date, enquiryId });
 
-  const move = (baseId, date) => {
+  /* drag a day of a shoot to another day: the first day brings any run of days with it; an extra day moves on its own */
+  const move = (payload, date) => {
+    const [baseId, fromDay] = String(payload).split('|');
     const b = bookings.find((x) => x._baseId === baseId);
-    if (!b || !date || b.date === date) return;
-    const patch = { date };
-    if (b.date && parseYmd(b.endDate)) patch.endDate = addDays(b.endDate, daysBetween(b.date, date));
-    setData((d) => d && { ...d, bookings: d.bookings.map((x) => (x._baseId === baseId ? withMoney({ ...x, ...patch }) : x)) });
+    if (!b || !date) return;
+    const extra = fromDay && fromDay !== b.date ? (Array.isArray(b.moreDays) ? b.moreDays : []).find((d) => d && d.date === fromDay) : null;
+    let patch;
+    let local;
+    if (extra) {
+      if (extra.date === date) return;
+      patch = { [`moreDays[_key=="${extra._key}"].date`]: date };
+      local = { moreDays: b.moreDays.map((d) => (d._key === extra._key ? { ...d, date } : d)) };
+    } else {
+      if (b.date === date) return;
+      patch = { date };
+      if (b.date && parseYmd(b.endDate)) patch.endDate = addDays(b.endDate, daysBetween(b.date, date));
+      local = patch;
+    }
+    setData((d) => d && { ...d, bookings: d.bookings.map((x) => (x._baseId === baseId ? withMoney({ ...x, ...local }) : x)) });
     client
       .patch(b._id)
       .set(patch)
@@ -305,11 +380,11 @@ export function ShootsCalendar(props) {
       if (!e.currentTarget.contains(e.relatedTarget)) setDropDay((x) => (x === d ? null : x));
     },
     onDrop: (e) => {
-      const id = e.dataTransfer.getData(DND);
+      const payload = e.dataTransfer.getData(DND);
       setDropDay(null);
-      if (!id) return;
+      if (!payload) return;
       e.preventDefault();
-      move(id, d);
+      move(payload, d);
     },
   });
 
@@ -320,18 +395,17 @@ export function ShootsCalendar(props) {
   const thisMonth = firstOfMonth(today);
 
   const upcoming = upcomingOf(bookings, today);
-  const undated = bookings.filter((b) => !b.date && b.status !== 'cancelled');
-  const toBook = unbookedOf(enquiries, bookings).slice(0, 5);
+  const undated = bookings.filter((b) => !b.days.length && b.status !== 'cancelled');
+  const notBooked = unbookedOf(enquiries, bookings).slice(0, 5);
   const inMonth = bookings
     .filter((b) => b.days.some((d) => d.slice(0, 7) === month.slice(0, 7)))
-    .sort((a, b) => String(a.date).localeCompare(String(b.date)) || String(a.startTime || '').localeCompare(String(b.startTime || '')));
-  const scope = (view === 'month' ? inMonth.filter((b) => b.date.slice(0, 7) === month.slice(0, 7)) : upcoming).filter((b) => b.status !== 'cancelled');
+    .map((b) => ({ ...b, first: b.days.find((d) => d.slice(0, 7) === month.slice(0, 7)) }))
+    .sort((a, b) => a.first.localeCompare(b.first) || String(a.startTime || '').localeCompare(String(b.startTime || '')));
+  const counted = (b) => b.status !== 'cancelled' && isBooked(b);
+  const scope = (view === 'month' ? inMonth.filter((b) => b.days[0].slice(0, 7) === month.slice(0, 7)) : upcoming).filter(counted);
   const sIncome = sumOf(scope, (b) => b.money.income);
   const sProfit = sumOf(scope, (b) => b.money.profit);
-  const owed = sumOf(
-    bookings.filter((b) => b.status !== 'cancelled'),
-    (b) => b.money.outstanding
-  );
+  const owed = sumOf(bookings.filter(counted), (b) => b.money.outstanding);
 
   const nav = (
     <div className="lo-cal-nav">
@@ -344,6 +418,32 @@ export function ShootsCalendar(props) {
       <button type="button" onClick={() => setMonth(shiftMonth(month, 1))} aria-label="Next month">
         <ChevronRight />
       </button>
+    </div>
+  );
+
+  const notBookedCard = (
+    <div className="lo-side-card">
+      <span className="lo-side-label">Not booked yet</span>
+      {data && !notBooked.length ? <p className="lo-side-empty">No enquiries waiting. Every one has a shoot or isn’t going ahead.</p> : null}
+      {notBooked.map((e, i) => (
+        <div key={e._baseId} className="lo-enq" style={{ '--i': i }}>
+          <span className="lo-enq-ic">
+            <InboxIcon />
+          </span>
+          <span className="lo-enq-main">
+            <span className="lo-enq-name">{[e.name, e.company].filter(Boolean).join(' · ') || 'Enquiry'}</span>
+            <span className="lo-enq-meta">{[e.service, tidyRange(e.budget), e.receivedAt ? relDay(e.receivedAt.slice(0, 10)) : ''].filter(Boolean).join(' · ')}</span>
+          </span>
+          <button type="button" className="lo-mini-btn" data-primary="" onClick={() => book(undefined, e._baseId)}>
+            Book
+          </button>
+          <button type="button" className="lo-enq-x" onClick={() => declineEnquiry(client, setData, e)} title="Not going ahead? Take it off this list" aria-label="Not going ahead">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
+              <path d="M3 3l6 6M9 3L3 9" />
+            </svg>
+          </button>
+        </div>
+      ))}
     </div>
   );
 
@@ -361,7 +461,7 @@ export function ShootsCalendar(props) {
             </span>
             {nav}
           </div>
-          <div className="lo-mini-grid">
+          <div className="lo-mini-grid" key={month}>
             {WEEKDAYS.map((w) => (
               <span key={w} className="lo-mini-wd">
                 {w[0]}
@@ -372,35 +472,35 @@ export function ShootsCalendar(props) {
               const flags = {
                 'data-out': d.slice(0, 7) !== month.slice(0, 7) ? '' : undefined,
                 'data-today': d === today ? '' : undefined,
+                'data-selected': selected.has(d) ? '' : undefined,
                 'data-drop': dropDay === d ? '' : undefined,
               };
               const inner = (
                 <>
-                  <span>{parseYmd(d).getDate()}</span>
+                  <span className="lo-mini-num">{parseYmd(d).getDate()}</span>
                   {list.length ? (
                     <i className="lo-mini-dots">
                       {list.slice(0, 3).map((b) => (
-                        <i key={b._baseId} data-status={b.status} />
+                        <i key={b._baseId} data-status={b.status} data-draft={isBooked(b) ? undefined : ''} />
                       ))}
                     </i>
                   ) : null}
                 </>
               );
               return list.length ? (
-                <ChildLink
-                  key={d}
-                  childId={list[0]._baseId}
-                  className="lo-mini-day"
-                  data-has=""
-                  data-active={list.some((b) => b._baseId === openId) ? '' : undefined}
-                  title={list.map((b) => bookingTitle(b)).join(', ')}
-                  {...flags}
-                  {...dropTarget(d)}
-                >
+                <ChildLink key={d} childId={list[0]._baseId} className="lo-mini-day" data-has="" title={list.map((b) => bookingTitle(b)).join(', ')} {...flags} {...dropTarget(d)}>
                   {inner}
                 </ChildLink>
               ) : (
-                <button key={d} type="button" className="lo-mini-day" onClick={() => book(d)} title={`Book a shoot on ${fmtDay(d, { weekday: 'long', day: 'numeric', month: 'long' })}`} {...flags} {...dropTarget(d)}>
+                <button
+                  key={d}
+                  type="button"
+                  className="lo-mini-day"
+                  onClick={() => book(d)}
+                  title={`Book a shoot on ${fmtDay(d, { weekday: 'long', day: 'numeric', month: 'long' })}`}
+                  {...flags}
+                  {...dropTarget(d)}
+                >
                   {inner}
                 </button>
               );
@@ -410,16 +510,16 @@ export function ShootsCalendar(props) {
         <div className="lo-agenda">
           <span className="lo-side-label">In {monthName}</span>
           {data === null ? <p className="lo-side-empty">Loading your shoots…</p> : null}
-          {data && inMonth.length
-            ? inMonth.map((b, i) => <AgendaRow key={b._baseId} b={b} i={i} ChildLink={ChildLink} active={openId === b._baseId} />)
-            : data
-              ? <p className="lo-side-empty">No shoots in {monthName}. Tap a day above to book one.</p>
-              : null}
+          {data && inMonth.length ? (
+            inMonth.map((b, i) => <AgendaRow key={b._baseId} b={b} i={i} today={today} ChildLink={ChildLink} active={openId === b._baseId} />)
+          ) : data ? (
+            <p className="lo-side-empty">No shoots in {monthName}. Tap a day above to book one.</p>
+          ) : null}
           {undated.length ? (
             <>
               <span className="lo-side-label">Not on the calendar yet</span>
               {undated.map((b, i) => (
-                <AgendaRow key={b._baseId} b={b} i={i} ChildLink={ChildLink} active={openId === b._baseId} />
+                <AgendaRow key={b._baseId} b={b} i={i} today={today} ChildLink={ChildLink} active={openId === b._baseId} />
               ))}
             </>
           ) : null}
@@ -463,14 +563,14 @@ export function ShootsCalendar(props) {
           {view === 'month' ? nav : null}
         </div>
         <div className="lo-cal-stats">
-          <Stat label={view === 'month' ? `Shoots in ${monthName}` : 'Coming up'} value={data ? scope.length : '–'} />
-          <Stat label="Booked" value={data ? money(sIncome) : '–'} />
-          <Stat label="Profit" value={data ? money(sProfit) : '–'} sub={sIncome ? `${percent(sProfit / sIncome)} margin` : ''} main />
-          <Stat label="Still to come in" value={data ? money(owed) : '–'} sub="across all shoots" />
+          <Stat label={view === 'month' ? `Shoots in ${monthName}` : 'Coming up'} value={data ? scope.length : '…'} />
+          <Stat label="Booked" value={data ? money(sIncome) : '…'} />
+          <Stat label="Profit" value={data ? money(sProfit) : '…'} sub={sIncome ? `${percent(sProfit / sIncome)} margin` : ''} main />
+          <Stat label="Still to come in" value={data ? money(owed) : '…'} sub="across all shoots" />
         </div>
       </header>
 
-      {data && data.error ? <p className="lo-cal-error">Couldn’t load your shoots — check your connection and refresh.</p> : null}
+      {data && data.error ? <p className="lo-cal-error">Couldn’t load your shoots. Check your connection and refresh.</p> : null}
 
       <div className="lo-cal-body">
         <section className="lo-cal-main" aria-label={view === 'month' ? `${monthName} ${year}` : 'Every shoot'}>
@@ -497,6 +597,7 @@ export function ShootsCalendar(props) {
                       className="lo-day"
                       data-out={d.slice(0, 7) !== month.slice(0, 7) ? '' : undefined}
                       data-today={d === today ? '' : undefined}
+                      data-selected={selected.has(d) ? '' : undefined}
                       data-past={d < today ? '' : undefined}
                       data-weekend={wd > 4 ? '' : undefined}
                       data-drop={dropDay === d ? '' : undefined}
@@ -507,7 +608,7 @@ export function ShootsCalendar(props) {
                     >
                       <div className="lo-day-top">
                         <span className="lo-day-num">
-                          {date.getDate()}
+                          <span className="lo-day-n">{date.getDate()}</span>
                           {date.getDate() === 1 ? <small>{date.toLocaleDateString('en-GB', { month: 'short' })}</small> : null}
                         </span>
                         <button
@@ -561,11 +662,11 @@ export function ShootsCalendar(props) {
           <div className="lo-side-card">
             <span className="lo-side-label">Coming up</span>
             {data === null ? <p className="lo-side-empty">Loading…</p> : null}
-            {data && upcoming.length
-              ? upcoming.slice(0, 6).map((b, i) => <AgendaRow key={b._baseId} b={b} i={i} ChildLink={ChildLink} active={openId === b._baseId} showMoney />)
-              : data
-                ? <p className="lo-side-empty">Nothing booked yet. Click any day to book your first shoot.</p>
-                : null}
+            {data && upcoming.length ? (
+              upcoming.slice(0, 6).map((b, i) => <AgendaRow key={b._baseId} b={b} i={i} today={today} ChildLink={ChildLink} active={openId === b._baseId} showMoney />)
+            ) : data ? (
+              <p className="lo-side-empty">Nothing booked yet. Click any day to book your first shoot.</p>
+            ) : null}
             {upcoming.length > 6 ? (
               <button type="button" className="lo-side-more" onClick={() => setView('list')}>
                 See all {upcoming.length} →
@@ -578,29 +679,12 @@ export function ShootsCalendar(props) {
               <span className="lo-side-label">Not on the calendar yet</span>
               <p className="lo-side-hint">Drag one onto a day, or open it to add a date.</p>
               {undated.map((b, i) => (
-                <AgendaRow key={b._baseId} b={b} i={i} ChildLink={ChildLink} active={openId === b._baseId} />
+                <AgendaRow key={b._baseId} b={b} i={i} today={today} ChildLink={ChildLink} active={openId === b._baseId} />
               ))}
             </div>
           ) : null}
 
-          <div className="lo-side-card">
-            <span className="lo-side-label">Ready to book</span>
-            {data && !toBook.length ? <p className="lo-side-empty">Every enquiry has a shoot booked — or there are none yet.</p> : null}
-            {toBook.map((e, i) => (
-              <div key={e._baseId} className="lo-enq" style={{ '--i': i }}>
-                <span className="lo-enq-ic">
-                  <InboxIcon />
-                </span>
-                <span className="lo-enq-main">
-                  <span className="lo-enq-name">{[e.name, e.company].filter(Boolean).join(' · ') || 'Enquiry'}</span>
-                  <span className="lo-enq-meta">{[e.service, e.budget, e.receivedAt ? relDay(e.receivedAt.slice(0, 10)) : ''].filter(Boolean).join(' · ')}</span>
-                </span>
-                <button type="button" className="lo-mini-btn" data-primary="" onClick={() => book(undefined, e._baseId)}>
-                  Book
-                </button>
-              </div>
-            ))}
-          </div>
+          {notBookedCard}
         </aside>
       </div>
     </div>

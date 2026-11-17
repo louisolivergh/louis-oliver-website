@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Arrow } from './Icons';
 
-/* How long each part takes (ms) — kept in step with the CSS in globals.css */
+/* How long each part takes (ms), kept in step with the CSS in globals.css */
 const PRESS_MS = 820; // the tap animation plays this long before we change page
 const FADE_MS = 520; // the menu then fades away over the new page
 const SETTLE_MS = 1250; // by now the menu has finished opening (panel + links rising in)
@@ -28,7 +28,7 @@ const prefersReducedMotion = () =>
 /**
  * Mobile menu with three calm phases:
  *  closed → open (panel unfolds, links rise in one by one)
- *  open → closing (whole panel fades out in one piece — nothing jumps or shifts)
+ *  open → closing (whole panel fades out in one piece, nothing jumps or shifts)
  *  closing → closed
  *
  * Press feedback ("lit") starts the instant a finger touches a link and runs straight on into

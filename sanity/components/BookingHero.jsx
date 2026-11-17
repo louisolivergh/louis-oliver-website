@@ -2,8 +2,8 @@
 
 /**
  * Header cards for the shoot form (styled in app/studio/studio.css, ".lo-bk…"):
- *  - BookingHero: the top of a booked shoot — when, where, who, and the money at a glance.
- *  - EnquiryActions: on an enquiry — the shoots booked from it, and a button to book one.
+ *  - BookingHero: the top of a booked shoot, when, where, who, and the money at a glance.
+ *  - EnquiryActions: on an enquiry, the shoots booked from it, and a button to book one.
  */
 
 import { useEffect, useState } from 'react';
@@ -13,7 +13,9 @@ import {
   bookingTitle,
   clientLine,
   computeBudget,
+  daysBetween,
   fmtDay,
+  isBooked,
   latestById,
   mapsUrl,
   money,
@@ -35,24 +37,34 @@ function Fig({ label, value, sub, main, neg }) {
   );
 }
 
+/* "Thu 19 Nov 2026", "Thu 19 to Sat 21 Nov 2026", or "Thu 19 Nov 2026 + 2 more days" */
+function daysLabel(days) {
+  const long = { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' };
+  if (!days.length) return 'No date yet';
+  if (days.length === 1) return fmtDay(days[0], long);
+  const back = days.every((d, i) => i === 0 || daysBetween(days[i - 1], d) === 1);
+  if (back) return `${fmtDay(days[0], { weekday: 'short', day: 'numeric' })} to ${fmtDay(days[days.length - 1], long)}`;
+  return `${fmtDay(days[0], long)} + ${days.length - 1} more day${days.length > 2 ? 's' : ''}`;
+}
+
 export function BookingHero({ value }) {
   const v = value && typeof value === 'object' ? value : {};
   const b = computeBudget(v);
   const st = statusOf(v.status);
   const days = shootDays(v);
-  const long = { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' };
-  const when = v.date ? `${fmtDay(v.date, long)}${days.length > 1 ? ` – ${fmtDay(days[days.length - 1], long)}` : ''}` : 'No date yet';
+  const booked = isBooked(v);
+  const when = daysLabel(days);
   const locs = Array.isArray(v.locations) ? v.locations.filter((l) => l && (l.name || l.address)) : [];
   const first = locs[0];
   const who = clientLine(v);
 
   return (
-    <header className="lo-hero lo-bk-hero">
+    <header className="lo-hero lo-bk-hero" data-creating={booked ? undefined : ''}>
       <span className="lo-hero-rings" aria-hidden="true" />
       <div className="lo-hero-row">
-        <span className="lo-eyebrow">
+        <span className="lo-eyebrow" key={booked ? 'booked' : 'creating'}>
           <span className="lo-eyebrow-dot" aria-hidden="true" />
-          Booked shoot
+          {booked ? 'Booked shoot' : 'Creating'}
         </span>
         <span className="lo-bk-status" data-status={st.value}>
           {st.title}
@@ -61,10 +73,10 @@ export function BookingHero({ value }) {
       <h1 className="lo-hero-title">{bookingTitle(v)}</h1>
 
       <div className="lo-bk-meta">
-        <span className="lo-bk-chip" data-empty={v.date ? undefined : ''}>
+        <span className="lo-bk-chip" data-empty={days.length ? undefined : ''}>
           <CalendarIcon />
           {when}
-          {v.date ? <em>{relDay(v.date)}</em> : null}
+          {days.length ? <em>{relDay(days[0])}</em> : null}
         </span>
         {v.startTime ? (
           <span className="lo-bk-chip">
@@ -100,7 +112,9 @@ export function BookingHero({ value }) {
 
       <p className="lo-hero-tip">
         <span className="lo-tip-dot" aria-hidden="true" />
-        Private — only you can see this. Everything saves as you type.
+        {booked
+          ? 'Private. Only you can see this, and everything saves as you type.'
+          : 'Fill in what you know, then press Save shoot at the bottom to book it in. Only you can see this.'}
       </p>
     </header>
   );

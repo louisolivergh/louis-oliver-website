@@ -23,7 +23,15 @@ const defaultDocumentNode = (S, { schemaType }) => {
   return S.document().views([S.view.form()]);
 };
 
-/* A new booked shoot — opened from the calendar (with the day you clicked) or from an enquiry
+/* "Peak Gym" + "Brand video" → "Peak Gym brand video"; "Brewhouse Co" + "Food & drink" → "Brewhouse Co food & drink shoot" */
+const shootTitle = (who, service) => {
+  const what = typeof service === 'string' ? service.trim() : '';
+  if (!what) return who;
+  const lower = /^[A-Z][a-z]/.test(what) ? what[0].toLowerCase() + what.slice(1) : what;
+  return `${who} ${lower}${/\b(shoot|shoots|video|videos|film|films|photography|photos|content|reels?)\b/i.test(what) ? '' : ' shoot'}`;
+};
+
+/* A new booked shoot, opened from the calendar (with the day you clicked) or from an enquiry
    (with the client's name, contact details, budget and message copied across). */
 const bookingTemplate = {
   id: 'booking-new',
@@ -46,7 +54,7 @@ const bookingTemplate = {
         if (e) {
           out.client = clientFromEnquiry(id, e);
           const who = e.company || e.name;
-          if (who) out.title = e.service ? `${who} — ${e.service}` : who;
+          if (who) out.title = shootTitle(who, e.service);
         }
       } catch {
         // the details can still be filled in by hand

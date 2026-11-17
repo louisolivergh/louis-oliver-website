@@ -2,13 +2,79 @@
 
 /**
  * The editing screens' extra layer (styled in app/studio/studio.css):
- *  - LoInput: a header card at the top of every page you edit — what it controls, a link to see it
+ *  - LoInput: a header card at the top of every page you edit, what it controls, a link to see it
  *    live, and how much of it is filled in.
  *  - LoField: wraps every field so the styles know whether it's filled in (for the little ticks).
  * Everything else about the fields is Sanity's own, so editing works exactly as before.
  */
 
+import { useEffect, useRef } from 'react';
 import { BookingHero, EnquiryActions } from './BookingHero';
+
+/* The section tabs (All fields · Overview · …): a white pill that slides to the tab you pick.
+   Sanity draws the tabs; this adds one pill behind them and moves it whenever the choice changes. */
+function useSlidingTabs(ref) {
+  useEffect(() => {
+    const root = ref.current;
+    if (!root || typeof MutationObserver === 'undefined') return undefined;
+    let raf = 0;
+    let ro = null;
+    let watched = null;
+    const place = () => {
+      const list = root.querySelector('[data-testid="field-group-tabs"]');
+      if (!list) return;
+      let pill = list.querySelector(':scope > .lo-tab-pill');
+      if (!pill) {
+        pill = document.createElement('span');
+        pill.className = 'lo-tab-pill';
+        pill.setAttribute('aria-hidden', 'true');
+        list.insertBefore(pill, list.firstChild);
+      }
+      if (watched !== list && typeof ResizeObserver !== 'undefined') {
+        if (ro) ro.disconnect();
+        ro = new ResizeObserver(() => schedule());
+        ro.observe(list);
+        watched = list;
+      }
+      const tab = list.querySelector('[data-ui="Tab"][aria-selected="true"]');
+      if (!tab) {
+        pill.style.opacity = '0';
+        return;
+      }
+      const a = list.getBoundingClientRect();
+      const b = tab.getBoundingClientRect();
+      pill.style.width = `${b.width}px`;
+      pill.style.height = `${b.height}px`;
+      pill.style.transform = `translate(${b.left - a.left - list.clientLeft}px, ${b.top - a.top - list.clientTop}px)`;
+      pill.style.opacity = '1';
+      if (!pill.hasAttribute('data-ready')) requestAnimationFrame(() => pill.setAttribute('data-ready', ''));
+    };
+    function schedule() {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(place);
+    }
+    const mo = new MutationObserver(schedule);
+    mo.observe(root, { subtree: true, childList: true, attributes: true, attributeFilter: ['aria-selected'] });
+    window.addEventListener('resize', schedule);
+    schedule();
+    return () => {
+      mo.disconnect();
+      if (ro) ro.disconnect();
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', schedule);
+    };
+  }, [ref]);
+}
+
+function DocShell({ kind, children }) {
+  const ref = useRef(null);
+  useSlidingTabs(ref);
+  return (
+    <div className="lo-doc" data-lo-doc={kind} ref={ref}>
+      {children}
+    </div>
+  );
+}
 
 /* Where each page lives on the website */
 const PAGE_URL = {
@@ -23,7 +89,7 @@ const PAGE_URL = {
 
 /* What each kind of page is, in plain words */
 const INFO = {
-  homePage: { eyebrow: 'Website page', text: 'The first page visitors see — your headline, photo and stats, then a taste of everything else.' },
+  homePage: { eyebrow: 'Website page', text: 'The first page visitors see: your headline, photo and stats, then a taste of everything else.' },
   servicesPage: { eyebrow: 'Website page', text: 'Your three services, what each one includes, and why clients choose you.' },
   aboutPage: { eyebrow: 'Website page', text: 'Your story, your values and the kit you shoot with.' },
   processPage: { eyebrow: 'Website page', text: 'The headline and questions on your Process page. The steps themselves live under Process steps.' },
@@ -86,7 +152,7 @@ function heroTitle(type, info, schemaType, v) {
     case 'processStep':
       return v.title || 'New step';
     case 'enquiry':
-      return [v.name, v.company].filter(Boolean).join(' — ') || 'Enquiry';
+      return [v.name, v.company].filter(Boolean).join(' · ') || 'Enquiry';
     default:
       return info.title || (schemaType && schemaType.title) || 'Untitled';
   }
@@ -194,19 +260,12 @@ function DocHero({ schemaType, value }) {
 export function LoInput(props) {
   const isRoot = props.id === 'root' || (Array.isArray(props.path) && props.path.length === 0);
   if (!isRoot) return props.renderDefault(props);
-  if (props.schemaType && props.schemaType.name === 'booking') {
-    return (
-      <div className="lo-doc" data-lo-doc="booking">
-        <BookingHero value={props.value} />
-        {props.renderDefault(props)}
-      </div>
-    );
-  }
+  const booking = Boolean(props.schemaType && props.schemaType.name === 'booking');
   return (
-    <div className="lo-doc">
-      <DocHero schemaType={props.schemaType} value={props.value} />
+    <DocShell kind={booking ? 'booking' : undefined}>
+      {booking ? <BookingHero value={props.value} /> : <DocHero schemaType={props.schemaType} value={props.value} />}
       {props.renderDefault(props)}
-    </div>
+    </DocShell>
   );
 }
 
@@ -217,6 +276,7 @@ export function LoField(props) {
   return (
     <div
       className="lo-field"
+      data-lo-name={props.name}
       data-lo-kind={kind}
       data-lo-top={top ? '' : undefined}
       data-lo-filled={filled ? '' : undefined}

@@ -64,7 +64,7 @@ function Equip({ refs, extra, names }) {
   );
 }
 
-/** Live preview of a shoot page — updates as you type. */
+/** Live preview of a shoot page, updates as you type. */
 export function ShootPreview(props) {
   const doc = (props.document && (props.document.displayed || props.document.draft || props.document.published)) || {};
   const client = useClient({ apiVersion: '2024-10-01' });
@@ -91,7 +91,7 @@ export function ShootPreview(props) {
   return (
     <div style={{ height: '100%', overflow: 'auto', background: '#fff', fontFamily: BODY, color: INK }}>
       <div style={{ padding: '10px 16px', background: SOFT, borderBottom: `1px solid ${LINE}`, fontSize: 12, color: MUTED, display: 'flex', justifyContent: 'space-between', gap: 12, position: 'sticky', top: 0, zIndex: 2 }}>
-        <span>Live preview — updates as you edit</span>
+        <span>Live preview that updates as you edit</span>
         <span>{doc.slug && doc.slug.current ? `/work/${doc.slug.current}` : 'Generate a web address to publish'}</span>
       </div>
       <div style={{ maxWidth: 1000, margin: '0 auto', padding: '32px 28px 64px', display: 'flex', flexDirection: 'column', gap: 36 }}>
@@ -121,7 +121,7 @@ export function ShootPreview(props) {
         ) : null}
 
         {!sections.length ? (
-          <Empty ratio="3 / 1">No sections yet — open the “Page sections” tab and add your first one.</Empty>
+          <Empty ratio="3 / 1">No sections yet. Open the “Page sections” tab and add your first one.</Empty>
         ) : null}
 
         {sections.map((s) => {

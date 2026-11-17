@@ -38,7 +38,7 @@ export async function generateMetadata() {
         apple: [{ url: '/apple-touch-icon.png', sizes: '180x180' }],
       };
   return {
-    title: { default: 'Louis Oliver — Photo & Video', template: '%s — Louis Oliver' },
+    title: { default: 'Louis Oliver | Photo & Video', template: '%s | Louis Oliver' },
     description: 'Premium photo and video production for brands and retailers.',
     icons,
   };

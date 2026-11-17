@@ -6,6 +6,7 @@ import { useClient } from 'sanity';
 import { IntentLink, useRouter, useRouterState } from 'sanity/router';
 import { EQUIPMENT_CATEGORIES } from '../categories';
 import { CameraIcon, InboxIcon, KitIcon } from './DashIcons';
+import { tidyRange } from '../bookingData';
 
 /**
  * Fills the empty space beside the lists in Updates with something useful:
@@ -35,7 +36,7 @@ const Plus = () => (
   </svg>
 );
 
-/* one entry per document — the draft if you're mid-edit, otherwise the published version */
+/* one entry per document, the draft if you're mid-edit, otherwise the published version */
 function latest(list) {
   const map = new Map();
   (list || []).forEach((d) => {
@@ -126,7 +127,7 @@ function Canvas({ view }) {
               <Plus /> Add a shoot
             </IntentLink>
           </div>
-          <p className="lo-cv-text">Pick one to edit it, or start a new one. Newest first — the same order as your Work page.</p>
+          <p className="lo-cv-text">Pick one to edit it, or start a new one. Newest first, the same order as your Work page.</p>
         </header>
         {loading ? null : shoots.length ? (
           <div className="lo-cv-gallery">
@@ -147,7 +148,7 @@ function Canvas({ view }) {
         ) : (
           <div className="lo-cv-empty">
             <span className="lo-cv-ic"><CameraIcon /></span>
-            <p>Nothing in your portfolio yet. Your first shoot will appear here — and on your Work page once it’s published.</p>
+            <p>Nothing in your portfolio yet. Your first shoot will appear here, and on your Work page once it’s published.</p>
             <IntentLink intent="create" params={{ type: 'shoot' }} className="lo-cv-btn" data-primary="">
               <Plus /> Add your first shoot
             </IntentLink>
@@ -190,7 +191,7 @@ function Canvas({ view }) {
         ) : (
           <div className="lo-cv-empty">
             <span className="lo-cv-ic"><KitIcon /></span>
-            <p>Your kit list is empty. Add your cameras, lenses and lights — then tick them on each shoot.</p>
+            <p>Your kit list is empty. Add your cameras, lenses and lights, then tick them on each shoot.</p>
             <IntentLink intent="create" params={{ type: 'equipment' }} className="lo-cv-btn" data-primary="">
               <Plus /> Add your first item
             </IntentLink>
@@ -217,8 +218,8 @@ function Canvas({ view }) {
               <IntentLink key={e._id} intent="edit" params={{ id: e._id, type: 'enquiry' }} className="lo-cv-mail" data-done={e.replied ? '' : undefined} style={{ '--i': i }}>
                 <span className="lo-cv-mail-dot" aria-hidden="true" />
                 <span className="lo-cv-mail-main">
-                  <span className="lo-cv-mail-name">{[e.name, e.company].filter(Boolean).join(' — ') || 'Enquiry'}</span>
-                  <span className="lo-cv-mail-meta">{[e.service, e.budget].filter(Boolean).join(' · ') || 'No details'}</span>
+                  <span className="lo-cv-mail-name">{[e.name, e.company].filter(Boolean).join(' · ') || 'Enquiry'}</span>
+                  <span className="lo-cv-mail-meta">{[e.service, tidyRange(e.budget)].filter(Boolean).join(' · ') || 'No details'}</span>
                 </span>
                 <span className="lo-cv-mail-side">
                   <span className="lo-cv-pill">{e.replied ? 'Replied' : 'To reply'}</span>
@@ -251,7 +252,7 @@ function Canvas({ view }) {
         <a className="lo-cv-card" {...link('/updates/shoot')} style={{ '--i': 0 }}>
           <span className="lo-cv-card-top">
             <span className="lo-cv-ic"><CameraIcon /></span>
-            <span className="lo-cv-count">{loading ? '–' : shoots.length}</span>
+            <span className="lo-cv-count">{loading ? '…' : shoots.length}</span>
           </span>
           <span className="lo-cv-card-title">Portfolio</span>
           <span className="lo-cv-card-text">{loading ? ' ' : shoots.length ? `${featured} featured on your homepage` : 'No shoots yet'}</span>
@@ -266,7 +267,7 @@ function Canvas({ view }) {
         <a className="lo-cv-card" {...link('/updates/equipment')} style={{ '--i': 1 }}>
           <span className="lo-cv-card-top">
             <span className="lo-cv-ic"><KitIcon /></span>
-            <span className="lo-cv-count">{loading ? '–' : kit.length}</span>
+            <span className="lo-cv-count">{loading ? '…' : kit.length}</span>
           </span>
           <span className="lo-cv-card-title">Equipment list</span>
           <span className="lo-cv-card-text">{loading ? ' ' : groups.length ? groups.map((g) => g.title).join(' · ') : 'Nothing added yet'}</span>
@@ -276,11 +277,11 @@ function Canvas({ view }) {
         <a className="lo-cv-card" data-accent={toReply.length ? '' : undefined} {...link('/updates/enquiries')} style={{ '--i': 2 }}>
           <span className="lo-cv-card-top">
             <span className="lo-cv-ic"><InboxIcon /></span>
-            <span className="lo-cv-count">{loading ? '–' : toReply.length}</span>
+            <span className="lo-cv-count">{loading ? '…' : toReply.length}</span>
           </span>
           <span className="lo-cv-card-title">{toReply.length === 1 ? 'Enquiry to reply to' : 'Enquiries to reply to'}</span>
           <span className="lo-cv-card-text">
-            {loading ? ' ' : latestEnquiry ? `Latest: ${[latestEnquiry.name, latestEnquiry.company].filter(Boolean).join(' — ') || 'Enquiry'}` : 'None yet'}
+            {loading ? ' ' : latestEnquiry ? `Latest: ${[latestEnquiry.name, latestEnquiry.company].filter(Boolean).join(' · ') || 'Enquiry'}` : 'None yet'}
           </span>
           <span className="lo-cv-card-cta">Open inbox <Arrow /></span>
         </a>

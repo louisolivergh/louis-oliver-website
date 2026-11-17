@@ -18,8 +18,8 @@ export default function SetupCheck() {
           email={{
             hasKey: Boolean(process.env.RESEND_API_KEY),
             to: process.env.NOTIFY_EMAIL || 'contact@louisoliver.co.uk (default)',
-            from: process.env.NOTIFY_FROM || 'onboarding@resend.dev (default — set NOTIFY_FROM)',
-            site: process.env.SITE_URL || '(not set — uses this address)',
+            from: process.env.NOTIFY_FROM || 'onboarding@resend.dev (the default, set NOTIFY_FROM to change it)',
+            site: process.env.SITE_URL || '(not set, so it uses this address)',
           }}
         />
       </div>

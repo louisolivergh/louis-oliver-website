@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { set, unset, useClient } from 'sanity';
 
-/* Suggested categories for photo & video work — edit this list any time */
+/* Suggested categories for photo & video work, edit this list any time */
 export const SUGGESTED_CATEGORIES = [
   'Retail',
   'Supermarket',

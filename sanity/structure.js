@@ -6,9 +6,9 @@ import { ShootsCalendar } from './components/ShootsCalendar';
 import { CameraIcon, CheckIcon, InboxIcon, KitIcon, MailIcon } from './components/DashIcons';
 
 /* The dashboard's areas (tabs in the top bar):
-   - Updates: the things you change often — your portfolio, equipment, enquiries.
-   - Shoots: your calendar of booked shoots — private, never on the website.
-   - Website setup: the pages themselves — set them up once, then rarely touched. */
+   - Updates: the things you change often: your portfolio, equipment, enquiries.
+   - Shoots: your calendar of booked shoots, private and never on the website.
+   - Website setup: the pages themselves, set up once, then rarely touched. */
 
 /* Which kinds of document each area looks after, so a link to one always opens in the right area */
 export const TOOL_TYPES = {

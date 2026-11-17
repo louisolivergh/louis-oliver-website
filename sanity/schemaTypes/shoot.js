@@ -4,7 +4,7 @@ import { CategoryInput } from '../components/CategoryInput';
 
 /* ---------- reusable pieces ---------- */
 
-const equipmentField = (title = 'Equipment used — tick from your kit') =>
+const equipmentField = (title = 'Equipment used (tick from your kit)') =>
   defineField({
     name: 'equipment',
     title,
@@ -50,7 +50,7 @@ export const videoItem = defineType({
     defineField({
       name: 'shape',
       title: 'Shape',
-      description: 'Only needed for Vimeo / YouTube links — uploaded videos size themselves.',
+      description: 'Only needed for Vimeo or YouTube links. Uploaded videos size themselves.',
       type: 'string',
       initialValue: 'landscape',
       options: {
@@ -109,7 +109,7 @@ const fullVideo = defineArrayMember({
 const videoGrid = defineArrayMember({
   name: 'videoGrid',
   title: 'Video grid',
-  description: 'Several videos side by side — great for vertical social clips.',
+  description: 'Several videos side by side. Great for vertical social clips.',
   type: 'object',
   fields: [
     defineField({ name: 'heading', title: 'Heading', type: 'string' }),
@@ -179,12 +179,12 @@ export const shoot = defineType({
   ],
   fieldsets: [
     { name: 'basics', title: 'The basics', description: 'Who the shoot was for and where it lives on your website.' },
-    { name: 'when', title: 'When', description: 'The date sets the order on the Work page — newest first.', options: { columns: 2 } },
+    { name: 'when', title: 'When', description: 'The date sets the order on the Work page, newest first.', options: { columns: 2 } },
     { name: 'cover', title: 'Thumbnail & homepage', description: 'The picture on the Work page, and whether this shoot is featured on your homepage.' },
     { name: 'about', title: 'About the shoot', description: 'Shown at the top of the shoot’s page.' },
   ],
   fields: [
-    defineField({ name: 'title', title: 'Client', type: 'string', group: 'details', fieldset: 'basics', placeholder: 'e.g. Ink Heaven', description: 'Shown as the big heading on the shoot page and on its card.', validation: (r) => r.required() }),
+    defineField({ name: 'title', title: 'Client', type: 'string', group: 'details', fieldset: 'basics', description: 'Shown as the big heading on the shoot page and on its card.', validation: (r) => r.required() }),
     defineField({
       name: 'slug',
       title: 'Web address',
@@ -237,8 +237,8 @@ export const shoot = defineType({
       fields: [
         defineField({ name: 'quote', title: 'Review', type: 'text', rows: 3 }),
         defineField({ name: 'name', title: 'Person’s name', type: 'string' }),
-        defineField({ name: 'role', title: 'Their role & company', type: 'string', description: 'e.g. Owner, Ink Heaven' }),
-        defineField({ name: 'photo', title: 'Their photo', type: 'image', options: { hotspot: true }, description: 'Optional — otherwise their initials are shown.' }),
+        defineField({ name: 'role', title: 'Their role & company', type: 'string', description: 'e.g. Owner' }),
+        defineField({ name: 'photo', title: 'Their photo', type: 'image', options: { hotspot: true }, description: 'Optional. Otherwise their initials are shown.' }),
       ],
     }),
     defineField({

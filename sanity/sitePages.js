@@ -1,7 +1,7 @@
-/* The pages of your website, in menu order — used by the Website setup map (sanity/components/SiteMap.jsx).
+/* The pages of your website, in menu order, used by the Website setup map (sanity/components/SiteMap.jsx).
    `id` is the page's document; Process steps is a list of documents. */
 export const SITE_PAGES = [
-  { id: 'homePage', title: 'Home', path: '/', text: 'Your headline, photo and stats — the first thing visitors see.', shape: 'home' },
+  { id: 'homePage', title: 'Home', path: '/', text: 'Your headline, photo and stats. The first thing visitors see.', shape: 'home' },
   { id: 'servicesPage', title: 'Services', path: '/services', text: 'Your three services, and why clients choose you.', shape: 'services' },
   { id: 'aboutPage', title: 'About', path: '/about', text: 'Your story, your values and the kit you shoot with.', shape: 'about' },
   { id: 'processPage', title: 'Process', path: '/process', text: 'The headline and the questions clients ask.', shape: 'process' },

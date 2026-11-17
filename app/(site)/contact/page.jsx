@@ -32,7 +32,7 @@ export default async function ContactPage() {
               {page.phone ? <a href={`tel:${page.phone.replace(/\s+/g, '')}`} style={{ textDecoration: 'none', color: 'inherit' }}>{page.phone}</a> : '[+00 0000 000000]'}
             </Detail>
             <Detail label="Based in"><span className="pre">{pick(page.address, '[City, Postcode]')}</span></Detail>
-            <Detail label="Hours">{pick(page.hours, '[Mon–Fri, 9:00–18:00]')}</Detail>
+            <Detail label="Hours">{pick(page.hours, '[Mon to Fri, 9:00 to 18:00]')}</Detail>
         </div>
         <div className="contact-form pop" style={{ background: 'var(--soft)', borderRadius: 32, padding: 'clamp(28px, 4vw, 56px)', alignSelf: 'start' }}>
           <ContactForm

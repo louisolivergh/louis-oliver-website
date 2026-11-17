@@ -91,7 +91,7 @@ export default function ShootSections({ sections, cols = 3, title = '' }) {
     };
   }, [open, close, step]);
 
-  /* only one video plays at a time — starting one pauses the others */
+  /* only one video plays at a time, starting one pauses the others */
   useEffect(() => {
     const onPlay = (e) => {
       const t = e.target;

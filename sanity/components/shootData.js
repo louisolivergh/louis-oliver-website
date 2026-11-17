@@ -4,11 +4,12 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useClient } from 'sanity';
-import { computeBudget, latestById, shootDays } from '../bookingData';
+import { computeBudget, latestById, nextDayOf, shootDays } from '../bookingData';
 
 export const SHOOTS_QUERY = `{
   "bookings": *[_type == "booking"]{
-    _id, _updatedAt, title, status, kind, date, endDate, startTime, endTime, deliveryDate, budgetAmount,
+    _id, _updatedAt, title, status, kind, date, endDate, startTime, endTime, deliveryDate, budgetAmount, bookedAt,
+    "moreDays": moreDays[]{ _key, date, startTime, endTime, note },
     client{ name, company, email, phone, budget, "enquiry": enquiry._ref },
     "locations": locations[]{ name, address, hireFee, clientPays, paid },
     "people": people[]{ role, name, rate, rateUnit, qty, clientPays, paid },
@@ -17,7 +18,7 @@ export const SHOOTS_QUERY = `{
     "payments": payments[]{ amount },
     "kit": kit[]->name
   },
-  "enquiries": *[_type == "enquiry"] | order(receivedAt desc)[0...80]{ _id, name, company, service, budget, details, receivedAt, replied }
+  "enquiries": *[_type == "enquiry"] | order(receivedAt desc)[0...80]{ _id, name, company, service, budget, details, receivedAt, replied, declined }
 }`;
 
 /** a shoot with its sums and days worked out */
@@ -70,17 +71,28 @@ export function useShootData() {
   return { data, setData, load, client };
 }
 
-/** shoots that haven't finished yet, soonest first (cancelled ones left out) */
+/** shoots that haven't finished yet, by their next day (cancelled ones left out) */
 export function upcomingOf(bookings, today) {
   return (bookings || [])
     .filter((b) => b.status !== 'cancelled' && b.days.length && b.days[b.days.length - 1] >= today)
-    .sort((a, b) => String(a.date).localeCompare(String(b.date)) || String(a.startTime || '').localeCompare(String(b.startTime || '')));
+    .map((b) => ({ ...b, next: nextDayOf(b, today) }))
+    .sort((a, b) => a.next.localeCompare(b.next) || String(a.startTime || '').localeCompare(String(b.startTime || '')));
 }
 
-/** enquiries that haven't been booked as a shoot yet */
+/** enquiries with no shoot booked yet, leaving out ones marked "Not going ahead" */
 export function unbookedOf(enquiries, bookings) {
   const booked = new Set((bookings || []).map((b) => b.client && b.client.enquiry).filter(Boolean));
-  return (enquiries || []).filter((e) => !booked.has(e._baseId));
+  return (enquiries || []).filter((e) => !booked.has(e._baseId) && !e.declined);
+}
+
+/** mark an enquiry as "Not going ahead" so it drops off the lists */
+export function declineEnquiry(client, setData, e) {
+  setData((d) => d && { ...d, enquiries: d.enquiries.map((x) => (x._baseId === e._baseId ? { ...x, declined: true } : x)) });
+  return client
+    .patch(e._id)
+    .set({ declined: true })
+    .commit()
+    .catch(() => setData((d) => d && { ...d, enquiries: d.enquiries.map((x) => (x._baseId === e._baseId ? { ...x, declined: false } : x)) }));
 }
 
 /** open the new-shoot form, with a date and/or an enquiry already filled in */

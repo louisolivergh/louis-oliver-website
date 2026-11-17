@@ -12,17 +12,17 @@ export default function SetupCheckClient({ projectId, problem, dataset, hasToken
     if (!projectId) { setCors('No Project ID set'); return; }
     fetch(`https://${projectId}.api.sanity.io/v2024-10-01/users/me`, { credentials: 'include' })
       .then((r) => setCors(r.ok ? 'Allowed ✓ (this address is on the CORS list with credentials)' : `Reached Sanity (status ${r.status})`))
-      .catch(() => setCors('Blocked ✗ — this exact address is not on the CORS list for this project, or “Allow credentials” is not ticked'));
+      .catch(() => setCors('Blocked ✗. This exact address is not on the CORS list for this project, or “Allow credentials” is not ticked'));
   }, [projectId]);
 
   const rows = [
-    ['Project ID the site is using', projectId || (problem === 'invalid' ? '✗ The value in Vercel is not a valid Project ID — paste just the short code (letters and numbers only)' : '— missing —')],
-    ['Project ID note', problem === 'cleaned' ? 'The value in Vercel had extra spaces or capitals — fixed automatically, but worth re-pasting cleanly' : problem ? 'Needs fixing in Vercel' : 'Looks good ✓'],
+    ['Project ID the site is using', projectId || (problem === 'invalid' ? '✗ The value in Vercel is not a valid Project ID. Paste just the short code (letters and numbers only)' : 'Missing')],
+    ['Project ID note', problem === 'cleaned' ? 'The value in Vercel had extra spaces or capitals. Fixed automatically, but worth re-pasting cleanly' : problem ? 'Needs fixing in Vercel' : 'Looks good ✓'],
     ['Dataset', dataset],
     ['This page’s address (add exactly this to CORS)', origin],
     ['CORS test', cors],
-    ['Contact-form token set (needed for enquiries to save)', hasToken ? 'Yes ✓' : 'No ✗ — add SANITY_API_WRITE_TOKEN'],
-    ['Resend key set', email.hasKey ? 'Yes ✓' : 'No ✗ — add RESEND_API_KEY, then redeploy'],
+    ['Contact-form token set (needed for enquiries to save)', hasToken ? 'Yes ✓' : 'No ✗. Add SANITY_API_WRITE_TOKEN'],
+    ['Resend key set', email.hasKey ? 'Yes ✓' : 'No ✗. Add RESEND_API_KEY, then redeploy'],
     ['Emails go to', email.to],
     ['Emails come from', email.from],
     ['Dashboard link in emails', email.site],
@@ -32,9 +32,9 @@ export default function SetupCheckClient({ projectId, problem, dataset, hasToken
     try {
       const r = await fetch('/api/test-email', { method: 'POST' });
       const j = await r.json();
-      setTest(j.ok ? `Sent ✓ — check ${j.to} (and junk). It should also appear in Resend → Emails.` : `Not sent ✗ — ${j.reason}`);
+      setTest(j.ok ? `Sent ✓. Check ${j.to} (and junk). It should also appear in Resend → Emails.` : `Not sent ✗: ${j.reason}`);
     } catch (e) {
-      setTest('Not sent ✗ — the test could not reach the website.');
+      setTest('Not sent ✗. The test could not reach the website.');
     }
   };
 

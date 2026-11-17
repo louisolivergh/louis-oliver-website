@@ -77,7 +77,7 @@ export default async function HomePage() {
         <div className="hero-copy">
           <div className="tag fade f1">
             <span className="tag-dot dot-pulse" />
-            {pick(home.heroTagline, '[Short tagline — e.g. your category]')}
+            {pick(home.heroTagline, '[Short tagline, e.g. your category]')}
           </div>
           <h1 className="h1 h1-home">
             <span className="line d1"><span>{pick(home.heroLine1, '[Your bold')}</span></span>
@@ -129,7 +129,7 @@ export default async function HomePage() {
           {showStatus ? (
             <div className="status-pill float-2">
               <span className="status-dot pulse" />
-              {pick(home.statusLine, '[Status line — e.g. now booking]')}
+              {pick(home.statusLine, '[Status line, e.g. now booking]')}
             </div>
           ) : null}
         </div>
@@ -160,7 +160,7 @@ export default async function HomePage() {
       <section className="container section">
         <div className="section-head reveal">
           <div className="section-head-copy">
-            <span className="eyebrow">01 — Services</span>
+            <span className="eyebrow">01 · Services</span>
             <h2 className="h2">{pick(home.servicesTitle, '[Section headline about what you offer.]')}</h2>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 400 }}>
@@ -188,7 +188,7 @@ export default async function HomePage() {
           <Rings variant="panel" />
           <div className="panel-grid">
             <div className="reveal" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-              <span className="eyebrow eyebrow-white">02 — About Louis Oliver</span>
+              <span className="eyebrow eyebrow-white">02 · About Louis Oliver</span>
               <h2 className="display" style={{ margin: 0, fontSize: 'clamp(36px, 4.6vw, 68px)', lineHeight: 1.02, fontWeight: 600 }}>
                 {pick(home.aboutTitle, '[A confident statement about your company and why clients choose you.]')}
               </h2>
@@ -215,7 +215,7 @@ export default async function HomePage() {
       {/* PROCESS */}
       <section className="container" style={{ paddingTop: 'clamp(54px, 10.0vw, 120px)', paddingBottom: 'clamp(43px, 8.0vw, 96px)' }}>
         <div className="reveal" style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 720, marginBottom: 64 }}>
-          <span className="eyebrow">03 — How it works</span>
+          <span className="eyebrow">03 · How it works</span>
           <h2 className="h2">{pick(home.processTitle, '[A clear process from first call to results.]')}</h2>
           <Link href="/process" className="text-link">See the full process <span aria-hidden="true">→</span></Link>
         </div>
@@ -237,7 +237,7 @@ export default async function HomePage() {
       <section style={{ borderTop: '1px solid var(--line-soft)' }}>
         <div className="container" style={{ paddingTop: 'clamp(54px, 10.0vw, 120px)', paddingBottom: 'clamp(54px, 10.0vw, 120px)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 440px), 1fr))', gap: 'clamp(29px, 5.3vw, 64px)' }}>
           <div className="reveal" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-            <span className="eyebrow">05 — Contact</span>
+            <span className="eyebrow">05 · Contact</span>
             <h2 className="display" style={{ margin: 0, fontSize: 'clamp(44px, 5.6vw, 84px)', lineHeight: 0.98, fontWeight: 600 }}>
               {pick(home.contactTitle, '[Let’s build something big.]')}
             </h2>

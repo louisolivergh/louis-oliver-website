@@ -1,4 +1,4 @@
-# Louis Oliver — website
+# Louis Oliver website
 
 The Louis Oliver website: Next.js, hosted on Vercel, with a Sanity dashboard at `/studio` for all content.
 
@@ -14,7 +14,7 @@ The Louis Oliver website: Next.js, hosted on Vercel, with a Sanity dashboard at 
 | See stats, quick-add, tick off enquiries | `/studio` → **Overview** (opens first) |
 | Read contact-form enquiries | `/studio` → **Overview**, or Content → Regular updates → **Enquiries** |
 | Preview a shoot page while building it | Open a shoot → **Preview** tab (or split view) |
-| Change design or features | Ask Claude — changes are pushed here and Vercel publishes them automatically |
+| Change design or features | Ask Claude. Changes are pushed here and Vercel publishes them automatically |
 
 Changes you publish in the dashboard appear on the site within about 30 seconds.
 

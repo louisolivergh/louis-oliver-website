@@ -40,7 +40,7 @@ export default async function AboutPage() {
           )}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 28, paddingTop: 16 }}>
-          <span className="eyebrow reveal">01 — The story</span>
+          <span className="eyebrow reveal">01 · The story</span>
           <h2 className="display reveal" style={{ margin: 0, fontSize: 'clamp(34px, 3.6vw, 52px)', lineHeight: 1.06, fontWeight: 600 }}>
             {pick(page.storyTitle, '[How Louis Oliver started and where it is going.]')}
           </h2>
@@ -54,7 +54,7 @@ export default async function AboutPage() {
         <div className="panel grow" style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(29px, 5.3vw, 64px)' }}>
           <Rings variant="panel" />
           <div className="reveal" style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 760 }}>
-            <span className="eyebrow eyebrow-white">02 — Values</span>
+            <span className="eyebrow eyebrow-white">02 · Values</span>
             <h2 className="display" style={{ margin: 0, fontSize: 'clamp(36px, 4.6vw, 64px)', lineHeight: 1.02, fontWeight: 600 }}>
               {pick(page.valuesTitle, '[The principles behind every project.]')}
             </h2>
@@ -74,7 +74,7 @@ export default async function AboutPage() {
       <section className="container" style={{ paddingTop: 'clamp(54px, 10.0vw, 120px)', paddingBottom: 'clamp(43px, 8.0vw, 96px)', display: 'flex', flexDirection: 'column', gap: 'clamp(25px, 4.7vw, 56px)' }}>
         <div className="section-head reveal" style={{ marginBottom: 0 }}>
           <div className="section-head-copy">
-            <span className="eyebrow">03 — Equipment</span>
+            <span className="eyebrow">03 · Equipment</span>
             <h2 className="h2">{pick(page.equipmentTitle, '[The kit behind every shoot.]')}</h2>
           </div>
           <p className="body" style={{ maxWidth: 400 }}>{pick(page.equipmentIntro, '[A short line about your setup and why it matters for the quality clients get.]')}</p>

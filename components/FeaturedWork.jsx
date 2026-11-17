@@ -62,7 +62,7 @@ export default function FeaturedWork({ featured, reviews }) {
         aria-live="polite"
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
-          <span className="eyebrow">04 — Client results</span>
+          <span className="eyebrow">04 · Client results</span>
           {current.shoot ? (
             <span key={`tag-${key}`} className="quote-tag">From the {current.shoot} shoot</span>
           ) : null}
@@ -93,7 +93,7 @@ export default function FeaturedWork({ featured, reviews }) {
                   type="button"
                   role="tab"
                   aria-selected={i === index}
-                  aria-label={`Review ${i + 1}${r.shoot ? ` — ${r.shoot}` : ''}`}
+                  aria-label={`Review ${i + 1}${r.shoot ? `: ${r.shoot}` : ''}`}
                   className={`quote-dot${i === index ? ' on' : ''}`}
                   onClick={() => setIndex(i)}
                 >

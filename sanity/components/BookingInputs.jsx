@@ -1,36 +1,46 @@
 'use client';
 
 /**
- * The booked-shoot form's own parts (styled in app/studio/studio.css — ".lo-li…", ".lo-client…", ".lo-sum…"):
+ * The booked-shoot form's own parts (styled in app/studio/studio.css, ".lo-li…", ".lo-client…", ".lo-sum…"):
  *  - ClientInput: match the enquiry a shoot came from, so the client's details, budget and message come across.
- *  - ListInput: quick inline lists — locations, cast & crew, prices, costs, payments, schedule, shots, notes, links.
+ *  - ListInput: quick inline lists, locations, cast & crew, prices, costs, payments, schedule, shots, notes, links.
  *  - BudgetSummaryInput: the money, worked out from everything on the shoot.
  * Everything saves as you type, like the rest of the dashboard.
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useToast } from '@sanity/ui';
 import { insert, set, setIfMissing, unset, useClient, useFormValue } from 'sanity';
 import { IntentLink } from 'sanity/router';
 import {
-  COST_CATEGORIES,
-  LINK_KINDS,
-  LOCATION_TYPES,
-  RATE_UNITS,
-  ROLES,
-  UNITS,
+  addDays,
   categoryTitle,
   clientFromEnquiry,
+  clientLine,
   computeBudget,
+  COST_CATEGORIES,
   fmtDay,
   initials,
   latestById,
   lineTotal,
+  LINK_KINDS,
+  LOCATION_TYPES,
   mapsUrl,
   money,
   percent,
   personCost,
+  RATE_UNITS,
+  relDay,
+  REMINDER_OPTIONS,
+  reminderDays,
+  reminderHour,
+  reminderPlan,
   roleOf,
+  ROLES,
+  shootDays,
+  tidyRange,
   todayYmd,
+  UNITS,
 } from '../bookingData';
 import { MailIcon, PhoneIcon } from './DashIcons';
 
@@ -195,6 +205,8 @@ function ListInput({ spec, value, onChange, readOnly, ctx }) {
   const items = Array.isArray(value) ? value.filter((x) => x && x._key) : [];
   const [fresh, setFresh] = useState(null);
   const [confirm, setConfirm] = useState(null);
+  const [leaving, setLeaving] = useState({}); // key → its height, while it animates away
+  const nodes = useRef({});
   const variant = spec.variant || 'cards';
 
   useEffect(() => {
@@ -205,7 +217,7 @@ function ListInput({ spec, value, onChange, readOnly, ctx }) {
 
   const add = (preset) => {
     if (readOnly) return;
-    const it = { _type: spec.type, _key: makeKey(), ...(spec.defaults ? spec.defaults() : {}), ...(preset || {}) };
+    const it = { _type: spec.type, _key: makeKey(), ...(spec.defaults ? spec.defaults(items, ctx || {}) : {}), ...(preset || {}) };
     if (!items.length) onChange([setIfMissing([]), insert([it], 'after', [-1])]);
     else if (spec.newestFirst) onChange(insert([it], 'before', [0]));
     else onChange(insert([it], 'after', [-1]));
@@ -223,7 +235,21 @@ function ListInput({ spec, value, onChange, readOnly, ctx }) {
       return;
     }
     setConfirm(null);
-    onChange(unset([{ _key: key }]));
+    // slide it away first, then remove it
+    const el = nodes.current[key];
+    const calm = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    setLeaving((m) => ({ ...m, [key]: el ? el.getBoundingClientRect().height : 0 }));
+    setTimeout(
+      () => {
+        onChange(unset([{ _key: key }]));
+        setLeaving((m) => {
+          const next = { ...m };
+          delete next[key];
+          return next;
+        });
+      },
+      calm ? 0 : 420
+    );
   };
   const move = (i, dir) => {
     const j = i + dir;
@@ -236,10 +262,10 @@ function ListInput({ spec, value, onChange, readOnly, ctx }) {
   const visible = (it) => spec.fields.filter((f) => !f.when || f.when(it));
 
   return (
-    <div className="lo-li" data-variant={variant}>
+    <div className="lo-li" data-variant={variant} data-list={spec.type}>
       {items.length && variant === 'rows' ? (
         <div className="lo-li-cols" aria-hidden="true">
-          {spec.fields.map((f) => (
+          {spec.fields.filter((f) => !f.wrap).map((f) => (
             <span key={f.name} style={{ '--span': f.span || 12 }}>
               {f.bare ? '' : typeof f.label === 'function' ? '' : f.label}
             </span>
@@ -287,10 +313,14 @@ function ListInput({ spec, value, onChange, readOnly, ctx }) {
             return (
               <li
                 key={it._key}
+                ref={(el) => {
+                  nodes.current[it._key] = el;
+                }}
                 className="lo-li-item"
                 data-fresh={fresh === it._key ? '' : undefined}
                 data-done={spec.isDone && spec.isDone(it) ? '' : undefined}
-                style={{ '--i': Math.min(i, 12) }}
+                data-leaving={leaving[it._key] !== undefined ? '' : undefined}
+                style={{ '--i': Math.min(i, 12), ...(leaving[it._key] !== undefined ? { '--h': `${leaving[it._key]}px` } : {}) }}
               >
                 {spec.head ? (
                   <div className="lo-li-head">
@@ -362,7 +392,7 @@ function Amount({ value, clientPays, paid }) {
 const LOCATIONS = {
   type: 'location',
   addLabel: 'Add a location',
-  empty: 'No locations yet. Add the studio, venue or outdoor spot you’re shooting at — with the address, who to ask for and any hire fee.',
+  empty: 'No locations yet. Add the studio, venue or outdoor spot you’re shooting at, with the address, who to ask for and any hire fee.',
   quick: [
     { label: 'Studio', preset: { kind: 'studio' } },
     { label: 'Client’s premises', preset: { kind: 'client' } },
@@ -395,7 +425,7 @@ const LOCATIONS = {
 const PEOPLE = {
   type: 'person',
   addLabel: 'Add someone',
-  empty: 'Nobody added yet. Add models, actors, assistants, makeup artists — with their contact details and fee.',
+  empty: 'Nobody added yet. Add models, actors, assistants and makeup artists, with their contact details and fee.',
   quick: [
     { label: 'Model', preset: { role: 'model' } },
     { label: 'Actor', preset: { role: 'actor' } },
@@ -434,7 +464,7 @@ const QUOTE = {
   type: 'quoteLine',
   variant: 'rows',
   addLabel: 'Add a line',
-  empty: 'No price yet. Add a line for each thing you’re charging for — the total works itself out.',
+  empty: 'No price yet. Add a line for each thing you’re charging for and the total works itself out.',
   quick: [
     { label: 'Full day', preset: { label: 'Full-day shoot', qty: 1 } },
     { label: 'Half day', preset: { label: 'Half-day shoot', qty: 1 } },
@@ -466,7 +496,7 @@ const QUOTE = {
 const COSTS = {
   type: 'costLine',
   addLabel: 'Add a cost',
-  empty: 'No other costs yet. Studio or kit hire, travel, props, food — add anything you’ll pay for.',
+  empty: 'No other costs yet. Add anything you’ll pay for: studio or kit hire, travel, props, food.',
   quick: [
     { label: 'Studio hire', preset: { category: 'studio', label: 'Studio hire', unit: 'day' } },
     { label: 'Kit hire', preset: { category: 'kit', label: 'Equipment hire', unit: 'day' } },
@@ -559,7 +589,7 @@ const SCHEDULE = {
   type: 'slot',
   variant: 'rows',
   addLabel: 'Add a time',
-  empty: 'No schedule yet — add when everyone arrives and what happens when.',
+  empty: 'No schedule yet. Add when everyone arrives and what happens when.',
   quick: [
     { label: 'Arrive & set up', preset: { text: 'Arrive & set up' } },
     { label: 'Talent arrives', preset: { text: 'Talent arrives' } },
@@ -606,7 +636,7 @@ const NOTES = {
   addLabel: 'Add a note',
   newestFirst: true,
   noMove: true,
-  empty: 'No notes yet. Whenever they tell you something — a change of plan, a preference, a new idea — add it here with the date.',
+  empty: 'No notes yet. Whenever they tell you something (a change of plan, a preference, a new idea), add it here with the date.',
   defaults: () => ({ date: todayYmd() }),
   fields: [
     { name: 'date', kind: 'date', label: 'Date', span: 4 },
@@ -632,6 +662,26 @@ const LINKS = {
   ],
 };
 
+const MORE_DAYS = {
+  type: 'shootDay',
+  variant: 'rows',
+  addLabel: 'Add another day',
+  empty: 'Just the one day. Shooting over more than one? Add each extra day here.',
+  // the next day after the last one, at the same times, change anything you need
+  defaults: (items, doc) => {
+    const last = [doc.date, ...items.map((d) => d.date)].filter(Boolean).sort().pop();
+    return { date: last ? addDays(last, 1) : undefined, startTime: doc.startTime || undefined, endTime: doc.endTime || undefined };
+  },
+  sortBy: (a, b) => String(a.date || '9').localeCompare(String(b.date || '9')),
+  sortLabel: 'Sort by date',
+  fields: [
+    { name: 'date', kind: 'date', label: 'Day', span: 6 },
+    { name: 'startTime', kind: 'time', label: 'Start', span: 3 },
+    { name: 'endTime', kind: 'time', label: 'Finish', span: 3 },
+    { name: 'note', kind: 'text', label: 'Note', span: 12, wrap: true, placeholder: 'Note for this day (optional), e.g. second location' },
+  ],
+};
+
 const useBudget = () => computeBudget(useFormValue([]));
 
 export const LocationsInput = (props) => <ListInput {...props} spec={LOCATIONS} />;
@@ -640,6 +690,10 @@ export const ScheduleInput = (props) => <ListInput {...props} spec={SCHEDULE} />
 export const ShotListInput = (props) => <ListInput {...props} spec={SHOTS} />;
 export const NotesInput = (props) => <ListInput {...props} spec={NOTES} />;
 export const LinksInput = (props) => <ListInput {...props} spec={LINKS} />;
+export function MoreDaysInput(props) {
+  const doc = useFormValue([]) || {};
+  return <ListInput {...props} spec={MORE_DAYS} ctx={doc} />;
+}
 export function QuoteInput(props) {
   const b = useBudget();
   return <ListInput {...props} spec={QUOTE} ctx={b} />;
@@ -676,7 +730,7 @@ export function BudgetSummaryInput() {
     else facts.push({ tone: '', text: `Nothing paid yet · ${money(b.income)} to come in` });
   }
   if (b.toPayOut) facts.push({ tone: '', text: `${money(b.toPayOut)} of your costs still to pay out` });
-  if (b.covered) facts.push({ tone: '', text: `${money(b.covered)} paid by the client directly — not in your costs` });
+  if (b.covered) facts.push({ tone: '', text: `${money(b.covered)} paid by the client directly, so not in your costs` });
   if (b.days > 1 && b.income) facts.push({ tone: '', text: `${money(b.profit / b.days)} profit per shoot day, over ${b.days} days` });
 
   return (
@@ -700,7 +754,7 @@ export function BudgetSummaryInput() {
       </div>
 
       {nothing ? (
-        <p className="lo-sum-empty">Add your price under “What you’re charging”, then your costs — location and people fees come in from their tabs. Everything here works itself out.</p>
+        <p className="lo-sum-empty">Add your price under “What you’re charging”, then your costs. Location and people fees come in from their tabs. Everything here works itself out.</p>
       ) : (
         <>
           <div className="lo-sum-bar" role="img" aria-label={`Costs ${money(b.costs)}, profit ${money(b.profit)}`}>
@@ -748,7 +802,7 @@ export function BudgetSummaryInput() {
 /* ---------- who it's for ---------- */
 
 const PICK_QUERY = `{
-  "enquiries": *[_type == "enquiry"] | order(receivedAt desc)[0...120]{ _id, name, company, email, phone, service, budget, details, receivedAt, replied },
+  "enquiries": *[_type == "enquiry"] | order(receivedAt desc)[0...120]{ _id, name, company, email, phone, service, budget, details, receivedAt, replied, declined },
   "booked": *[_type == "booking" && defined(client.enquiry._ref)]{ _id, "ref": client.enquiry._ref }
 }`;
 
@@ -789,7 +843,7 @@ function EnquiryPicker({ onPick, onCancel, readOnly, selfId }) {
       <div className="lo-match-head">
         <div>
           <span className="lo-match-title">Match an enquiry</span>
-          <span className="lo-match-text">Pick who this shoot is for — their name, contact details, budget and message fill in for you.</span>
+          <span className="lo-match-text">Pick who this shoot is for. Their name, contact details, budget and message fill in for you.</span>
         </div>
         {onCancel ? (
           <button type="button" className="lo-mini-btn" onClick={onCancel}>
@@ -812,15 +866,23 @@ function EnquiryPicker({ onPick, onCancel, readOnly, selfId }) {
                     {e.name || 'Unknown'}
                     {e.company ? <span> · {e.company}</span> : null}
                   </span>
-                  <span className="lo-match-meta">{[e.service, e.budget, e.receivedAt ? fmtDay(e.receivedAt.slice(0, 10), { day: 'numeric', month: 'short', year: 'numeric' }) : ''].filter(Boolean).join(' · ')}</span>
+                  <span className="lo-match-meta">{[e.service, tidyRange(e.budget), e.receivedAt ? fmtDay(e.receivedAt.slice(0, 10), { day: 'numeric', month: 'short', year: 'numeric' }) : ''].filter(Boolean).join(' · ')}</span>
                   {e.details ? <span className="lo-match-snip">{e.details}</span> : null}
                 </span>
-                {n ? <span className="lo-match-tag">Booked{n > 1 ? ` ×${n}` : ''}</span> : !e.replied ? <span className="lo-match-tag" data-new="">New</span> : null}
+                {n ? (
+                  <span className="lo-match-tag">Booked{n > 1 ? ` ×${n}` : ''}</span>
+                ) : e.declined ? (
+                  <span className="lo-match-tag">Not going ahead</span>
+                ) : !e.replied ? (
+                  <span className="lo-match-tag" data-new="">
+                    New
+                  </span>
+                ) : null}
               </button>
             );
           })
         ) : (
-          <p className="lo-match-none">{q ? 'No enquiries match that.' : 'No enquiries yet — they arrive here from the contact form on your website.'}</p>
+          <p className="lo-match-none">{q ? 'No enquiries match that.' : 'No enquiries yet. They arrive here from the contact form on your website.'}</p>
         )}
       </div>
     </div>
@@ -896,7 +958,7 @@ export function ClientInput(props) {
               {v.budget ? (
                 <div>
                   <dt>Their budget</dt>
-                  <dd>{v.budget}</dd>
+                  <dd>{tidyRange(v.budget)}</dd>
                 </div>
               ) : null}
               {when ? (
@@ -941,6 +1003,193 @@ export function ClientInput(props) {
           {props.renderDefault(props)}
         </div>
       ) : null}
+    </div>
+  );
+}
+
+/* ---------- email reminders ---------- */
+
+const REMIND_TO = 'contact@louisoliver.co.uk';
+const shortDay = (d) => fmtDay(d, { weekday: 'short', day: 'numeric', month: 'short' });
+
+export function RemindersInput(props) {
+  const { value, onChange, readOnly } = props;
+  const doc = useFormValue([]) || {};
+  const id = String(doc._id || '').replace(/^drafts\./, '');
+  const chosen = Array.isArray(value) ? value.map(String) : [];
+  const today = todayYmd();
+  const plan = reminderPlan({ ...doc, reminders: chosen }, today);
+  const hasDate = reminderDays(doc).length > 0;
+  const [test, setTest] = useState(null);
+
+  const toggle = (v) => {
+    const next = chosen.includes(v) ? chosen.filter((x) => x !== v) : [...chosen, v];
+    const ordered = REMINDER_OPTIONS.map((o) => o.value).filter((x) => next.includes(x));
+    onChange(ordered.length ? set(ordered) : unset());
+  };
+
+  const sendTest = async () => {
+    setTest({ state: 'sending', text: '' });
+    try {
+      const res = await fetch('/api/reminders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+      const body = await res.json().catch(() => ({}));
+      if (res.ok && body.ok) setTest({ state: 'ok', text: `Test email sent to ${body.to || REMIND_TO}. Check your inbox.` });
+      else if (res.status === 404) setTest({ state: 'warn', text: 'Type or pick anything on this shoot first (so it’s saved), then try again.' });
+      else setTest({ state: 'warn', text: body.reason ? `It didn’t send: ${body.reason}` : 'It didn’t send. Please try again in a minute.' });
+    } catch {
+      setTest({ state: 'warn', text: 'It didn’t send. Check your connection and try again.' });
+    }
+  };
+
+  const next = plan.find((p) => p.state === 'waiting' || p.state === 'due');
+  // the morning run has gone by the time you're reading this, so anything due today goes tomorrow
+  const nextSend = !next
+    ? ''
+    : next.due < today || (next.due === today && new Date().getHours() > reminderHour(today))
+      ? 'tomorrow morning'
+      : next.due === today
+        ? 'this morning'
+        : shortDay(next.due);
+  return (
+    <div className="lo-rem">
+      <div className="lo-rem-chips">
+        {REMINDER_OPTIONS.map((o, i) => {
+          const on = chosen.includes(o.value);
+          const items = plan.filter((p) => p.option === o.value);
+          const allSent = items.length > 0 && items.every((p) => p.state === 'sent');
+          const allMissed = items.length > 0 && items.every((p) => p.state === 'missed');
+          const upcoming = items.find((p) => p.state === 'waiting' || p.state === 'due');
+          const days = reminderDays(doc);
+          const when = upcoming ? shortDay(upcoming.due) : days.length ? shortDay(addDays(days[0], -o.days)) : '';
+          let sub = when;
+          if (!hasDate) sub = 'Add a date first';
+          else if (on && allSent) sub = 'Sent';
+          else if (on && allMissed) sub = 'Too late for this one';
+          return (
+            <button
+              key={o.value}
+              type="button"
+              className="lo-rem-chip"
+              data-on={on ? '' : undefined}
+              data-state={on ? (allSent ? 'sent' : allMissed ? 'missed' : 'waiting') : undefined}
+              aria-pressed={on}
+              disabled={readOnly}
+              onClick={() => toggle(o.value)}
+              style={{ '--i': i }}
+            >
+              <span className="lo-li-box">
+                <IconTick />
+              </span>
+              <span className="lo-rem-text">
+                <b>{o.title}</b>
+                <small>{sub}</small>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="lo-rem-foot">
+        <span className="lo-rem-ic" aria-hidden="true">
+          <MailIcon />
+        </span>
+        <span className="lo-rem-say">
+          {!hasDate ? (
+            <>Add the shoot day and your reminders will be worked out from it.</>
+          ) : next ? (
+            <>
+              Next email <b>{nextSend}</b> at around {reminderHour(next.due < today ? today : next.due)}am, to <b>{REMIND_TO}</b>
+            </>
+          ) : chosen.length ? (
+            <>No more reminders to send for this shoot.</>
+          ) : (
+            <>No reminders picked. Tick when you’d like an email.</>
+          )}
+        </span>
+        <button type="button" className="lo-mini-btn" onClick={sendTest} disabled={!id || (test && test.state === 'sending')}>
+          {test && test.state === 'sending' ? 'Sending…' : 'Send a test now'}
+        </button>
+      </div>
+      {test && test.text ? (
+        <p className="lo-rem-note" data-tone={test.state}>
+          {test.text}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+/* ---------- the Save button at the bottom ---------- */
+
+/** a field with no heading, just its own card */
+export const BareField = (props) => props.children;
+
+export function SaveShootInput(props) {
+  const { value, onChange, readOnly } = props;
+  const doc = useFormValue([]) || {};
+  const toast = useToast();
+  const b = computeBudget(doc);
+  const days = shootDays(doc);
+  const locs = (Array.isArray(doc.locations) ? doc.locations : []).filter((l) => l && (l.name || l.address));
+  const checks = [
+    { label: 'Date', ok: days.length > 0, text: days.length ? `${shortDay(days[0])}${days.length > 1 ? ` + ${days.length - 1} more` : ''}` : 'Not set yet' },
+    { label: 'Client', ok: Boolean(clientLine(doc)), text: clientLine(doc) || 'Not added' },
+    { label: 'Location', ok: locs.length > 0, text: locs.length ? locs[0].name || locs[0].address : 'Not added' },
+    { label: 'Price', ok: b.income > 0, text: b.income > 0 ? money(b.income) : 'Not added' },
+  ];
+
+  const save = () => {
+    if (readOnly) return;
+    onChange(set(new Date().toISOString()));
+    toast.push({ status: 'success', title: 'Shoot saved', description: 'It’s booked in your calendar.' });
+  };
+
+  if (value) {
+    const at = new Date(value);
+    return (
+      <div className="lo-save" data-booked="">
+        <span className="lo-save-tick" aria-hidden="true">
+          <IconTick />
+        </span>
+        <span className="lo-save-main">
+          <b>Shoot saved</b>
+          <span>
+            Booked on {at.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })} at {at.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}.
+            Anything you change from now on saves as you type.
+          </span>
+        </span>
+        {!readOnly ? (
+          <button type="button" className="lo-mini-btn" data-quiet="" onClick={() => onChange(unset())}>
+            Undo
+          </button>
+        ) : null}
+      </div>
+    );
+  }
+  return (
+    <div className="lo-save">
+      <span className="lo-save-head">
+        <b>Ready to save this shoot?</b>
+        <span>Check the essentials. Anything missing can be added later.</span>
+      </span>
+      <ul className="lo-save-checks">
+        {checks.map((c, i) => (
+          <li key={c.label} data-ok={c.ok ? '' : undefined} style={{ '--i': i }}>
+            <span className="lo-save-dot" aria-hidden="true">
+              {c.ok ? <IconTick /> : null}
+            </span>
+            <span className="lo-save-what">
+              <small>{c.label}</small>
+              <span className="lo-save-val">{c.text}</span>
+            </span>
+          </li>
+        ))}
+      </ul>
+      <button type="button" className="lo-save-btn" onClick={save} disabled={readOnly}>
+        Save shoot
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M3 8h10M9 4l4 4-4 4" />
+        </svg>
+      </button>
     </div>
   );
 }

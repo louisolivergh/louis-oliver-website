@@ -1,32 +1,48 @@
 'use client';
 
 import { useToast } from '@sanity/ui';
+import { useDocumentOperation } from 'sanity';
 import { CheckIcon } from './DashIcons';
 
-/* Booked shoots are never published (that keeps them private — they hold client details and money).
-   In place of "Publish", the main button just confirms everything is saved. */
+/* Booked shoots are never published (that keeps them private, they hold client details and money).
+   In place of "Publish": "Save shoot" books a new shoot in, and after that the button just confirms it's saved. */
 export function SavedAction(props) {
   const toast = useToast();
-  const exists = Boolean(props && (props.draft || props.published));
-  if (!exists) {
+  const { patch } = useDocumentOperation(props.id, props.type);
+  const doc = (props && (props.draft || props.published)) || null;
+
+  if (!doc) {
     // a brand-new shoot is stored the moment you type or pick anything
     return {
-      label: 'Not saved yet',
+      label: 'Save shoot',
       icon: CheckIcon,
       disabled: true,
-      title: 'Type or pick anything and the shoot saves itself.',
+      title: 'Fill in a detail first, then save the shoot.',
+    };
+  }
+  if (!doc.bookedAt) {
+    return {
+      label: 'Save shoot',
+      icon: CheckIcon,
+      tone: 'primary',
+      title: 'Book this shoot in. You can keep changing it afterwards.',
+      onHandle: () => {
+        patch.execute([{ set: { bookedAt: new Date().toISOString() } }]);
+        toast.push({ status: 'success', title: 'Shoot saved', description: 'It’s booked in your calendar.' });
+        if (typeof props.onComplete === 'function') props.onComplete();
+      },
     };
   }
   return {
     label: 'Saved',
     icon: CheckIcon,
     tone: 'primary',
-    title: 'Shoots save as you type and stay private — there’s nothing to publish.',
+    title: 'Shoots save as you type and stay private, so there’s nothing to publish.',
     onHandle: () =>
       toast.push({
         status: 'success',
         title: 'All saved',
-        description: 'Shoots save as you type and stay private — only you can see them.',
+        description: 'Shoots save as you type and stay private. Only you can see them.',
       }),
   };
 }

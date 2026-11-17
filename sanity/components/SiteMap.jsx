@@ -246,7 +246,7 @@ export function SiteMap(props) {
         </div>
         <h1 className="lo-site-title">Your website, page by page.</h1>
         <p className="lo-site-text">
-          Set these up once and you’re done — day to day you’ll mostly use Updates. Pick a page to edit it; changes go live when you
+          Set these up once and you’re done. Day to day you’ll mostly use Updates. Pick a page to edit it; changes go live when you
           press Publish.
         </p>
         {data ? (

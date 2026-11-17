@@ -7,7 +7,7 @@
 export const STATUSES = [
   { value: 'pencilled', title: 'Pencilled in', short: 'Pencilled in' },
   { value: 'confirmed', title: 'Confirmed', short: 'Confirmed' },
-  { value: 'shot', title: 'Shot — editing', short: 'Editing' },
+  { value: 'shot', title: 'Shot, now editing', short: 'Editing' },
   { value: 'delivered', title: 'Delivered', short: 'Delivered' },
   { value: 'cancelled', title: 'Cancelled', short: 'Cancelled' },
 ];
@@ -113,7 +113,7 @@ const sum = (list) => list.reduce((a, b) => a + b, 0);
 
 const GBP0 = new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP', maximumFractionDigits: 0 });
 const GBP2 = new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP', minimumFractionDigits: 2, maximumFractionDigits: 2 });
-/** £1,250 — pence only when there are some */
+/** £1,250, pence only when there are some */
 export const money = (n) => {
   const v = round2(num(n));
   return Number.isInteger(v) ? GBP0.format(v) : GBP2.format(v);
@@ -125,7 +125,7 @@ export const moneyShort = (n) => {
   if (Math.abs(v) >= 1000) return `£${(v / 1000).toFixed(1).replace(/\.0$/, '')}k`;
   return money(Math.round(v));
 };
-export const percent = (r) => (typeof r === 'number' && Number.isFinite(r) ? `${Math.round(r * 100)}%` : '–');
+export const percent = (r) => (typeof r === 'number' && Number.isFinite(r) ? `${Math.round(r * 100)}%` : '');
 
 /** quantity × rate (an empty quantity counts as 1) */
 export function lineTotal(line) {
@@ -144,7 +144,7 @@ export function personCost(p) {
   return round2(rate * q);
 }
 
-/** "£1k–£3k", "Under £500", "£5,000+" → the top figure, or null */
+/** "£1k to £3k", "Under £500", "£5,000+" → the top figure, or null */
 export function parseBudget(text) {
   if (typeof text !== 'string') return null;
   const found = [...text.replace(/,/g, '').matchAll(/(\d+(?:\.\d+)?)\s*([kK])?/g)]
@@ -166,7 +166,7 @@ export function computeBudget(doc) {
   arr(d.people).forEach((p) => {
     const amount = personCost(p);
     const role = roleOf(p.role);
-    if (amount) items.push({ key: p._key, source: 'people', category: role ? role.category : 'crew', label: [role && role.title, p.name].filter(Boolean).join(' — ') || 'Person', amount, clientPays: Boolean(p.clientPays), paid: Boolean(p.paid) });
+    if (amount) items.push({ key: p._key, source: 'people', category: role ? role.category : 'crew', label: [role && role.title, p.name].filter(Boolean).join(' · ') || 'Person', amount, clientPays: Boolean(p.clientPays), paid: Boolean(p.paid) });
   });
   arr(d.costs).forEach((c) => {
     const amount = lineTotal(c);
@@ -237,23 +237,113 @@ export function relDay(s) {
   if (n < -1 && n > -14) return `${-n} days ago`;
   return fmtDay(s, { day: 'numeric', month: 'short', year: 'numeric' });
 }
-export const timeRange = (a, b) => (a && b ? `${a}–${b}` : a || '');
+export const timeRange = (a, b) => (a && b ? `${a} to ${b}` : a || '');
 
-/** every day the shoot runs, first to last */
+/** every day the shoot runs, in order, the first day, any run of days after it, and any extra days */
 export function shootDays(b) {
-  if (!b || !parseYmd(b.date)) return [];
-  const last = parseYmd(b.endDate) && b.endDate > b.date ? b.endDate : b.date;
+  if (!b) return [];
+  const set = new Set();
+  if (parseYmd(b.date)) {
+    const last = parseYmd(b.endDate) && b.endDate > b.date ? b.endDate : b.date;
+    for (let s = b.date; s <= last && set.size < 62; s = addDays(s, 1)) set.add(s);
+  }
+  (Array.isArray(b.moreDays) ? b.moreDays : []).forEach((d) => {
+    if (d && parseYmd(d.date)) set.add(d.date.slice(0, 10));
+  });
+  return [...set].sort();
+}
+
+/** the times (and note) for one day of a shoot */
+export function dayInfo(b, day) {
+  const extra = (Array.isArray(b && b.moreDays) ? b.moreDays : []).find((d) => d && d.date === day);
+  if (extra && day !== b.date) return { start: extra.startTime || '', end: extra.endTime || '', note: extra.note || '', key: extra._key };
+  return { start: (b && b.startTime) || '', end: (b && b.endTime) || '', note: '', key: null };
+}
+
+/** the next day this shoot happens (today counts), or its last day if it's all in the past */
+export function nextDayOf(b, today) {
+  const days = shootDays(b);
+  return days.find((d) => d >= today) || days[days.length - 1] || '';
+}
+
+/** has the shoot been saved with "Save shoot"? (until then it's still being created) */
+export const isBooked = (b) => Boolean(b && b.bookedAt);
+
+/* ---------- reminders ---------- */
+
+export const REMINDER_OPTIONS = [
+  { value: '14', title: '2 weeks before', days: 14 },
+  { value: '7', title: '1 week before', days: 7 },
+  { value: '3', title: '3 days before', days: 3 },
+  { value: '2', title: '2 days before', days: 2 },
+  { value: '1', title: 'The day before', days: 1 },
+  { value: '0', title: 'On the morning', days: 0 },
+];
+/** a reminder that was missed (say the server was down) is still sent up to this many days late */
+export const REMINDER_GRACE_DAYS = 2;
+
+/** days that start a run of shoot days, reminders count back from these */
+export function reminderDays(b) {
+  const days = shootDays(b);
+  const set = new Set(days);
+  return days.filter((d) => !set.has(addDays(d, -1)));
+}
+
+/** each chosen reminder, for each run of shoot days: when it's due, and whether it's been sent */
+export function reminderPlan(b, today) {
+  const chosen = (Array.isArray(b && b.reminders) ? b.reminders : []).map(String);
+  const sent = new Set(Array.isArray(b && b.remindersSent) ? b.remindersSent : []);
   const out = [];
-  for (let s = b.date; s <= last && out.length < 62; s = addDays(s, 1)) out.push(s);
-  return out;
+  reminderDays(b).forEach((day) => {
+    REMINDER_OPTIONS.filter((o) => chosen.includes(o.value)).forEach((o) => {
+      const due = addDays(day, -o.days);
+      const token = `${o.value}@${day}`;
+      let state = 'waiting';
+      if (sent.has(token)) state = 'sent';
+      else if (day < today || daysBetween(due, today) > REMINDER_GRACE_DAYS) state = 'missed';
+      else if (due <= today) state = 'due';
+      out.push({ option: o.value, title: o.title, day, due, token, state });
+    });
+  });
+  return out.sort((x, y) => x.due.localeCompare(y.due));
+}
+
+/** the hour the morning reminder run reaches you, UK time: 7am in winter, 8am in summer (it runs at 07:00 UTC) */
+export function reminderHour(day) {
+  try {
+    const h = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: 'numeric', hourCycle: 'h23' }).format(new Date(`${day}T07:00:00Z`));
+    return Number(h) || 7;
+  } catch {
+    return 7;
+  }
+}
+
+/** today's date (YYYY-MM-DD) in a given time zone, the server runs in UTC */
+export function ymdInZone(date = new Date(), timeZone = 'Europe/London') {
+  try {
+    return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
+  } catch {
+    return ymd(date);
+  }
 }
 
 /* ---------- people & names ---------- */
 
+/** a title someone typed, with any dash between words swapped for a dot: "Ink Heaven · autumn" */
+export const tidyTitle = (t) => (typeof t === 'string' ? t.replace(/\s*[\u2013\u2014]+\s*/g, ' · ').replace(/\s+-+\s+/g, ' · ') : t);
+/** a budget someone picked, shown without dashes: "£1k-£3k" → "£1k to £3k" */
+export const tidyRange = (t) =>
+  typeof t === 'string'
+    ? t
+        .replace(/(\d[\d,.]*(?:\s*[kKmM](?![a-z]))?)\s*[-\u2013\u2014]+\s*(?=[£$€]?\s*\d)/g, '$1 to ')
+        .replace(/\s*[\u2013\u2014]+\s*/g, ', ')
+        .replace(/\s+-+\s+/g, ', ')
+    : t;
+
 export function bookingTitle(b) {
   if (!b) return 'New shoot';
   const c = b.client || {};
-  return (typeof b.title === 'string' && b.title.trim()) || c.company || c.name || 'New shoot';
+  return tidyTitle((typeof b.title === 'string' && b.title.trim()) || c.company || c.name || 'New shoot');
 }
 export function clientLine(b) {
   const c = (b && b.client) || {};

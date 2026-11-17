@@ -6,7 +6,7 @@ import * as uiTheme from '@sanity/ui/theme';
 const brand = '#104de6';
 const ink = '#0b1220';
 
-// the website's own fonts — loaded by app/layout.jsx
+// the website's own fonts, loaded by app/layout.jsx
 const BODY = 'var(--font-inter, Inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 const DISPLAY = 'var(--font-sora, Sora), var(--font-inter, Inter), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
 

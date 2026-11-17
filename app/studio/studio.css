@@ -1,12 +1,12 @@
 /* ================================================================
-   Dashboard (/studio) — the "Content" side, designed like the website.
+   Dashboard (/studio), the "Content" side, designed like the website.
 
    Fonts, colours and corner rounding come from sanity/theme.js. The
    header card on each page you edit comes from
    sanity/components/FormChrome.jsx. This file is the look and the
    motion. Every rule is scoped to the dashboard's Content side, so the
    website and the Overview page are untouched. If Sanity ever changes
-   its markup, these rules simply stop applying — nothing breaks.
+   its markup, these rules simply stop applying, nothing breaks.
 
    1. Design tokens & motion
    2. Lists (the columns you click through)
@@ -123,14 +123,14 @@ html body [data-ui="PaneLayout"] [data-ui="PreviewCard"][data-as="a"] :is([data-
   padding-left: 14px !important;
 }
 
-/* navigation is text only — icon placeholders never show (a shoot's real thumbnail still does).
+/* navigation is text only, icon placeholders never show (a shoot's real thumbnail still does).
    The lists are set to hide icons in sanity.config.js; this is a backstop. */
 html body [data-ui="PaneLayout"] :is([data-ui="ListPane"], [data-ui="DocumentListPane"]) [data-ui="PreviewCard"][data-as="a"] [data-ui="Box"]:has(> [data-testid="Media"] > svg),
 html body [data-ui="PaneLayout"] :is([data-ui="ListPane"], [data-ui="DocumentListPane"]) [data-ui="PreviewCard"][data-as="a"] [data-testid="compact-preview"] [data-testid="Media"]:has(> svg) {
   display: none !important;
 }
 
-/* thumbnails ease in a touch on hover, and the row's content glides slightly — like the website */
+/* thumbnails ease in a touch on hover, and the row's content glides slightly, like the website */
 html body [data-ui="PaneLayout"] [data-ui="PreviewCard"] [data-testid="Media"] img {
   transition: transform .8s cubic-bezier(.16, 1, .3, 1);
 }
@@ -155,7 +155,7 @@ html body [data-ui="PaneLayout"] [data-testid="pane-header"] [data-ui="Card"] > 
   color: #0b1220 !important;
 }
 
-/* group labels inside a list ("Inbox", "Brand") — the website's small blue eyebrow, with its line
+/* group labels inside a list ("Inbox", "Brand"), the website's small blue eyebrow, with its line
    running level beside it */
 html body [data-ui="PaneLayout"] [data-ui="ListPane"] [data-ui="Box"]:has(> [data-ui="Text"] + hr) {
   display: flex !important;
@@ -409,7 +409,7 @@ html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [da
   background: #e8edf5;
   animation: loRise .7s var(--lo-ease) .05s backwards;
 }
-/* …and padding above/left of every tab — which pushed them off-centre inside the pill */
+/* …and padding above/left of every tab, which pushed them off-centre inside the pill */
 html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-testid="field-group-tabs"] > div {
   display: block !important;
   padding: 0 !important;
@@ -1521,19 +1521,36 @@ html body .lo-day-top { display: flex; align-items: center; justify-content: spa
 html body .lo-day-num {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  min-width: 28px;
-  height: 28px;
-  padding: 0 8px;
-  border-radius: 999px;
+  gap: 6px;
   font: 600 13px/1 var(--lo-body);
   font-variant-numeric: tabular-nums;
+}
+/* the date sits in a circle: today gets a dotted ring, the day you've got open is filled in */
+html body :is(.lo-day-n, .lo-mini-num) {
+  box-sizing: border-box;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1.5px dashed transparent;
+  border-radius: 50%;
+  transition: background-color .35s ease, color .35s ease, border-color .35s ease, box-shadow .45s var(--lo-ease), transform .45s var(--lo-spring);
+}
+html body :is(.lo-day[data-today] .lo-day-n, .lo-mini-day[data-today] .lo-mini-num) { border-color: var(--lo-blue); color: var(--lo-blue); }
+html body :is(.lo-day[data-selected] .lo-day-n, .lo-mini-day[data-selected] .lo-mini-num) {
+  border-style: solid;
+  border-color: var(--lo-blue);
+  background: var(--lo-blue);
+  color: #ffffff;
+  box-shadow: 0 8px 18px -8px rgba(16, 77, 230, .8);
+  animation: loPop .5s var(--lo-spring) backwards;
 }
 html body .lo-day-num small { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--lo-blue); }
 html body .lo-day[data-past]:not([data-today]) .lo-day-num { color: #8a93a5; }
 html body .lo-day[data-out] .lo-day-num { color: var(--lo-faint); }
-html body .lo-day[data-today] .lo-day-num { background: var(--lo-blue); color: #ffffff; box-shadow: 0 8px 18px -10px rgba(16, 77, 230, .85); }
-html body .lo-day[data-today] .lo-day-num small { color: rgba(255, 255, 255, .85); }
+html body .lo-day[data-today] .lo-day-num { color: var(--lo-blue); }
 html body .lo-day-add {
   display: inline-flex;
   flex: none;
@@ -1735,6 +1752,7 @@ html body :is(.lo-tbl-date, .lo-tbl-shoot) { display: flex; flex-direction: colu
 html body .lo-tbl-shoot b { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font: 600 14px/1.25 var(--lo-display); }
 html body :is(.lo-tbl-row, .lo-tbl-foot) small { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 11.5px; color: var(--lo-muted); }
 html body .lo-tbl-where { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--lo-text); }
+html body .lo-tbl-none { color: var(--lo-faint); font-weight: 500; font-size: 12.5px; letter-spacing: 0; }
 html body :is(.lo-tbl-row, .lo-tbl-foot) [data-neg] b { color: #b42318; }
 html body .lo-tbl-row [data-ok] { font-weight: 600; color: #12805c; }
 html body .lo-tbl-foot { margin-top: 6px; border-radius: 14px; background: var(--lo-tint); color: var(--lo-blue); font-size: 13.5px; font-weight: 600; }
@@ -1774,12 +1792,11 @@ html body .lo-mini-day {
 html body .lo-mini-day:hover { background: #ffffff; }
 html body .lo-mini-day[data-out] { color: var(--lo-faint) !important; }
 html body .lo-mini-day[data-has] { background: #ffffff; box-shadow: inset 0 0 0 1px var(--lo-edge); }
-html body .lo-mini-day[data-today] > span:first-child { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: var(--lo-blue); color: #ffffff; }
-html body .lo-mini-day[data-active] { background: var(--lo-blue); box-shadow: none; color: #ffffff !important; }
+html body .lo-mini .lo-mini-num { width: 26px; height: 26px; }
 html body .lo-mini-day[data-drop] { box-shadow: inset 0 0 0 2px var(--lo-blue); }
 html body .lo-mini-dots { display: flex; gap: 2px; }
 html body .lo-mini-dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--st-bg); box-shadow: inset 0 0 0 1px var(--st-line); }
-html body .lo-mini-day[data-active] .lo-mini-dots i { background: #ffffff; box-shadow: none; }
+html body .lo-mini-dots i[data-draft] { opacity: .45; }
 html body .lo-agenda { display: flex; flex-direction: column; gap: 2px; }
 
 @container (max-width: 1120px) {
@@ -2167,7 +2184,7 @@ html body .lo-match-search {
   transition: box-shadow .3s ease;
 }
 html body .lo-match-search:focus { box-shadow: var(--lo-focus); }
-html body .lo-match-list { display: flex; flex-direction: column; gap: 6px; max-height: 430px; margin-top: 10px; overflow: auto; }
+html body .lo-match-list { display: flex; flex-direction: column; gap: 6px; max-height: 440px; margin: 6px -8px 0; padding: 4px 8px 12px; overflow: auto; }
 html body .lo-match-item {
   display: flex;
   align-items: center;
@@ -2186,7 +2203,7 @@ html body .lo-match-item {
   animation: loRise .45s var(--lo-ease) backwards;
   animation-delay: calc(var(--i, 0) * 30ms);
 }
-html body .lo-match-item:hover { transform: translateX(3px); box-shadow: inset 0 0 0 1.5px var(--lo-blue), 0 12px 24px -18px rgba(16, 77, 230, .6); }
+html body .lo-match-item:hover { transform: translateY(-1px); box-shadow: inset 0 0 0 1.5px var(--lo-blue), 0 12px 24px -18px rgba(16, 77, 230, .6); }
 html body .lo-match-main { display: flex; flex: 1; flex-direction: column; gap: 3px; min-width: 0; }
 html body .lo-match-name { font-size: 14.5px; font-weight: 600; }
 html body .lo-match-name span { font-weight: 500; color: var(--lo-text); }
@@ -2418,4 +2435,253 @@ html body .lo-due svg { font-size: 14px; }
 
 @media (prefers-reduced-motion: reduce) {
   html body :is(.lo-cal, .lo-cal *, .lo-dash, .lo-dash *, .lo-li *, .lo-client *, .lo-sum *, .lo-bk-hero *) { animation: none !important; transition-duration: .01ms !important; }
+}
+
+/* ================================================================
+   12. Shoots, round two: saving, more days, reminders, sliding tabs,
+       animated removal, the date box, "not booked yet"
+   ================================================================ */
+
+/* ---------- section tabs: a white pill slides to the tab you pick (sanity/components/FormChrome.jsx) ---------- */
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-testid="field-group-tabs"] { position: relative; }
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-testid="field-group-tabs"] [data-ui="Tab"] { position: relative; z-index: 1; }
+html body .lo-tab-pill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 0;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(11, 18, 32, .06), 0 10px 20px -12px rgba(11, 18, 32, .35);
+  opacity: 0;
+  pointer-events: none;
+}
+html body .lo-tab-pill[data-ready] { transition: transform .55s var(--lo-spring), width .55s var(--lo-spring), height .3s ease, opacity .3s ease; }
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-testid="field-group-tabs"]:has(> .lo-tab-pill[data-ready]) [data-ui="Tab"][aria-selected="true"] {
+  --card-bg-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* ---------- lists: removing something slides it away ---------- */
+html body .lo-li-item { box-sizing: border-box; }
+html body .lo-li-item[data-leaving] {
+  overflow: hidden;
+  pointer-events: none;
+  animation: loLeave .42s var(--lo-ease) forwards !important;
+}
+@keyframes loLeave {
+  0% { height: var(--h); opacity: 1; transform: none; }
+  45% { opacity: 0; transform: translateX(-18px) scale(.97); }
+  100% { height: 0; min-height: 0; padding-top: 0; padding-bottom: 0; margin-top: -10px; opacity: 0; transform: translateX(-18px) scale(.97); }
+}
+html body .lo-li-del[data-confirm] { animation: loNudge .45s var(--lo-spring); }
+html body .lo-li-del[data-confirm] span { animation: loFade .3s ease backwards; }
+@keyframes loNudge {
+  0% { transform: scale(.9); }
+  60% { transform: scale(1.06); }
+  100% { transform: none; }
+}
+
+/* ---------- date boxes: the calendar button is part of the same box ---------- */
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-ui="TextInput"]:has(> [data-ui="Card"]) { align-items: stretch !important; }
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-ui="TextInput"] > [data-ui="Card"] {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  --card-bg-color: var(--lo-field) !important;
+  background-color: var(--lo-field) !important;
+  border-color: var(--lo-edge) !important;
+  transition: background-color .3s ease, border-color .3s ease;
+}
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-ui="TextInput"] > [data-ui="Card"]:last-child { border-radius: 0 12px 12px 0 !important; }
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-ui="TextInput"] > [data-ui="Card"]:first-child { border-radius: 12px 0 0 12px !important; }
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-ui="TextInput"]:has(> [data-ui="Card"]:last-child) input + span {
+  border-radius: 12px 0 0 12px !important;
+}
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-ui="TextInput"]:has(> [data-ui="Card"]:first-child) input + span {
+  border-radius: 0 12px 12px 0 !important;
+}
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-ui="TextInput"]:has(> [data-ui="Card"]:first-child):has(> [data-ui="Card"]:last-child) input + span {
+  border-radius: 0 !important;
+}
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-ui="TextInput"]:focus-within > [data-ui="Card"] {
+  --card-bg-color: #ffffff !important;
+  background-color: #ffffff !important;
+  border-color: var(--lo-blue) !important;
+}
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-ui="TextInput"] > [data-ui="Card"] [data-ui="Button"] { border-radius: 9px !important; }
+
+/* ---------- When: Shoot day · Start · Finish, then any extra days across the full width ---------- */
+html body [data-testid="form-view"] .lo-field[data-lo-name="moreDays"] { grid-column: 1 / -1; margin-top: 6px; }
+/* each extra day: date · start · finish on one line, its note underneath; the bin stays on the first line */
+html body .lo-li[data-list="shootDay"] .lo-li-acts { grid-row: 1; grid-column: -2; }
+html body .lo-li[data-list="shootDay"] .lo-li-cell[data-kind="text"] .lo-li-input { min-height: 38px; padding-top: 8px; padding-bottom: 8px; background: transparent; box-shadow: inset 0 0 0 1px transparent; font-size: 13.5px; }
+html body .lo-li[data-list="shootDay"] .lo-li-cell[data-kind="text"] .lo-li-input:hover { box-shadow: inset 0 0 0 1px var(--lo-edge); }
+html body .lo-li[data-list="shootDay"] .lo-li-cell[data-kind="text"] .lo-li-input:focus { background: #ffffff; box-shadow: var(--lo-focus); }
+
+/* ---------- shoots still being created ---------- */
+html body .lo-bk-hero[data-creating] .lo-eyebrow-dot { animation: loPulse 1.6s ease-in-out infinite; }
+html body :is(.lo-chip, .lo-dw-shoot)[data-draft] {
+  opacity: .66;
+  background-image: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0) 0 6px, rgba(255, 255, 255, .38) 6px 9px);
+}
+html body .lo-ag[data-draft] .lo-ag-date { opacity: .55; }
+html body .lo-tbl-row[data-draft] .lo-tbl-shoot b { color: var(--lo-text); }
+html body .lo-unsaved {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #fff4e5;
+  color: #a15c07;
+  font: 700 10.5px/1 var(--lo-body);
+  letter-spacing: .03em;
+  white-space: nowrap;
+}
+
+/* ---------- "Not booked yet": take an enquiry off the list ---------- */
+html body .lo-enq-x {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-left: -4px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--lo-faint);
+  cursor: pointer;
+  transition: background-color .25s ease, color .25s ease, transform .3s var(--lo-ease);
+}
+html body .lo-enq-x:hover { background: #fdecea; color: #b42318; }
+html body .lo-enq-x:active { transform: scale(.9); }
+
+/* ---------- email reminders ---------- */
+html body .lo-rem { display: flex; flex-direction: column; gap: 12px; color: var(--lo-ink); font-family: var(--lo-body); }
+html body .lo-rem-chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+html body .lo-rem-chip {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--lo-field);
+  box-shadow: inset 0 0 0 1px var(--lo-edge);
+  color: var(--lo-ink);
+  font-family: var(--lo-body);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color .3s ease, box-shadow .35s ease, transform .35s var(--lo-ease);
+  animation: loRise .5s var(--lo-ease) backwards;
+  animation-delay: calc(var(--i, 0) * 40ms);
+}
+html body .lo-rem-chip:hover { background: #ffffff; box-shadow: inset 0 0 0 1px var(--lo-edge-hover); }
+html body .lo-rem-chip:active { transform: scale(.98); }
+html body .lo-rem-chip[data-on] { background: var(--lo-tint); box-shadow: inset 0 0 0 1.5px var(--lo-blue); }
+html body .lo-rem-chip[data-on] .lo-li-box { background: var(--lo-blue); box-shadow: none; color: #ffffff; transform: scale(1.06); }
+html body .lo-rem-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+html body .lo-rem-text b { font-size: 14px; font-weight: 600; }
+html body .lo-rem-text small { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 12px; color: var(--lo-muted); }
+html body .lo-rem-chip[data-on] .lo-rem-text small { color: var(--lo-blue); font-weight: 600; }
+html body .lo-rem-chip[data-state="sent"] .lo-rem-text small { color: #12805c; }
+html body .lo-rem-chip[data-state="missed"] .lo-rem-text small { color: #a15c07; }
+html body .lo-rem-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; padding: 12px 14px; border-radius: 16px; background: var(--lo-soft); }
+html body .lo-rem-ic { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 10px; background: var(--lo-tint); color: var(--lo-blue); font-size: 16px; }
+html body .lo-rem-say { flex: 1; min-width: 200px; color: var(--lo-text); font-size: 13.5px; line-height: 1.45; }
+html body .lo-rem-say b { color: var(--lo-ink); font-weight: 600; }
+html body .lo-rem-note { margin: 0; padding: 10px 14px; border-radius: 12px; font-size: 13px; font-weight: 500; animation: loRise .4s var(--lo-ease) backwards; }
+html body .lo-rem-note[data-tone="ok"] { background: #e9f6f0; color: #12805c; }
+html body .lo-rem-note[data-tone="warn"] { background: #fff4e5; color: #a15c07; }
+
+/* ---------- the Save card at the bottom of every tab ---------- */
+html body [data-testid="form-view"] .lo-field[data-lo-name="bookedAt"] {
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+html body .lo-save {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px 26px;
+  border-radius: 26px;
+  background: linear-gradient(135deg, #104de6, #3266ee);
+  color: #ffffff;
+  font-family: var(--lo-body);
+  box-shadow: 0 30px 60px -40px rgba(16, 77, 230, .95);
+  animation: loRise .7s var(--lo-ease) backwards;
+}
+html body .lo-save::after {
+  content: "";
+  position: absolute;
+  right: -150px;
+  top: -180px;
+  z-index: -1;
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  background: repeating-radial-gradient(circle at center, rgba(255, 255, 255, 0) 0 28px, rgba(255, 255, 255, .12) 28px 29px);
+  -webkit-mask-image: radial-gradient(closest-side, #000 50%, transparent);
+  mask-image: radial-gradient(closest-side, #000 50%, transparent);
+  pointer-events: none;
+}
+html body .lo-save-head { display: flex; flex-direction: column; gap: 5px; }
+html body .lo-save-head b { font: 600 22px/1.15 var(--lo-display); letter-spacing: -.025em; }
+html body .lo-save-head span { color: rgba(255, 255, 255, .85); font-size: 14px; }
+html body .lo-save-checks { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
+html body .lo-save-checks li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 11px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .12);
+  font-size: 13.5px;
+  font-weight: 600;
+  animation: loRise .5s var(--lo-ease) backwards;
+  animation-delay: calc(.1s + var(--i, 0) * 50ms);
+}
+html body .lo-save-what { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+html body .lo-save-val { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+html body .lo-save-checks small { font: 600 10.5px/1 var(--lo-body); letter-spacing: .08em; text-transform: uppercase; color: rgba(255, 255, 255, .7); }
+html body .lo-save-checks li:not([data-ok]) { color: rgba(255, 255, 255, .72); }
+html body .lo-save-dot { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .55); color: var(--lo-blue); }
+html body .lo-save-checks li[data-ok] .lo-save-dot { background: #ffffff; box-shadow: none; }
+html body .lo-save-btn {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 10px;
+  padding: 15px 26px;
+  border: 0;
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--lo-blue);
+  font: 700 15.5px/1 var(--lo-body);
+  cursor: pointer;
+  box-shadow: 0 16px 30px -16px rgba(11, 18, 32, .6);
+  transition: transform .45s var(--lo-spring), box-shadow .4s ease;
+}
+html body .lo-save-btn svg { transition: transform .45s var(--lo-spring); }
+html body .lo-save-btn:hover { transform: translateY(-2px); box-shadow: 0 22px 36px -16px rgba(11, 18, 32, .7); }
+html body .lo-save-btn:hover svg { transform: translateX(3px); }
+html body .lo-save-btn:active { transform: scale(.97); }
+html body .lo-save[data-booked] { flex-direction: row; align-items: center; gap: 14px; padding: 18px 20px; background: #e9f6f0; color: var(--lo-ink); box-shadow: inset 0 0 0 1px #c3e6d4; }
+html body .lo-save[data-booked]::after { content: none; }
+html body .lo-save-tick { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; background: #12805c; color: #ffffff; animation: loPop .6s var(--lo-spring) backwards; }
+html body .lo-save-tick svg { width: 18px; height: 18px; }
+html body .lo-save-main { display: flex; flex: 1; flex-direction: column; gap: 3px; min-width: 0; }
+html body .lo-save-main b { color: #12805c; font: 600 17px/1.2 var(--lo-display); }
+html body .lo-save-main span { color: var(--lo-text); font-size: 13.5px; line-height: 1.5; }
+
+@media (prefers-reduced-motion: reduce) {
+  html body :is(.lo-tab-pill, .lo-save, .lo-save *, .lo-rem *, .lo-li-del) { animation: none !important; transition-duration: .01ms !important; }
 }
