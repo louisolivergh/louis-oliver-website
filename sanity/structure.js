@@ -5,15 +5,16 @@ import { SiteMap } from './components/SiteMap';
 import { ShootsCalendar } from './components/ShootsCalendar';
 import { UpdatesHome } from './components/UpdatesHome';
 import { InboxPane, KitPane, PortfolioPane } from './components/UpdatesCanvas';
+import { ClientsPane } from './components/ClientsPane';
 
 /* The dashboard's areas (tabs in the top bar):
-   - Updates: the things you change often: your portfolio, equipment, enquiries.
+   - Updates: the things you change often: your portfolio, equipment, clients, enquiries.
    - Shoots: your calendar of booked shoots, private and never on the website.
    - Website setup: the pages themselves, set up once, then rarely touched. */
 
 /* Which kinds of document each area looks after, so a link to one always opens in the right area */
 export const TOOL_TYPES = {
-  updates: ['shoot', 'equipment', 'enquiry', 'videoItem'],
+  updates: ['shoot', 'equipment', 'client', 'enquiry', 'videoItem'],
   shoots: ['booking'],
   website: [...SINGLETONS, 'processStep'],
 };
@@ -43,8 +44,9 @@ export const updatesStructure = (S, context) =>
     .child(async (id, options) => {
       if (id === 'shoot') return S.component(PortfolioPane).id('shoot').title('Portfolio');
       if (id === 'equipment') return S.component(KitPane).id('equipment').title('Equipment list');
+      if (id === 'clients') return S.component(ClientsPane).id('clients').title('Clients');
       if (id === 'enquiries') return S.component(InboxPane).id('enquiries').title('Enquiries');
-      // a portfolio shoot, piece of kit or enquiry (opened from one of the pages above, or from the Dashboard)
+      // a portfolio shoot, piece of kit, client or enquiry (opened from one of the pages above, or from the Dashboard)
       const docId = String(id).replace(/^__edit__/, '');
       const p = (options && options.params) || {};
       const types = TOOL_TYPES.updates;

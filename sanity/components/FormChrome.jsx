@@ -105,6 +105,7 @@ const INFO = {
   equipment: { eyebrow: 'Equipment', text: 'Shows in the kit list on your About page, and can be ticked on any shoot or booking.' },
   processStep: { eyebrow: 'Process step', text: 'One step in your process. Steps appear in order of their position number.' },
   enquiry: { eyebrow: 'Enquiry', text: 'Sent from the contact form on your website.' },
+  client: { eyebrow: 'Client', text: 'A company or person you shoot for. Their shoots, people and enquiries are gathered on the Clients page, and it stays private.' },
 };
 
 /* ---------- helpers ---------- */
@@ -159,6 +160,8 @@ function heroTitle(type, info, schemaType, v) {
       return v.title || 'New step';
     case 'enquiry':
       return [v.name, v.company].filter(Boolean).join(' · ') || 'Enquiry';
+    case 'client':
+      return v.name || 'New client';
     default:
       return info.title || (schemaType && schemaType.title) || 'Untitled';
   }

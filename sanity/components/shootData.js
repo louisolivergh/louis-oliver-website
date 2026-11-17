@@ -120,9 +120,15 @@ export function declineEnquiry(client, setData, e) {
 }
 
 /** open the new-shoot form, with a date and/or an enquiry already filled in */
-export function bookShoot(router, { date, enquiryId } = {}) {
+export function bookShoot(router, { date, enquiryId, client } = {}) {
   const payload = {};
   if (date) payload.date = date;
   if (enquiryId) payload.enquiryId = enquiryId;
+  // a client from the Clients page: their name and contact details go on the new shoot
+  if (!enquiryId && client) {
+    ['company', 'name', 'email', 'phone'].forEach((k) => {
+      if (typeof client[k] === 'string' && client[k].trim()) payload[k] = client[k].trim();
+    });
+  }
   router.navigateIntent('create', [{ type: 'booking', template: 'booking-new' }, payload]);
 }

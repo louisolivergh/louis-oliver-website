@@ -50,3 +50,23 @@ export function SavedAction(props) {
   };
 }
 SavedAction.action = 'loSaved';
+
+/* Clients hold contact details, so like shoots they're never published: they save as you type. */
+export function ClientSavedAction(props) {
+  const toast = useToast();
+  const doc = (props && (props.draft || props.published)) || null;
+  return {
+    label: 'Saved',
+    icon: CheckIcon,
+    tone: 'primary',
+    disabled: !doc,
+    title: doc ? 'Clients save as you type and stay private, so there’s nothing to publish.' : 'Type their name to save the client.',
+    onHandle: () =>
+      toast.push({
+        status: 'success',
+        title: 'All saved',
+        description: 'Clients save as you type and stay private. Only you can see them.',
+      }),
+  };
+}
+ClientSavedAction.action = 'loClientSaved';

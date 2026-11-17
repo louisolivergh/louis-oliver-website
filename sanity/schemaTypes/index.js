@@ -1,5 +1,6 @@
 import { equipment } from './equipment';
 import { booking } from './booking';
+import { client } from './client';
 import { shoot, videoItem } from './shoot';
 import { aboutPage, contactPage, enquiry, homePage, processPage, processStep, servicesPage, siteSettings, workPage } from './pages';
 
@@ -19,4 +20,5 @@ export const schemaTypes = [
   processStep,
   enquiry,
   booking,
+  client,
 ];

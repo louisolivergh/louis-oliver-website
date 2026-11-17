@@ -2,15 +2,16 @@
 
 /**
  * The Updates tab itself (sanity/structure.js → updatesStructure), in the dashboard's own style:
- *  - nothing open → a full page: your portfolio, equipment list and enquiries as big cards, plus quick adds
- *  - a list open beside it → a slim menu of the same three, with the open one highlighted
+ *  - nothing open → a full page: your portfolio, equipment list, clients and enquiries as big cards, plus quick adds
+ *  - a list open beside it → a slim menu of the same four, with the open one highlighted
  * Each opens Sanity's list for it in the next column. Styles: app/studio/studio.css (".lo-up…", ".lo-cv…").
  */
 
 import { IntentLink } from 'sanity/router';
 import { usePaneRouter } from 'sanity/structure';
-import { CameraIcon, InboxIcon, KitIcon } from './DashIcons';
+import { CameraIcon, InboxIcon, KitIcon, UsersIcon } from './DashIcons';
 import { useUpdatesData } from './UpdatesCanvas';
+import { useClientsData } from './ClientsPane';
 
 const Arrow = () => (
   <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
@@ -27,16 +28,21 @@ export function UpdatesHome(props) {
   const { ChildLink } = usePaneRouter();
   const open = props && props.childItemId ? String(props.childItemId).replace(/^__edit__/, '') : '';
   const { shoots, kit, enquiries, toReply, featured, groups, loading } = useUpdatesData();
+  const { clients, savedIds } = useClientsData();
   const has = (list) => list.some((d) => d._id === open);
-  const active = ['shoot', 'equipment', 'enquiries'].includes(open)
+  const active = ['shoot', 'equipment', 'clients', 'enquiries'].includes(open)
     ? open
     : has(shoots)
       ? 'shoot'
       : has(kit)
         ? 'equipment'
-        : has(enquiries)
-          ? 'enquiries'
-          : '';
+        : savedIds.includes(open)
+          ? 'clients'
+          : has(enquiries)
+            ? 'enquiries'
+            : '';
+  const companies = clients.filter((c) => c.kind === 'company').length;
+  const people = clients.length - companies;
   const latest = enquiries[0];
   const who = latest ? [latest.name, latest.company].filter(Boolean).join(' · ') || 'Enquiry' : '';
 
@@ -57,6 +63,16 @@ export function UpdatesHome(props) {
       count: kit.length,
       text: groups.length ? groups.map((g) => g.title).join(' · ') : 'Nothing added yet',
       cta: 'Open kit list',
+    },
+    {
+      id: 'clients',
+      Icon: UsersIcon,
+      title: 'Clients',
+      count: clients.length,
+      text: clients.length
+        ? [companies ? `${companies} ${companies === 1 ? 'company' : 'companies'}` : '', people ? `${people} ${people === 1 ? 'person' : 'people'}` : ''].filter(Boolean).join(' · ')
+        : 'Everyone who books a shoot',
+      cta: 'Open clients',
     },
     {
       id: 'enquiries',
@@ -105,6 +121,9 @@ export function UpdatesHome(props) {
           <IntentLink intent="create" params={{ type: 'equipment', template: 'equipment' }} className="lo-up-add">
             <Plus /> Add equipment
           </IntentLink>
+          <IntentLink intent="create" params={{ type: 'client', template: 'client' }} className="lo-up-add">
+            <Plus /> New client
+          </IntentLink>
         </div>
       </nav>
     );
@@ -120,7 +139,7 @@ export function UpdatesHome(props) {
             Updates
           </span>
           <h1 className="lo-cv-title">Keep your portfolio fresh.</h1>
-          <p className="lo-cv-text">Add finished shoots to your portfolio, keep your kit list current and reply to enquiries. Booked shoots live in the Shoots tab.</p>
+          <p className="lo-cv-text">Add finished shoots to your portfolio, keep your kit list current, see your clients and reply to enquiries. Booked shoots live in the Shoots tab.</p>
         </header>
 
         <div className="lo-cv-cards">
@@ -154,6 +173,9 @@ export function UpdatesHome(props) {
           </IntentLink>
           <IntentLink intent="create" params={{ type: 'equipment', template: 'equipment' }} className="lo-cv-btn">
             <Plus /> Add equipment
+          </IntentLink>
+          <IntentLink intent="create" params={{ type: 'client', template: 'client' }} className="lo-cv-btn">
+            <Plus /> New client
           </IntentLink>
         </div>
       </div>

@@ -7,7 +7,7 @@ import { SINGLETONS, schemaTypes } from './sanity/schemaTypes';
 import { theme } from './sanity/theme';
 import { TOOL_TYPES, shootsStructure, updatesStructure, websiteStructure } from './sanity/structure';
 import { clientFromEnquiry } from './sanity/bookingData';
-import { SavedAction } from './sanity/components/BookingActions';
+import { ClientSavedAction, SavedAction } from './sanity/components/BookingActions';
 import { Overview } from './sanity/components/Overview';
 import { ShootPreview } from './sanity/components/ShootPreview';
 import { StudioBrand, StudioLogo } from './sanity/components/StudioLogo';
@@ -31,8 +31,9 @@ const shootTitle = (who, service) => {
   return `${who} ${lower}${/\b(shoot|shoots|video|videos|film|films|photography|photos|content|reels?)\b/i.test(what) ? '' : ' shoot'}`;
 };
 
-/* A new booked shoot, opened from the calendar (with the day you clicked) or from an enquiry
-   (with the client's name, contact details, budget and message copied across). */
+/* A new booked shoot, opened from the calendar (with the day you clicked), from an enquiry
+   (with the client's name, contact details, budget and message copied across) or from a client
+   on the Clients page (with their name and contact details). */
 const bookingTemplate = {
   id: 'booking-new',
   title: 'Booked shoot',
@@ -40,6 +41,10 @@ const bookingTemplate = {
   parameters: [
     { name: 'date', type: 'string' },
     { name: 'enquiryId', type: 'string' },
+    { name: 'company', type: 'string' },
+    { name: 'name', type: 'string' },
+    { name: 'email', type: 'string' },
+    { name: 'phone', type: 'string' },
   ],
   value: async (params, context) => {
     const p = params || {};
@@ -58,6 +63,16 @@ const bookingTemplate = {
         }
       } catch {
         // the details can still be filled in by hand
+      }
+    } else {
+      // booked from a client on the Clients page
+      const client = {};
+      ['name', 'company', 'email', 'phone'].forEach((k) => {
+        if (typeof p[k] === 'string' && p[k].trim()) client[k] = p[k].trim().slice(0, 200);
+      });
+      if (Object.keys(client).length) {
+        out.client = client;
+        if (client.company || client.name) out.title = shootTitle(client.company || client.name, '');
       }
     }
     return out;
@@ -102,6 +117,8 @@ export default defineConfig({
       if (SINGLETONS.includes(schemaType)) return prev.filter(({ action }) => action && ['publish', 'discardChanges', 'restore'].includes(action));
       // booked shoots stay private: nothing to publish, they save as you type
       if (schemaType === 'booking') return [SavedAction, ...prev.filter(({ action }) => action && ['duplicate', 'delete', 'restore'].includes(action))];
+      // clients stay private too
+      if (schemaType === 'client') return [ClientSavedAction, ...prev.filter(({ action }) => action && ['delete', 'restore'].includes(action))];
       return prev;
     },
     // the calendar's own "book a shoot" template doesn't need its own entry in the + menu
