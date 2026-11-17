@@ -19,6 +19,7 @@ import {
   clientLine,
   computeBudget,
   COST_CATEGORIES,
+  dayInfo,
   fmtDay,
   initials,
   latestById,
@@ -712,18 +713,44 @@ export function QuoteInput(props) {
   return <ListInput {...props} spec={QUOTE} ctx={{ ...b, doc }} />;
 }
 /** on a shoot over more than one day, each time says which day it's for (it shows on that day in the calendar) */
+/* a new time on the schedule: half an hour after the last one that day, or the day's start time */
+const halfHourAfter = (t) => {
+  const m = /^(\d{1,2}):(\d{2})/.exec(String(t || ''));
+  if (!m) return '';
+  const total = Math.min(23 * 60 + 30, Number(m[1]) * 60 + Number(m[2]) + 30);
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+};
+function nextScheduleTime(items, doc, days, dayNo) {
+  const n = parseInt(dayNo, 10) || 1;
+  const same = items.filter((s) => s && (parseInt(s.dayNo, 10) || 1) === n && /^\d{1,2}:\d{2}/.test(String(s.time || '')));
+  const latest = same.map((s) => s.time).sort().pop();
+  if (latest) return halfHourAfter(latest);
+  const day = days[n - 1];
+  return (day && dayInfo(doc, day).start) || doc.startTime || '';
+}
+
 export function ScheduleInput(props) {
   const doc = useFormValue([]) || {};
   const days = shootDays(doc);
-  const key = days.join(',');
+  const key = `${days.join(',')}|${doc.startTime || ''}|${(Array.isArray(doc.moreDays) ? doc.moreDays : []).map((d) => d && d.startTime).join(',')}`;
   const spec = useMemo(() => {
-    if (days.length < 2) return SCHEDULE;
+    if (days.length < 2) {
+      return {
+        ...SCHEDULE,
+        defaults: (items) => {
+          const time = nextScheduleTime(items, doc, days, '1');
+          return time ? { time } : {};
+        },
+      };
+    }
     const dayOf = (s) => parseInt(s && s.dayNo, 10) || 1;
     return {
       ...SCHEDULE,
       defaults: (items) => {
         const last = items[items.length - 1];
-        return last && last.dayNo ? { dayNo: last.dayNo } : {};
+        const dayNo = last && last.dayNo ? last.dayNo : '';
+        const time = nextScheduleTime(items, doc, days, dayNo || '1');
+        return { ...(dayNo ? { dayNo } : {}), ...(time ? { time } : {}) };
       },
       sortBy: (a, b) => dayOf(a) - dayOf(b) || String(a.time || '99').localeCompare(String(b.time || '99')),
       sortLabel: 'Sort by day and time',

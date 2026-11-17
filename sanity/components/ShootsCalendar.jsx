@@ -229,8 +229,8 @@ function DayShoot({ b, day, ChildLink, active, i }) {
         {plan.length ? (
           <ol className="lo-dayv-plan">
             {plan.map((s, k) => (
-              <li key={s._key || k}>
-                <b>{s.time || ''}</b>
+              <li key={s._key || k} data-untimed={s.time ? undefined : ''}>
+                <b>{s.time || 'No time'}</b>
                 <span>{s.text}</span>
               </li>
             ))}
@@ -253,7 +253,162 @@ function DayShoot({ b, day, ChildLink, active, i }) {
   );
 }
 
+/* ---------- the day as a timeline, like Google Calendar: hours down the side, every time at its place ---------- */
+const HOUR = 72; // pixels for one hour
+const toMin = (t) => {
+  const m = /^(\d{1,2}):(\d{2})/.exec(String(t || ''));
+  return m ? Number(m[1]) * 60 + Number(m[2]) : null;
+};
+const fmtMin = (m) => `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+
+function DayGrid({ day, today, shoots, dues, ChildLink, openId, onBook }) {
+  const live = shoots.filter((b) => b.status !== 'cancelled');
+  const off = shoots.filter((b) => b.status === 'cancelled');
+  const cols = live.map((b) => {
+    const info = dayInfo(b, day);
+    const plan = scheduleFor(b, day);
+    const timed = plan.filter((s) => toMin(s.time) !== null).map((s) => ({ ...s, at: toMin(s.time) }));
+    const untimed = plan.filter((s) => toMin(s.time) === null);
+    const marks = [toMin(info.start), ...timed.map((s) => s.at)].filter((x) => x !== null);
+    const start = marks.length ? Math.min(...marks) : null;
+    const last = timed.length ? timed[timed.length - 1].at : null;
+    const set = toMin(info.end);
+    const end = start === null ? null : Math.max(set !== null ? set : start + 120, last !== null ? last + 30 : 0, start + 30);
+    const loc = (Array.isArray(b.locations) ? b.locations : []).find((l) => l && (l.name || l.address));
+    return { b, info, timed, untimed, start, end, place: loc ? loc.name || loc.address : '' };
+  });
+  const placed = cols.filter((c) => c.start !== null);
+  const loose = cols.filter((c) => c.start === null);
+  const untimed = cols.flatMap((c) => c.untimed.map((s) => ({ s, c })));
+  const from = Math.max(0, Math.floor((Math.min(8 * 60, ...placed.map((c) => c.start)) - 60) / 60) * 60);
+  const to = Math.min(24 * 60, Math.ceil((Math.max(18 * 60, ...placed.map((c) => c.end)) + 60) / 60) * 60);
+  const y = (m) => ((m - from) / 60) * HOUR;
+  const hours = [];
+  for (let h = from; h <= to; h += 60) hours.push(h);
+  const nowDate = new Date();
+  const nowMin = day === today ? nowDate.getHours() * 60 + nowDate.getMinutes() : null;
+  const grid = { gridTemplateColumns: `repeat(${Math.max(placed.length, 1)}, minmax(0, 1fr))` };
+  const nothing = !live.length && !dues.length;
+
+  return (
+    <div className="lo-dg" key={day}>
+      {nothing ? (
+        <div className="lo-dayv-empty">
+          <b>{day < today ? 'Nothing happened on this day.' : 'Nothing booked on this day yet.'}</b>
+          <button type="button" className="lo-cv-btn" data-primary="" onClick={() => onBook(day)}>
+            <PlusIcon /> Book a shoot on this day
+          </button>
+        </div>
+      ) : null}
+
+      {dues.length || loose.length || untimed.length ? (
+        <div className="lo-dg-allday">
+          <span className="lo-dg-side-label">All day</span>
+          <div className="lo-dg-allday-items">
+            {dues.map((b) => (
+              <ChildLink key={`due-${b._baseId}`} childId={b._baseId} className="lo-dg-due" data-done={b.status === 'delivered' ? '' : undefined}>
+                <TruckIcon />
+                {b.status === 'delivered' ? 'Delivered' : 'Due to the client'}: {bookingTitle(b)}
+              </ChildLink>
+            ))}
+            {loose.map((c) => (
+              <ChildLink key={`loose-${c.b._baseId}`} childId={c.b._baseId} className="lo-dg-loose">
+                {bookingTitle(c.b)} <small>no time set</small>
+              </ChildLink>
+            ))}
+            {untimed.map(({ s, c }, i) => (
+              <ChildLink key={`${c.b._baseId}-${s._key || i}`} childId={c.b._baseId} className="lo-dg-loose" data-untimed="">
+                {s.text || 'Something planned'} <small>no time set · {bookingTitle(c.b)}</small>
+              </ChildLink>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {placed.length ? (
+        <div className="lo-dg-cal">
+          <div className="lo-dg-heads" style={grid}>
+            {placed.map((c) => (
+              <div key={c.b._baseId} className="lo-dg-head" data-active={openId === c.b._baseId ? '' : undefined} data-draft={isBooked(c.b) ? undefined : ''}>
+                <span className="lo-dg-head-top">
+                  <b>{bookingTitle(c.b)}</b>
+                  {isBooked(c.b) ? (
+                    <span className="lo-ag-status" data-status={c.b.status}>
+                      {statusOf(c.b.status).short}
+                    </span>
+                  ) : (
+                    <Unsaved />
+                  )}
+                </span>
+                <small>{[timeRange(c.info.start, c.info.end), c.b.days.length > 1 ? `day ${c.b.days.indexOf(day) + 1} of ${c.b.days.length}` : '', c.place].filter(Boolean).join(' · ')}</small>
+                <ChildLink childId={c.b._baseId} className="lo-dg-open">
+                  Open shoot
+                </ChildLink>
+              </div>
+            ))}
+          </div>
+          <div className="lo-dg-body" style={{ height: y(to) }}>
+            {hours.map((h) => (
+              <div key={h} className="lo-dg-hour" style={{ top: y(h) }}>
+                <span>{fmtMin(h)}</span>
+              </div>
+            ))}
+            <div className="lo-dg-cols" style={grid}>
+              {placed.map((c) => (
+                <div key={c.b._baseId} className="lo-dg-col">
+                  <ChildLink
+                    childId={c.b._baseId}
+                    className="lo-dg-span"
+                    data-draft={isBooked(c.b) ? undefined : ''}
+                    style={{ top: y(c.start), height: Math.max(24, y(c.end) - y(c.start)) }}
+                    title={`${bookingTitle(c.b)} · ${fmtMin(c.start)} to ${fmtMin(c.end)}`}
+                  >
+                    {c.timed.length ? null : (
+                      <span className="lo-dg-span-label">
+                        <b>{fmtMin(c.start)}</b> {bookingTitle(c.b)}
+                        {c.info.note ? <small>{c.info.note}</small> : null}
+                      </span>
+                    )}
+                  </ChildLink>
+                  {c.timed.map((s, i) => {
+                    const next = c.timed[i + 1] ? c.timed[i + 1].at : c.end;
+                    const top = y(s.at);
+                    const height = Math.max(26, y(Math.max(next, s.at + 15)) - top - 3);
+                    return (
+                      <ChildLink
+                        key={s._key || i}
+                        childId={c.b._baseId}
+                        className="lo-dg-event"
+                        data-short={height < 44 ? '' : undefined}
+                        data-draft={isBooked(c.b) ? undefined : ''}
+                        style={{ top, height, zIndex: 2 + i }}
+                        title={`${s.time} ${s.text || ''}`}
+                      >
+                        <b>{s.time}</b>
+                        <span>{s.text || 'Something planned'}</span>
+                      </ChildLink>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+            {nowMin !== null && nowMin >= from && nowMin <= to ? <div className="lo-dg-now" style={{ top: y(nowMin) }} aria-label={`Now, ${fmtMin(nowMin)}`} /> : null}
+          </div>
+        </div>
+      ) : null}
+
+      {off.length ? <p className="lo-dayv-off">Cancelled: {off.map((b) => bookingTitle(b)).join(', ')}</p> : null}
+      {!nothing ? (
+        <button type="button" className="lo-cv-btn lo-dayv-add" onClick={() => onBook(day)}>
+          <PlusIcon /> Book another shoot on this day
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 function DayView({ day, today, shoots, dues, ChildLink, openId, onBook, compact }) {
+  if (!compact) return <DayGrid day={day} today={today} shoots={shoots} dues={dues} ChildLink={ChildLink} openId={openId} onBook={onBook} />;
   const live = shoots.filter((b) => b.status !== 'cancelled');
   const off = shoots.filter((b) => b.status === 'cancelled');
   const nothing = !live.length && !dues.length;

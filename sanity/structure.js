@@ -4,7 +4,7 @@ import { SINGLETON_TITLES } from './sitePages';
 import { SiteMap } from './components/SiteMap';
 import { ShootsCalendar } from './components/ShootsCalendar';
 import { UpdatesHome } from './components/UpdatesHome';
-import { CheckIcon, InboxIcon, MailIcon } from './components/DashIcons';
+import { InboxPane, KitPane, PortfolioPane } from './components/UpdatesCanvas';
 
 /* The dashboard's areas (tabs in the top bar):
    - Updates: the things you change often: your portfolio, equipment, enquiries.
@@ -19,43 +19,40 @@ export const TOOL_TYPES = {
 };
 
 /* Lists show text only: no icon placeholders. Shoots still show their thumbnail when they have one. */
-const textList = (S, title) => S.list().title(title).showIcons(false);
 const typeList = (S, type, title) => S.documentTypeList(type).title(title).showIcons(false);
 
-const enquiryList = (S, id, title, filter, icon) =>
-  S.listItem()
-    .id(id)
-    .title(title)
-    .icon(icon)
-    .child(
-      S.documentList()
-        .apiVersion(apiVersion)
-        .title(title)
-        .schemaType('enquiry')
-        .filter(filter)
-        .defaultOrdering([{ field: 'receivedAt', direction: 'desc' }])
-        .showIcons(false)
-    );
+/* ---------- Updates: a themed menu, and each area (portfolio, kit, inbox) as a themed page beside it.
+   Anything you open (a shoot, a piece of kit, an enquiry) opens in place of that page. ---------- */
 
-/* ---------- Updates: its own page (portfolio, equipment, enquiries); each list opens beside it ---------- */
-const enquiriesList = (S) =>
-  textList(S, 'Enquiries').items([
-    enquiryList(S, 'toReply', 'To reply', '_type == "enquiry" && replied != true', InboxIcon),
-    enquiryList(S, 'replied', 'Replied', '_type == "enquiry" && replied == true', CheckIcon),
-    enquiryList(S, 'all', 'All enquiries', '_type == "enquiry"', MailIcon),
-  ]);
+/* what kind of document an id is (links into Updates don't always say) */
+async function typeOf(S, context, id) {
+  try {
+    const getClient = (context && context.getClient) || (S.context && S.context.getClient);
+    if (!getClient) return '';
+    const t = await getClient({ apiVersion }).fetch('*[_id in [$id, $draft]][0]._type', { id, draft: `drafts.${id}` });
+    return typeof t === 'string' ? t : '';
+  } catch {
+    return '';
+  }
+}
 
-export const updatesStructure = (S) =>
+export const updatesStructure = (S, context) =>
   S.component(UpdatesHome)
     .id('updates')
     .title('Updates')
-    .child((id, options) => {
-      if (id === 'shoot') return typeList(S, 'shoot', 'Portfolio');
-      if (id === 'equipment') return typeList(S, 'equipment', 'Equipment list');
-      if (id === 'enquiries') return enquiriesList(S);
-      // a portfolio shoot, piece of kit or enquiry opened from a link elsewhere (e.g. the Dashboard)
-      const type = (options && options.params && options.params.type) || 'shoot';
-      return S.document().schemaType(type).documentId(String(id).replace(/^__edit__/, ''));
+    .child(async (id, options) => {
+      if (id === 'shoot') return S.component(PortfolioPane).id('shoot').title('Portfolio');
+      if (id === 'equipment') return S.component(KitPane).id('equipment').title('Equipment list');
+      if (id === 'enquiries') return S.component(InboxPane).id('enquiries').title('Enquiries');
+      // a portfolio shoot, piece of kit or enquiry (opened from one of the pages above, or from the Dashboard)
+      const docId = String(id).replace(/^__edit__/, '');
+      const p = (options && options.params) || {};
+      const types = TOOL_TYPES.updates;
+      let type = types.includes(p.type) ? p.type : types.includes(p.template) ? p.template : '';
+      if (!type) type = await typeOf(S, context, docId);
+      return S.document()
+        .schemaType(types.includes(type) ? type : 'shoot')
+        .documentId(docId);
     })
     .canHandleIntent((intent, params) => (intent === 'edit' || intent === 'create') && Boolean(params && TOOL_TYPES.updates.includes(params.type)));
 

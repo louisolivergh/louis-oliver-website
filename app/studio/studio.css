@@ -2909,7 +2909,7 @@ html body .lo-sv-edit {
   cursor: pointer;
   transition: background-color .3s ease, color .3s ease, box-shadow .3s ease, transform .45s var(--lo-spring);
 }
-html body .lo-sv-edit:hover { background: var(--lo-blue); box-shadow: none; color: #ffffff; }
+html body .lo-sv-edit:hover { background: var(--lo-blue); box-shadow: inset 0 0 0 1px transparent; color: #ffffff; }
 html body .lo-sv-edit:active { transform: scale(.96); }
 html body .lo-sv-edit[data-big] { padding: 13px 26px; font-size: 14px; background: var(--lo-blue); color: #ffffff; box-shadow: 0 12px 24px -14px rgba(16, 77, 230, .9); }
 html body .lo-sv-edit[data-big]:hover { background: var(--lo-blue-dark); }
@@ -2966,9 +2966,14 @@ html body .lo-sv-step-dot {
 html body .lo-sv-steps button:hover:not(:disabled) .lo-sv-step-dot { box-shadow: inset 0 0 0 2px var(--lo-blue); color: var(--lo-blue); transform: scale(1.08); }
 html body .lo-sv-steps li[data-state="done"] .lo-sv-step-dot { background: var(--lo-blue); box-shadow: none; color: #ffffff; }
 html body .lo-sv-steps li[data-state="done"] button { color: var(--lo-ink); }
-/* where it's at: ticked like the ones before it, with a soft halo so you can see it's the current one */
-html body .lo-sv-steps li[data-state="now"] .lo-sv-step-dot { background: var(--lo-blue); box-shadow: 0 0 0 6px var(--lo-tint), 0 10px 22px -10px rgba(16, 77, 230, .85); color: #ffffff; transform: scale(1.06); animation: loPop .6s var(--lo-spring) backwards; }
+/* what you're working on now: the step after the last tick, ringed with a soft halo that gently breathes */
+html body .lo-sv-steps li[data-state="now"] .lo-sv-step-dot { background: #ffffff; box-shadow: inset 0 0 0 3px var(--lo-blue), 0 0 0 6px var(--lo-tint); color: var(--lo-blue); transform: scale(1.06); animation: loPop .6s var(--lo-spring) backwards, loNowRing 2.4s ease-in-out .6s infinite; }
 html body .lo-sv-steps li[data-state="now"] button { color: var(--lo-blue); font-weight: 700; }
+html body .lo-sv-steps li[data-at] button { cursor: default; }
+@keyframes loNowRing {
+  0%, 100% { box-shadow: inset 0 0 0 3px var(--lo-blue), 0 0 0 6px var(--lo-tint); }
+  50% { box-shadow: inset 0 0 0 3px var(--lo-blue), 0 0 0 10px rgba(16, 77, 230, .08); }
+}
 html body .lo-sv-steps li[data-state="done"] .lo-sv-step-dot { animation: loPop .5s var(--lo-spring) backwards; }
 html body .lo-sv-track[data-cancelled] .lo-sv-steps { opacity: .45; }
 html body .lo-sv-next {
@@ -3017,7 +3022,7 @@ html body .lo-sv-finished { display: inline-flex; align-items: center; gap: 8px;
 }
 
 /* the cards */
-html body .lo-sv-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+html body .lo-sv-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: row dense; gap: 16px; }
 @container (max-width: 640px) { html body .lo-sv-grid { grid-template-columns: minmax(0, 1fr); } }
 html body .lo-sv-card { display: flex; flex-direction: column; gap: 12px; min-width: 0; padding: 20px; border-radius: 22px; background: #ffffff; box-shadow: inset 0 0 0 1px var(--lo-edge); animation: loRise .6s var(--lo-ease) backwards; }
 html body .lo-sv-card[data-wide] { grid-column: 1 / -1; }
@@ -3258,4 +3263,135 @@ html body .lo-dayv[data-compact] .lo-dayv-empty b { font-size: 15px; }
 @container (max-width: 560px) {
   html body .lo-dayv-shoot { grid-template-columns: minmax(0, 1fr); gap: 10px; }
   html body .lo-dayv-time { flex-direction: row; align-items: baseline; gap: 8px; padding: 0 0 8px; border-right: 0; border-bottom: 1px solid var(--lo-line); }
+}
+
+/* ---------- 17. Updates: each area is its own page beside the menu ---------- */
+html body [data-ui="Pane"]:has(.lo-upsec) [data-testid="pane-header"] { display: none; }
+html body .lo-upsec { min-height: 100%; background: var(--lo-canvas); color: var(--lo-ink); font-family: var(--lo-body); container-type: inline-size; }
+
+/* ---------- 18. Smooth hovers both ways ----------
+   A shadow can only fade from one look to another if both have the same shape (same number of
+   shadows, inset or not); otherwise Safari jumps between them, which shows as a shadow popping
+   when you move off. So every resting state carries the hover/focus shape too, just invisible. */
+html body .lo-cv-btn { box-shadow: inset 0 0 0 1px var(--lo-edge), 0 14px 26px -18px rgba(11, 18, 32, 0); }
+html body .lo-mini-btn { box-shadow: inset 0 0 0 1px var(--lo-edge), 0 8px 16px -12px rgba(11, 18, 32, 0); }
+html body .lo-match-item { box-shadow: inset 0 0 0 1px var(--lo-edge), 0 12px 24px -18px rgba(16, 77, 230, 0); }
+html body .lo-li-map:hover,
+html body .lo-pill:hover,
+html body .lo-sv-edit:not([data-big]):hover { box-shadow: inset 0 0 0 1px transparent; }
+html body .lo-native,
+html body .lo-match-search,
+html body :is(.lo-li-input, .lo-li-select, .lo-li-area) { box-shadow: inset 0 0 0 1px var(--lo-edge), 0 0 0 4px rgba(16, 77, 230, 0); }
+html body .lo-native:hover,
+html body :is(.lo-li-input, .lo-li-select, .lo-li-area):hover { box-shadow: inset 0 0 0 1px var(--lo-edge-hover), 0 0 0 4px rgba(16, 77, 230, 0); }
+html body .lo-native:focus,
+html body .lo-match-search:focus,
+html body :is(.lo-li-input, .lo-li-select, .lo-li-area):focus { box-shadow: var(--lo-focus); }
+html body .lo-li[data-list="shootDay"] .lo-li-cell[data-kind="text"] .lo-li-input { box-shadow: inset 0 0 0 1px transparent, 0 0 0 4px rgba(16, 77, 230, 0); }
+html body .lo-li[data-list="shootDay"] .lo-li-cell[data-kind="text"] .lo-li-input:hover { box-shadow: inset 0 0 0 1px var(--lo-edge), 0 0 0 4px rgba(16, 77, 230, 0); }
+html body .lo-li[data-list="shootDay"] .lo-li-cell[data-kind="text"] .lo-li-input:focus { box-shadow: var(--lo-focus); }
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) select[data-ui="Select"] { box-shadow: inset 0 0 0 1px var(--lo-edge), 0 0 0 4px rgba(16, 77, 230, 0) !important; }
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) select[data-ui="Select"]:not(:disabled):hover { box-shadow: inset 0 0 0 1px var(--lo-edge-hover), 0 0 0 4px rgba(16, 77, 230, 0) !important; }
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) select[data-ui="Select"]:not(:disabled):focus { box-shadow: var(--lo-focus) !important; }
+/* the due cards: a springy lift in, and a calm settle back (no overshoot) when you move off */
+html body .lo-dayv-due { box-shadow: inset 0 0 0 1px #f0cf9c, 0 10px 20px -14px rgba(161, 92, 7, 0); transition: transform .5s var(--lo-ease), box-shadow .45s ease; }
+html body .lo-dayv-due:hover { transition: transform .45s var(--lo-spring), box-shadow .3s ease; }
+html body .lo-dayv-due[data-done] { box-shadow: inset 0 0 0 1px #c3e6d4, 0 10px 20px -14px rgba(18, 128, 92, 0); }
+html body .lo-dayv-due[data-done]:hover { box-shadow: inset 0 0 0 1px #8fcfb2, 0 10px 20px -14px rgba(18, 128, 92, .5); }
+html body .lo-cdue { box-shadow: inset 0 0 0 1px #f0cf9c, 0 8px 16px -12px rgba(161, 92, 7, 0); transition: transform .5s var(--lo-ease), box-shadow .45s ease; }
+html body .lo-cdue:hover { transition: transform .45s var(--lo-spring), box-shadow .3s ease; }
+html body .lo-cdue[data-done] { box-shadow: inset 0 0 0 1px #c3e6d4, 0 8px 16px -12px rgba(18, 128, 92, 0); }
+html body .lo-cdue[data-done]:hover { box-shadow: inset 0 0 0 1px #8fcfb2, 0 8px 16px -12px rgba(18, 128, 92, .5); }
+
+/* ---------- 19. The day as a timeline, like Google Calendar (ShootsCalendar.jsx, DayGrid) ---------- */
+html body .lo-dg { display: flex; flex-direction: column; gap: 14px; animation: loRise .5s var(--lo-ease) backwards; }
+html body .lo-dg-side-label { flex: none; width: 56px; padding-top: 8px; color: var(--lo-muted); font: 600 11px/1 var(--lo-body); letter-spacing: .06em; text-transform: uppercase; }
+html body .lo-dg-allday { display: flex; gap: 10px; padding: 12px 14px 12px 12px; border-radius: 18px; background: #ffffff; box-shadow: inset 0 0 0 1px var(--lo-edge); }
+html body .lo-dg-allday-items { display: flex; flex: 1; flex-wrap: wrap; gap: 8px; min-width: 0; }
+html body :is(.lo-dg-due, .lo-dg-loose) {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font: 600 13px/1.2 var(--lo-body);
+  text-decoration: none !important;
+  transition: transform .45s var(--lo-ease), box-shadow .4s ease;
+}
+html body .lo-dg-due { background: #fff7eb; box-shadow: inset 0 0 0 1px #f0cf9c, 0 8px 16px -12px rgba(161, 92, 7, 0); color: #8a4b05 !important; }
+html body .lo-dg-due:hover { transform: translateY(-1px); box-shadow: inset 0 0 0 1px #e8a33d, 0 8px 16px -12px rgba(161, 92, 7, .6); }
+html body .lo-dg-due[data-done] { background: #e7f5ee; box-shadow: inset 0 0 0 1px #c3e6d4, 0 8px 16px -12px rgba(18, 128, 92, 0); color: #12805c !important; }
+html body .lo-dg-due svg { flex: none; font-size: 15px; }
+html body .lo-dg-loose { background: var(--lo-soft); box-shadow: inset 0 0 0 1px var(--lo-edge), 0 8px 16px -12px rgba(11, 18, 32, 0); color: var(--lo-ink) !important; }
+html body .lo-dg-loose:hover { transform: translateY(-1px); box-shadow: inset 0 0 0 1px var(--lo-edge-hover), 0 8px 16px -12px rgba(11, 18, 32, .35); }
+html body .lo-dg-loose small { color: var(--lo-muted); font-weight: 500; }
+html body .lo-dg-loose[data-untimed] { background: #fff7eb; box-shadow: inset 0 0 0 1px #f0cf9c, 0 8px 16px -12px rgba(161, 92, 7, 0); }
+
+html body .lo-dg-cal { overflow: hidden; border-radius: 22px; background: #ffffff; box-shadow: inset 0 0 0 1px var(--lo-edge); }
+/* one column per shoot, with its name on top */
+html body .lo-dg-heads { display: grid; gap: 10px; padding: 14px 14px 12px 70px; border-bottom: 1px solid var(--lo-line); }
+html body .lo-dg-head { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 10px 12px; border-radius: 14px; background: var(--lo-soft); }
+html body .lo-dg-head[data-active] { background: var(--lo-tint); box-shadow: inset 0 0 0 1.5px #c6d4fa; }
+html body .lo-dg-head[data-draft] { opacity: .75; }
+html body .lo-dg-head-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+html body .lo-dg-head-top b { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font: 600 15px/1.25 var(--lo-display); letter-spacing: -.01em; }
+html body .lo-dg-head small { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--lo-muted); font-size: 12.5px; }
+html body .lo-dg-open { align-self: flex-start; margin-top: 2px; color: var(--lo-blue) !important; font: 600 12.5px/1 var(--lo-body); text-decoration: none !important; }
+html body .lo-dg-open:hover { text-decoration: underline !important; }
+/* the hours */
+html body .lo-dg-body { position: relative; margin: 12px 14px 16px 0; }
+html body .lo-dg-hour { position: absolute; left: 0; right: 0; height: 0; border-top: 1px solid #edf1f7; }
+html body .lo-dg-hour > span { position: absolute; left: 14px; top: -8px; padding-right: 8px; background: #ffffff; color: var(--lo-muted); font: 600 11.5px/1 var(--lo-body); font-variant-numeric: tabular-nums; }
+html body .lo-dg-cols { position: absolute; inset: 0 0 0 70px; display: grid; gap: 10px; }
+html body .lo-dg-col { position: relative; min-width: 0; }
+/* the shoot itself: a soft band from start to finish */
+html body .lo-dg-span {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  border-radius: 12px;
+  background: rgba(16, 77, 230, .06);
+  box-shadow: inset 3px 0 0 var(--lo-blue);
+  text-decoration: none !important;
+  transition: background-color .3s ease;
+}
+html body .lo-dg-span:hover { background: rgba(16, 77, 230, .1); }
+html body .lo-dg-span[data-draft] { background: repeating-linear-gradient(135deg, rgba(16, 77, 230, .05) 0 8px, rgba(16, 77, 230, .02) 8px 16px); }
+html body .lo-dg-span-label { display: flex; flex-direction: column; gap: 3px; padding: 8px 10px 8px 14px; color: var(--lo-blue); font: 600 13px/1.3 var(--lo-body); }
+html body .lo-dg-span-label small { color: var(--lo-text); font-weight: 500; }
+/* each time in the schedule: a block at its time, until the next one */
+html body .lo-dg-event {
+  position: absolute;
+  left: 8px;
+  right: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: var(--lo-blue);
+  box-shadow: 0 0 0 1.5px #ffffff, 0 10px 20px -16px rgba(16, 77, 230, 0);
+  color: #ffffff !important;
+  font: 600 13px/1.25 var(--lo-body);
+  text-decoration: none !important;
+  transition: transform .45s var(--lo-ease), box-shadow .4s ease, background-color .3s ease;
+  animation: loRise .45s var(--lo-ease) backwards;
+}
+html body .lo-dg-event b { font-size: 11.5px; font-weight: 700; font-variant-numeric: tabular-nums; opacity: .85; }
+html body .lo-dg-event span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+html body .lo-dg-event[data-short] { flex-direction: row; align-items: center; gap: 8px; padding-top: 3px; padding-bottom: 3px; }
+html body .lo-dg-event:hover { z-index: 30 !important; background: var(--lo-blue-dark); transform: translateY(-1px); box-shadow: 0 0 0 1.5px #ffffff, 0 10px 20px -16px rgba(16, 77, 230, .9); }
+html body .lo-dg-event[data-draft] { background: #6f93ef; }
+/* now (on today) */
+html body .lo-dg-now { position: absolute; left: 62px; right: 0; z-index: 40; height: 2px; background: #e5484d; pointer-events: none; }
+html body .lo-dg-now::before { content: ""; position: absolute; left: -5px; top: -4px; width: 10px; height: 10px; border-radius: 50%; background: #e5484d; }
+@container (max-width: 560px) {
+  html body .lo-dg-heads { padding-left: 14px; }
+  html body .lo-dg-cols { left: 56px; }
+  html body .lo-dg-side-label { width: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html body :is(.lo-dg, .lo-dg *) { animation: none !important; transition-duration: .01ms !important; }
 }

@@ -1,23 +1,20 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { useClient } from 'sanity';
-import { IntentLink, useRouter, useRouterState } from 'sanity/router';
+import { IntentLink } from 'sanity/router';
 import { EQUIPMENT_CATEGORIES } from '../categories';
 import { CameraIcon, InboxIcon, KitIcon } from './DashIcons';
 import { tidyRange } from '../bookingData';
 
 /**
- * Fills the empty space beside the lists in Updates with something useful:
- *  - nothing open → three cards (portfolio, equipment, enquiries) and quick actions
- *  - Portfolio open → your portfolio shoots as a gallery
- *  - Equipment open → your kit, grouped
- *  - Enquiries open → your inbox at a glance
- * It sits after the open lists and disappears as soon as an editor opens (see app/studio/studio.css, ".lo-canvas").
+ * The pages of the Updates tab (beside the menu in UpdatesHome.jsx):
+ *  - Portfolio → your portfolio shoots as a gallery
+ *  - Equipment list → your kit, grouped
+ *  - Enquiries → your inbox at a glance
+ * Picking anything opens it in place of the page. Styles: app/studio/studio.css (".lo-cv…", ".lo-upsec").
  */
 
-const EMPTY = [];
 const QUERY = `{
   "shoots": *[_type == "shoot"]{ _id, title, client, category, featured, date, "thumb": thumbnail.asset->url },
   "kit": *[_type == "equipment"]{ _id, name, spec, category },
@@ -45,18 +42,6 @@ function latest(list) {
 
 const when = (iso) => (iso ? new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '');
 
-function useStudioPath() {
-  const router = useRouter();
-  const base = typeof window !== 'undefined' && window.location.pathname.startsWith('/studio') ? '/studio' : '';
-  return (path) => ({
-    href: `${base}${path}`,
-    onClick: (e) => {
-      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1) return;
-      e.preventDefault();
-      router.navigateUrl({ path: `${base}${path}` });
-    },
-  });
-}
 
 /* ---------- the numbers behind Updates (also used by UpdatesHome.jsx) ---------- */
 
@@ -112,7 +97,6 @@ export function useUpdatesData() {
 /* ---------- the panel itself ---------- */
 
 function Canvas({ view }) {
-  const link = useStudioPath();
   const { shoots, kit, enquiries, toReply, featured, groups, loading } = useUpdatesData();
 
   /* ----- Shoots open: a gallery ----- */
@@ -123,7 +107,7 @@ function Canvas({ view }) {
           <span className="lo-eyebrow"><span className="lo-eyebrow-dot" aria-hidden="true" />Portfolio</span>
           <div className="lo-cv-headrow">
             <h1 className="lo-cv-title">Your portfolio</h1>
-            <IntentLink intent="create" params={{ type: 'shoot' }} className="lo-cv-btn" data-primary="">
+            <IntentLink intent="create" params={{ type: 'shoot', template: 'shoot' }} className="lo-cv-btn" data-primary="">
               <Plus /> Add a shoot
             </IntentLink>
           </div>
@@ -149,7 +133,7 @@ function Canvas({ view }) {
           <div className="lo-cv-empty">
             <span className="lo-cv-ic"><CameraIcon /></span>
             <p>Nothing in your portfolio yet. Your first shoot will appear here, and on your Work page once it’s published.</p>
-            <IntentLink intent="create" params={{ type: 'shoot' }} className="lo-cv-btn" data-primary="">
+            <IntentLink intent="create" params={{ type: 'shoot', template: 'shoot' }} className="lo-cv-btn" data-primary="">
               <Plus /> Add your first shoot
             </IntentLink>
           </div>
@@ -166,7 +150,7 @@ function Canvas({ view }) {
           <span className="lo-eyebrow"><span className="lo-eyebrow-dot" aria-hidden="true" />Equipment list</span>
           <div className="lo-cv-headrow">
             <h1 className="lo-cv-title">Your kit</h1>
-            <IntentLink intent="create" params={{ type: 'equipment' }} className="lo-cv-btn" data-primary="">
+            <IntentLink intent="create" params={{ type: 'equipment', template: 'equipment' }} className="lo-cv-btn" data-primary="">
               <Plus /> Add equipment
             </IntentLink>
           </div>
@@ -192,7 +176,7 @@ function Canvas({ view }) {
           <div className="lo-cv-empty">
             <span className="lo-cv-ic"><KitIcon /></span>
             <p>Your kit list is empty. Add your cameras, lenses and lights, then tick them on each shoot.</p>
-            <IntentLink intent="create" params={{ type: 'equipment' }} className="lo-cv-btn" data-primary="">
+            <IntentLink intent="create" params={{ type: 'equipment', template: 'equipment' }} className="lo-cv-btn" data-primary="">
               <Plus /> Add your first item
             </IntentLink>
           </div>
@@ -242,63 +226,18 @@ function Canvas({ view }) {
   return null;
 }
 
-/* ---------- putting it in place ---------- */
+/* ---------- the three areas, each as its own page beside the menu (sanity/structure.js) ---------- */
 
-/* Finds the column area of Updates and gives the panel a spot at its end. */
-function usePaneLayoutHost(enabled) {
-  const [host, setHost] = useState(null);
-  useEffect(() => {
-    if (!enabled || typeof document === 'undefined') {
-      setHost(null);
-      return undefined;
-    }
-    const el = document.createElement('div');
-    el.className = 'lo-canvas';
-    let frame = 0;
-    const place = () => {
-      frame = 0;
-      const layout = document.querySelector('[data-ui="PaneLayout"]');
-      if (!layout) {
-        if (el.parentNode) el.parentNode.removeChild(el);
-        setHost(null);
-        return;
-      }
-      if (el.parentNode !== layout) layout.appendChild(el);
-      setHost(el);
-    };
-    const schedule = () => {
-      if (!frame) frame = requestAnimationFrame(place);
-    };
-    place();
-    const observer = new MutationObserver(schedule);
-    observer.observe(document.body, { childList: true, subtree: true });
-    return () => {
-      observer.disconnect();
-      if (frame) cancelAnimationFrame(frame);
-      if (el.parentNode) el.parentNode.removeChild(el);
-      setHost(null);
-    };
-  }, [enabled]);
-  return host;
-}
+const Area = ({ view }) => (
+  <div className="lo-upsec">
+    <Canvas view={view} />
+  </div>
+);
+export const PortfolioPane = () => <Area view="shoots" />;
+export const KitPane = () => <Area view="kit" />;
+export const InboxPane = () => <Area view="inbox" />;
 
-function CanvasHost() {
-  const tool = useRouterState((s) => (s && typeof s.tool === 'string' ? s.tool : ''));
-  const panes = useRouterState((s) => (s && s.tool && s[s.tool] && Array.isArray(s[s.tool].panes) ? s[s.tool].panes : EMPTY));
-  const first = panes[0] && panes[0][0] ? panes[0][0].id : '';
-  const view = first === 'shoot' ? 'shoots' : first === 'equipment' ? 'kit' : first === 'enquiries' ? 'inbox' : 'home';
-  // nothing open: the Updates pane is the whole page (UpdatesHome.jsx), so there's no panel beside it at all
-  const host = usePaneLayoutHost(tool === 'updates' && view !== 'home');
-  if (!host || view === 'home') return null;
-  return createPortal(<Canvas view={view} />, host);
-}
-
-/* Studio layout: Sanity's own, plus the panel above */
+/* Studio layout: Sanity's own (kept so sanity.config.js stays the same) */
 export function StudioLayout(props) {
-  return (
-    <>
-      {props.renderDefault(props)}
-      <CanvasHost />
-    </>
-  );
+  return props.renderDefault(props);
 }

@@ -162,12 +162,13 @@ function StatusTrack({ v, days, today, onStatus }) {
       </div>
       <ol className="lo-sv-steps" style={{ '--at': cancelled ? -1 : at, '--n': STATUS_FLOW.length }}>
         {STATUS_FLOW.map((s, i) => {
-          const state = cancelled ? 'off' : i < at ? 'done' : i === at ? 'now' : 'next';
+          // done up to where it's at (ticked); the step after is what you're working on now (highlighted)
+          const state = cancelled ? 'off' : i <= at ? 'done' : i === at + 1 ? 'now' : 'next';
           return (
-            <li key={s} data-state={state}>
-              <button type="button" onClick={() => onStatus(s)} aria-pressed={state === 'now'} disabled={state === 'now'} title={statusOf(s).title}>
+            <li key={s} data-state={state} data-at={i === at ? '' : undefined}>
+              <button type="button" onClick={() => onStatus(s)} aria-pressed={i === at} disabled={i === at} title={i === at ? `${statusOf(s).title} (where it's at)` : statusOf(s).title}>
                 <span className="lo-sv-step-dot" key={state}>
-                  {state === 'done' || state === 'now' ? <IconTick /> : i + 1}
+                  {state === 'done' ? <IconTick /> : i + 1}
                 </span>
                 <span className="lo-sv-step-label">{statusOf(s).short}</span>
               </button>
@@ -232,6 +233,10 @@ export function ShootSummary({ value, onEdit, onStatus }) {
   const due = typeof v.deliveryDate === 'string' && v.deliveryDate ? v.deliveryDate.slice(0, 10) : '';
   const done = shots.filter((s) => s.done).length;
 
+  // the half-width cards pair up; if one is left over at the end, it takes the whole row (no gaps)
+  const singles = ['when', 'client', people.length && 'people', plan.length && 'plan', shots.length && 'shots', kitRefs.length && 'kit', text(v.brief) && 'brief', notes.length && 'notes', links.length && 'links', reminders.length && 'reminders'].filter(Boolean);
+  const fill = singles.length % 2 ? singles[singles.length - 1] : '';
+
   const missing = [
     !days.length && 'the date',
     !(c.name || c.company) && 'the client',
@@ -258,7 +263,7 @@ export function ShootSummary({ value, onEdit, onStatus }) {
 
       <div className="lo-sv-grid">
         {/* when */}
-        <Card icon={CalendarIcon} title="When" count={days.length > 1 ? `${days.length} days` : ''}>
+        <Card icon={CalendarIcon} title="When" wide={fill === 'when'} count={days.length > 1 ? `${days.length} days` : ''}>
           {days.length ? (
             <ul className="lo-sv-days">
               {days.map((d, i) => {
@@ -297,7 +302,7 @@ export function ShootSummary({ value, onEdit, onStatus }) {
         </Card>
 
         {/* who it's for */}
-        <Card icon={UserIcon} title="Client">
+        <Card icon={UserIcon} title="Client" wide={fill === 'client'}>
           {c.name || c.company ? (
             <div className="lo-sv-client">
               <span className="lo-sv-avatar">{initials(c.name || c.company)}</span>
@@ -376,7 +381,7 @@ export function ShootSummary({ value, onEdit, onStatus }) {
 
         {/* who's on set */}
         {people.length ? (
-          <Card icon={UsersIcon} title="Cast & crew" count={`${people.length}`}>
+          <Card icon={UsersIcon} title="Cast & crew" wide={fill === 'people'} count={`${people.length}`}>
             <ul className="lo-sv-people">
               {people.map((p, i) => {
                 const role = roleOf(p.role);
@@ -401,7 +406,7 @@ export function ShootSummary({ value, onEdit, onStatus }) {
 
         {/* the plan for the day */}
         {plan.length ? (
-          <Card icon={ClockIcon} title="Schedule">
+          <Card icon={ClockIcon} title="Schedule" wide={fill === 'plan'}>
             {plan.map((p) => (
               <div key={p.d} className="lo-sv-plan">
                 {days.length > 1 ? <span className="lo-sv-plan-day">{shortDay(p.d)}</span> : null}
@@ -420,7 +425,7 @@ export function ShootSummary({ value, onEdit, onStatus }) {
 
         {/* shots */}
         {shots.length ? (
-          <Card icon={CameraIcon} title="Shot list" count={`${done} of ${shots.length} done`}>
+          <Card icon={CameraIcon} title="Shot list" wide={fill === 'shots'} count={`${done} of ${shots.length} done`}>
             <ul className="lo-sv-shots">
               {shots.map((s, i) => (
                 <li key={s._key || i} data-done={s.done ? '' : undefined}>
@@ -434,7 +439,7 @@ export function ShootSummary({ value, onEdit, onStatus }) {
 
         {/* kit */}
         {kitRefs.length ? (
-          <Card icon={KitIcon} title="Kit to bring" count={`${kitRefs.length}`}>
+          <Card icon={KitIcon} title="Kit to bring" wide={fill === 'kit'} count={`${kitRefs.length}`}>
             <div className="lo-sv-kit">
               {kitRefs.map((r) => (
                 <span key={r}>{kitNames[r] || '…'}</span>
@@ -524,14 +529,14 @@ export function ShootSummary({ value, onEdit, onStatus }) {
 
         {/* the brief */}
         {text(v.brief) ? (
-          <Card icon={ListIcon} title="The brief">
+          <Card icon={ListIcon} title="The brief" wide={fill === 'brief'}>
             <p className="lo-sv-text">{v.brief}</p>
           </Card>
         ) : null}
 
         {/* notes from the client */}
         {notes.length ? (
-          <Card icon={NoteIcon} title="Notes from the client" count={`${notes.length}`}>
+          <Card icon={NoteIcon} title="Notes from the client" wide={fill === 'notes'} count={`${notes.length}`}>
             <ul className="lo-sv-notes">
               {notes.map((n, i) => (
                 <li key={n._key || i}>
@@ -545,7 +550,7 @@ export function ShootSummary({ value, onEdit, onStatus }) {
 
         {/* links */}
         {links.length ? (
-          <Card icon={LinkIcon} title="Links & files">
+          <Card icon={LinkIcon} title="Links & files" wide={fill === 'links'}>
             <div className="lo-sv-links">
               {links.map((l, i) => {
                 const k = LINK_KINDS.find((x) => x.value === l.kind);
@@ -562,7 +567,7 @@ export function ShootSummary({ value, onEdit, onStatus }) {
 
         {/* reminders */}
         {reminders.length ? (
-          <Card icon={MailIcon} title="Email reminders">
+          <Card icon={MailIcon} title="Email reminders" wide={fill === 'reminders'}>
             <ul className="lo-sv-rem">
               {reminders.map((r) => (
                 <li key={r.token} data-state={r.state}>

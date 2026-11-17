@@ -25,8 +25,18 @@ const Plus = () => (
 
 export function UpdatesHome(props) {
   const { ChildLink } = usePaneRouter();
-  const open = props && props.childItemId ? String(props.childItemId) : '';
+  const open = props && props.childItemId ? String(props.childItemId).replace(/^__edit__/, '') : '';
   const { shoots, kit, enquiries, toReply, featured, groups, loading } = useUpdatesData();
+  const has = (list) => list.some((d) => d._id === open);
+  const active = ['shoot', 'equipment', 'enquiries'].includes(open)
+    ? open
+    : has(shoots)
+      ? 'shoot'
+      : has(kit)
+        ? 'equipment'
+        : has(enquiries)
+          ? 'enquiries'
+          : '';
   const latest = enquiries[0];
   const who = latest ? [latest.name, latest.company].filter(Boolean).join(' · ') || 'Enquiry' : '';
 
@@ -73,7 +83,7 @@ export function UpdatesHome(props) {
           {areas.map((a, i) => (
             <div key={a.id} className="lo-up-group">
               {a.inbox ? <span className="lo-up-label">Inbox</span> : null}
-              <ChildLink childId={a.id} className="lo-up-item" data-active={open === a.id ? '' : undefined} data-accent={a.accent ? '' : undefined} style={{ '--i': i }}>
+              <ChildLink childId={a.id} className="lo-up-item" data-active={active === a.id ? '' : undefined} data-accent={a.accent ? '' : undefined} style={{ '--i': i }}>
                 <span className="lo-up-ic">
                   <a.Icon />
                 </span>
@@ -89,10 +99,10 @@ export function UpdatesHome(props) {
           ))}
         </div>
         <div className="lo-up-adds">
-          <IntentLink intent="create" params={{ type: 'shoot' }} className="lo-up-add">
+          <IntentLink intent="create" params={{ type: 'shoot', template: 'shoot' }} className="lo-up-add">
             <Plus /> Add to portfolio
           </IntentLink>
-          <IntentLink intent="create" params={{ type: 'equipment' }} className="lo-up-add">
+          <IntentLink intent="create" params={{ type: 'equipment', template: 'equipment' }} className="lo-up-add">
             <Plus /> Add equipment
           </IntentLink>
         </div>
@@ -139,10 +149,10 @@ export function UpdatesHome(props) {
         </div>
 
         <div className="lo-cv-actions">
-          <IntentLink intent="create" params={{ type: 'shoot' }} className="lo-cv-btn" data-primary="">
+          <IntentLink intent="create" params={{ type: 'shoot', template: 'shoot' }} className="lo-cv-btn" data-primary="">
             <Plus /> Add to portfolio
           </IntentLink>
-          <IntentLink intent="create" params={{ type: 'equipment' }} className="lo-cv-btn">
+          <IntentLink intent="create" params={{ type: 'equipment', template: 'equipment' }} className="lo-cv-btn">
             <Plus /> Add equipment
           </IntentLink>
         </div>
