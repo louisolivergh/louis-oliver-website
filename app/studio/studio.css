@@ -1,12 +1,53 @@
 /* ================================================================
-   Dashboard (/studio) — the "Content" section, styled like the website.
+   Dashboard (/studio) — the "Content" side, designed like the website.
 
-   Fonts, colours and corner rounding come from sanity/theme.js.
-   This file adds the website's finishing touches to the lists, headers,
-   tabs and buttons. Every rule is scoped to the Content section
-   ([data-ui="PaneLayout"]), so the rest of the dashboard and the
-   website itself are untouched. If Sanity ever changes its markup,
-   these rules simply stop applying — nothing breaks.
+   Fonts, colours and corner rounding come from sanity/theme.js. The
+   header card on each page you edit comes from
+   sanity/components/FormChrome.jsx. This file is the look and the
+   motion. Every rule is scoped to the dashboard's Content side, so the
+   website and the Overview page are untouched. If Sanity ever changes
+   its markup, these rules simply stop applying — nothing breaks.
+
+   1. Design tokens & motion
+   2. Lists (the columns you click through)
+   3. Editing screens (the page you're editing)
+   ================================================================ */
+
+/* ================================================================
+   1. Design tokens & motion
+   ================================================================ */
+:root {
+  --lo-blue: #104de6;
+  --lo-blue-dark: #0b38ad;
+  --lo-ink: #0b1220;
+  --lo-text: #4a5468;
+  --lo-muted: #5b6475;
+  --lo-faint: #a3adbd;
+  --lo-line: #e6eaf1;
+  --lo-edge: #e1e7f0;
+  --lo-edge-hover: #c9d3e3;
+  --lo-canvas: #f6f8fc;
+  --lo-soft: #f4f7fd;
+  --lo-field: #f7f9fc;
+  --lo-tint: #eef3fe;
+  --lo-focus: inset 0 0 0 1.5px #104de6, 0 0 0 4px rgba(16, 77, 230, .12);
+  --lo-ease: cubic-bezier(.16, 1, .3, 1);
+  --lo-spring: cubic-bezier(.34, 1.56, .64, 1);
+  --lo-display: var(--font-sora, Sora), var(--font-inter, Inter), system-ui, sans-serif;
+  --lo-body: var(--font-inter, Inter), system-ui, sans-serif;
+  --lo-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 6.3 5.1 8.4 9.1 4' fill='none' stroke='%23ffffff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+@keyframes loRise { from { opacity: 0; transform: translateY(18px); } }
+@keyframes loFade { from { opacity: 0; } }
+@keyframes loFill { from { transform: scaleX(0); } }
+@keyframes loPop { 0% { opacity: 0; transform: scale(.2); } 60% { opacity: 1; } 100% { transform: scale(1); } }
+@keyframes loPulse { 0%, 100% { box-shadow: 0 0 0 4px rgba(16, 77, 230, .15); } 50% { box-shadow: 0 0 0 8px rgba(16, 77, 230, .03); } }
+@keyframes loGlow { 0%, 100% { box-shadow: 0 10px 22px -14px rgba(16, 77, 230, .55); } 50% { box-shadow: 0 14px 30px -12px rgba(16, 77, 230, .9); } }
+@keyframes loDrift { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* ================================================================
+   2. Lists (the columns you click through)
    ================================================================ */
 
 /* ---------- list rows (Shoots, Equipment, Enquiries, pages…) ---------- */
@@ -73,6 +114,22 @@ html body [data-ui="PaneLayout"] [data-ui="PreviewCard"][data-as="a"][data-selec
   --card-icon-color: #ffffff;
 }
 
+/* text-only rows get comfortable, even padding */
+html body [data-ui="PaneLayout"] [data-ui="PreviewCard"][data-as="a"] [data-testid="compact-preview"] {
+  padding-top: 9px !important;
+  padding-bottom: 9px !important;
+}
+html body [data-ui="PaneLayout"] [data-ui="PreviewCard"][data-as="a"] :is([data-testid="compact-preview"], [data-testid="default-preview"]):not(:has([data-testid="Media"])) {
+  padding-left: 14px !important;
+}
+
+/* navigation is text only — icon placeholders never show (a shoot's real thumbnail still does).
+   The lists are set to hide icons in sanity.config.js; this is a backstop. */
+html body [data-ui="PaneLayout"] :is([data-ui="ListPane"], [data-ui="DocumentListPane"]) [data-ui="PreviewCard"][data-as="a"] [data-ui="Box"]:has(> [data-testid="Media"] > svg),
+html body [data-ui="PaneLayout"] :is([data-ui="ListPane"], [data-ui="DocumentListPane"]) [data-ui="PreviewCard"][data-as="a"] [data-testid="compact-preview"] [data-testid="Media"]:has(> svg) {
+  display: none !important;
+}
+
 /* thumbnails ease in a touch on hover, and the row's content glides slightly — like the website */
 html body [data-ui="PaneLayout"] [data-ui="PreviewCard"] [data-testid="Media"] img {
   transition: transform .8s cubic-bezier(.16, 1, .3, 1);
@@ -98,14 +155,36 @@ html body [data-ui="PaneLayout"] [data-testid="pane-header"] [data-ui="Card"] > 
   color: #0b1220 !important;
 }
 
-/* group labels inside a list ("Inbox", "Brand") — the website's small blue eyebrow style */
+/* group labels inside a list ("Inbox", "Brand") — the website's small blue eyebrow, with its line
+   running level beside it */
+html body [data-ui="PaneLayout"] [data-ui="ListPane"] [data-ui="Box"]:has(> [data-ui="Text"] + hr) {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  margin: 18px 0 8px !important;
+  padding: 0 10px !important;
+}
 html body [data-ui="PaneLayout"] [data-ui="ListPane"] [data-ui="Text"]:has(+ hr) {
+  flex: none;
+  padding: 0 !important;
+  transform: none !important;
   font-size: 0.6875rem !important;
+  line-height: 1 !important;
   font-weight: 600 !important;
   letter-spacing: .14em !important;
   text-transform: uppercase;
   color: #104de6 !important;
-  padding-bottom: 0 !important; /* sits level with its line */
+}
+html body [data-ui="PaneLayout"] [data-ui="ListPane"] [data-ui="Text"]:has(+ hr)::before,
+html body [data-ui="PaneLayout"] [data-ui="ListPane"] [data-ui="Text"]:has(+ hr)::after {
+  display: none !important;
+}
+html body [data-ui="PaneLayout"] [data-ui="ListPane"] [data-ui="Text"] + hr {
+  flex: 1 1 auto;
+  margin: 0 !important;
+  height: 1px;
+  border: 0;
+  background-color: #e6eaf1 !important;
 }
 
 /* ---------- search box above lists: a soft rounded pill ---------- */
@@ -123,4 +202,637 @@ html body [data-ui="PaneLayout"] [data-ui="Button"] {
 /* tick boxes stay crisp squares with soft corners */
 html body [data-ui="PaneLayout"] [data-ui="Checkbox"] input + span {
   border-radius: 6px !important;
+}
+
+/* ================================================================
+   3. Editing screens (the page you're editing)
+   ================================================================ */
+
+/* ---------- the canvas: soft background so the white cards float, a little wider ---------- */
+html body [data-testid="document-pane"] [data-testid="document-panel-scroller"] {
+  background-color: var(--lo-canvas);
+}
+html body [data-testid="document-panel-scroller"] [data-ui="Container"]:has([data-testid="form-view"]) {
+  max-width: 760px !important;
+}
+html body [data-testid="form-view"] {
+  counter-reset: lo-section;
+  font-family: var(--lo-body);
+}
+/* Sanity's own title is replaced by the header card (backstop, in case it ever shows) */
+html body [data-testid="form-view"] [data-ui="Stack"]:has(> [data-testid="document-panel-document-title"]) {
+  display: none !important;
+}
+/* calmer spacing between the cards */
+html body .lo-doc > [data-ui="Stack"] {
+  gap: 18px !important;
+}
+
+/* ---------- header card: what this page is, a link to it, and how much is filled in ---------- */
+html body .lo-hero {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  margin: 0 0 18px;
+  padding: 28px 30px 26px;
+  border: 1px solid var(--lo-line);
+  border-radius: 28px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(11, 18, 32, .04), 0 34px 60px -50px rgba(16, 77, 230, .45);
+  color: var(--lo-ink);
+  font-family: var(--lo-body);
+  animation: loRise .8s var(--lo-ease) backwards;
+}
+/* the website's concentric rings, very faint, in the corner */
+html body .lo-hero-rings {
+  position: absolute;
+  right: -150px;
+  top: -150px;
+  z-index: -1;
+  width: 360px;
+  height: 360px;
+  border-radius: 50%;
+  pointer-events: none;
+  background:
+    repeating-radial-gradient(circle at center, rgba(16, 77, 230, 0) 0 26px, rgba(16, 77, 230, .085) 26px 27px),
+    radial-gradient(closest-side, rgba(16, 77, 230, .10), rgba(16, 77, 230, 0));
+  -webkit-mask-image: radial-gradient(closest-side, #000 55%, transparent);
+  mask-image: radial-gradient(closest-side, #000 55%, transparent);
+  animation: loFade 1.6s ease .2s backwards, loDrift 90s linear infinite;
+}
+html body .lo-hero-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+html body .lo-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font: 600 11px/1 var(--lo-body);
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--lo-blue);
+}
+html body .lo-eyebrow-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--lo-blue);
+  animation: loPulse 2.6s ease-in-out infinite;
+}
+html body .lo-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px 10px 16px;
+  border-radius: 999px;
+  background: var(--lo-tint);
+  color: var(--lo-blue) !important;
+  font: 600 13px/1 var(--lo-body);
+  text-decoration: none !important;
+  transition: background-color .35s ease, color .35s ease, box-shadow .5s var(--lo-ease), transform .4s var(--lo-ease);
+}
+html body .lo-live svg { transition: transform .5s var(--lo-ease); }
+html body .lo-live:hover { background: var(--lo-blue); color: #ffffff !important; box-shadow: 0 14px 26px -14px rgba(16, 77, 230, .75); }
+html body .lo-live:hover svg { transform: translate(2px, -2px); }
+html body .lo-live:active { transform: scale(.96); }
+html body .lo-hero-title {
+  margin: 18px 0 0;
+  font-family: var(--lo-display);
+  font-weight: 600;
+  font-size: clamp(28px, 3.4vw, 40px);
+  line-height: 1.06;
+  letter-spacing: -.035em;
+  color: var(--lo-ink);
+  overflow-wrap: anywhere;
+  animation: loRise .9s var(--lo-ease) .06s backwards;
+}
+html body .lo-hero-text {
+  margin: 10px 0 0;
+  max-width: 54ch;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--lo-text);
+  animation: loRise .9s var(--lo-ease) .12s backwards;
+}
+html body .lo-progress {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 22px;
+  animation: loFade .8s ease .2s backwards;
+}
+html body .lo-progress-track {
+  position: relative;
+  flex: 1;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #edf1f7;
+}
+html body .lo-progress-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #104de6, #5c87f2);
+  transform-origin: left center;
+  transition: transform .9s var(--lo-ease);
+  animation: loFill 1.4s var(--lo-ease) .3s backwards;
+}
+html body .lo-progress-label {
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--lo-muted);
+}
+html body .lo-progress-label b { font-weight: 700; color: var(--lo-ink); }
+html body .lo-progress[data-done] .lo-progress-label { font-weight: 600; color: var(--lo-blue); }
+html body .lo-progress[data-done] .lo-progress-label::before {
+  content: "";
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-right: 7px;
+  vertical-align: -3px;
+  border-radius: 50%;
+  background: var(--lo-blue) var(--lo-check) center / 11px no-repeat;
+  animation: loPop .55s var(--lo-spring) backwards;
+}
+html body .lo-hero-tip {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 16px 0 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--lo-muted);
+  animation: loFade .8s ease .35s backwards;
+}
+html body .lo-tip-dot { flex: none; width: 6px; height: 6px; border-radius: 50%; background: #c3d2f6; }
+html body .lo-hero-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: var(--lo-tint);
+  color: var(--lo-blue);
+  font-size: 13px;
+  font-weight: 600;
+  animation: loRise .8s var(--lo-ease) .2s backwards;
+}
+html body .lo-status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--lo-blue); animation: loPulse 2.6s ease-in-out infinite; }
+html body .lo-hero-status[data-done] { background: #e9f6f0; color: #12805c; }
+html body .lo-hero-status[data-done] .lo-status-dot { background: #12805c; animation: none; }
+html body .lo-status-when { font-weight: 500; color: var(--lo-muted); }
+
+/* ---------- group tabs (e.g. Details / Page sections): a sliding segmented control ---------- */
+html body [data-testid="form-view"] [data-testid="field-groups"] {
+  --card-bg-color: transparent !important;
+  background: transparent !important;
+  padding-bottom: 0 !important;
+}
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-testid="field-group-tabs"] {
+  display: inline-flex !important;
+  flex-wrap: wrap;
+  gap: 4px !important;
+  padding: 5px;
+  border-radius: 999px;
+  background: #e8edf5;
+  animation: loRise .7s var(--lo-ease) .05s backwards;
+}
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-testid="field-group-tabs"] [data-ui="Tab"] {
+  --card-bg-color: transparent !important;
+  --card-fg-color: var(--lo-text) !important;
+  --card-border-color: transparent !important;
+  box-shadow: none !important;
+  transition: background-color .4s ease, color .4s ease, box-shadow .5s var(--lo-ease);
+}
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-testid="field-group-tabs"] [data-ui="Tab"]:hover {
+  --card-fg-color: var(--lo-ink) !important;
+}
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-testid="field-group-tabs"] [data-ui="Tab"][aria-selected="true"] {
+  --card-bg-color: #ffffff !important;
+  --card-fg-color: var(--lo-ink) !important;
+  box-shadow: 0 1px 2px rgba(11, 18, 32, .06), 0 10px 20px -12px rgba(11, 18, 32, .35) !important;
+}
+
+/* ---------- sections: each group of fields is a white card, numbered like the website's steps ---------- */
+html body [data-testid="form-view"] fieldset:not(.lo-field fieldset),
+html body [data-testid="form-view"] .lo-field[data-lo-top]:not(fieldset .lo-field) {
+  position: relative;
+  min-width: 0;
+  min-inline-size: 0;
+  margin: 0 !important;
+  padding: 26px 28px 28px !important;
+  border: 1px solid var(--lo-line) !important;
+  border-radius: 24px !important;
+  background: #ffffff !important;
+  box-shadow: 0 1px 2px rgba(11, 18, 32, .04);
+  counter-increment: lo-section;
+  transition: border-color .45s ease, box-shadow .6s var(--lo-ease);
+  animation: loRise .75s var(--lo-ease) backwards;
+}
+@media (hover: hover) {
+  html body [data-testid="form-view"] fieldset:not(.lo-field fieldset):hover,
+  html body [data-testid="form-view"] .lo-field[data-lo-top]:not(fieldset .lo-field):hover {
+    border-color: #d6deeb !important;
+  }
+}
+/* the section you're typing in lifts gently and glows blue */
+html body [data-testid="form-view"] fieldset:not(.lo-field fieldset):focus-within,
+html body [data-testid="form-view"] .lo-field[data-lo-top]:not(fieldset .lo-field):focus-within {
+  border-color: #c4d3fa !important;
+  box-shadow: 0 0 0 4px rgba(16, 77, 230, .05), 0 32px 58px -42px rgba(16, 77, 230, .55);
+}
+/* cards arrive one after another */
+html body [data-testid="form-view"] :is(fieldset:not(.lo-field fieldset), .lo-field[data-lo-top]:not(fieldset .lo-field)):nth-child(1) { animation-delay: .04s; }
+html body [data-testid="form-view"] :is(fieldset:not(.lo-field fieldset), .lo-field[data-lo-top]:not(fieldset .lo-field)):nth-child(2) { animation-delay: .1s; }
+html body [data-testid="form-view"] :is(fieldset:not(.lo-field fieldset), .lo-field[data-lo-top]:not(fieldset .lo-field)):nth-child(3) { animation-delay: .16s; }
+html body [data-testid="form-view"] :is(fieldset:not(.lo-field fieldset), .lo-field[data-lo-top]:not(fieldset .lo-field)):nth-child(4) { animation-delay: .22s; }
+html body [data-testid="form-view"] :is(fieldset:not(.lo-field fieldset), .lo-field[data-lo-top]:not(fieldset .lo-field)):nth-child(5) { animation-delay: .28s; }
+html body [data-testid="form-view"] :is(fieldset:not(.lo-field fieldset), .lo-field[data-lo-top]:not(fieldset .lo-field)):nth-child(6) { animation-delay: .34s; }
+html body [data-testid="form-view"] :is(fieldset:not(.lo-field fieldset), .lo-field[data-lo-top]:not(fieldset .lo-field)):nth-child(7) { animation-delay: .4s; }
+html body [data-testid="form-view"] :is(fieldset:not(.lo-field fieldset), .lo-field[data-lo-top]:not(fieldset .lo-field)):nth-child(n+8) { animation-delay: .46s; }
+
+/* section header: blue number, then the title in the website's heading font */
+html body [data-testid="form-view"] fieldset:not(.lo-field fieldset),
+html body [data-testid="form-view"] .lo-field[data-lo-top]:not(fieldset .lo-field) > fieldset {
+  gap: 22px !important;
+}
+html body [data-testid="form-view"] fieldset:not(.lo-field fieldset) > :first-child legend > [data-ui="Text"],
+html body [data-testid="form-view"] fieldset:not(.lo-field fieldset) > :first-child legend > button > [data-ui="Text"],
+html body [data-testid="form-view"] .lo-field[data-lo-top]:not(fieldset .lo-field) > fieldset > :first-child legend > [data-ui="Text"],
+html body [data-testid="form-view"] .lo-field[data-lo-top]:not(fieldset .lo-field) > fieldset > :first-child legend > button > [data-ui="Text"] {
+  font-family: var(--lo-display) !important;
+  font-size: 1.1875rem !important;
+  font-weight: 600 !important;
+  letter-spacing: -.02em !important;
+  color: var(--lo-ink) !important;
+}
+html body [data-testid="form-view"] fieldset:not(.lo-field fieldset) > :first-child legend::before,
+html body [data-testid="form-view"] .lo-field[data-lo-top]:not(fieldset .lo-field) > fieldset > :first-child legend::before {
+  content: counter(lo-section, decimal-leading-zero);
+  display: block;
+  margin-bottom: 12px;
+  font: 600 11px/1 var(--lo-body);
+  letter-spacing: .16em;
+  color: var(--lo-blue);
+}
+/* no grey line down the left inside cards */
+html body [data-testid="form-view"] fieldset:not(.lo-field fieldset) > [data-ui="Box"]:last-child,
+html body [data-testid="form-view"] .lo-field[data-lo-top]:not(fieldset .lo-field) > fieldset > [data-ui="Box"]:last-child {
+  border-left: 0 !important;
+  padding-left: 0 !important;
+  box-shadow: none !important;
+}
+/* pictures and lists inside a card don't need Sanity's nesting line either; nested groups get a softer one */
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) .lo-field:is([data-lo-kind="image"], [data-lo-kind="file"], [data-lo-kind="array"]) > fieldset > [data-ui="Box"]:last-child {
+  border-left: 0 !important;
+  padding-left: 0 !important;
+  box-shadow: none !important;
+}
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) .lo-field[data-lo-kind="object"]:not([data-lo-top]) > fieldset > [data-ui="Box"]:last-child {
+  border-left-color: #e3e9f3 !important;
+}
+html body [data-testid="form-view"] fieldset:not(.lo-field fieldset) > [data-ui="Box"]:last-child > [data-ui="Grid"] {
+  row-gap: 26px !important;
+  column-gap: 16px !important;
+}
+
+/* ---------- field labels: clear and confident; they turn blue while you type ---------- */
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) label[data-ui="Text"],
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) .lo-field legend > [data-ui="Text"],
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) .lo-field legend > button > [data-ui="Text"] {
+  font-weight: 600 !important;
+  color: var(--lo-ink) !important;
+  transition: color .3s ease;
+}
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) .lo-field:focus-within > [data-testid^="field-"] label[data-ui="Text"] {
+  color: var(--lo-blue) !important;
+}
+/* a small blue tick appears beside anything you've filled in */
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) .lo-field[data-lo-filled] > [data-testid^="field-"] label[data-ui="Text"] > span::after,
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) .lo-field[data-lo-filled] > fieldset > :first-child legend > [data-ui="Text"] > span::after,
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) .lo-field[data-lo-filled] > fieldset > :first-child legend > button > [data-ui="Text"] > span::after {
+  content: "";
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  margin-left: 8px;
+  vertical-align: -2px;
+  border-radius: 50%;
+  background: var(--lo-blue) var(--lo-check) center / 11px no-repeat;
+  animation: loPop .55s var(--lo-spring) backwards;
+}
+
+/* ---------- text boxes: soft, roomy, with a blue glow while you type ---------- */
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) :is([data-ui="TextInput"] input, [data-ui="TextArea"] textarea) {
+  padding-top: 13px !important;
+  padding-bottom: 13px !important;
+}
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) :is([data-ui="TextInput"] input, [data-ui="TextArea"] textarea) + span {
+  --card-bg-color: var(--lo-field) !important;
+  --input-box-shadow: inset 0 0 0 1px var(--lo-edge) !important;
+  transition: box-shadow .3s ease, background-color .3s ease;
+}
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) :is([data-ui="TextInput"]:not(:has(> [data-ui="Card"])) input, [data-ui="TextArea"] textarea) + span {
+  border-radius: 12px !important;
+}
+@media (hover: hover) {
+  html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) :is([data-ui="TextInput"] input, [data-ui="TextArea"] textarea):not(:focus):not(:read-only):hover + span {
+    --input-box-shadow: inset 0 0 0 1px var(--lo-edge-hover) !important;
+  }
+}
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) :is([data-ui="TextInput"] input, [data-ui="TextArea"] textarea):focus + span {
+  --card-bg-color: #ffffff !important;
+  --input-box-shadow: var(--lo-focus) !important;
+}
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) :is([data-ui="TextInput"] input, [data-ui="TextArea"] textarea):invalid + span {
+  --input-box-shadow: inset 0 0 0 1px #e5484d !important;
+}
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) :is([data-ui="TextInput"] input, [data-ui="TextArea"] textarea):invalid:focus + span {
+  --input-box-shadow: inset 0 0 0 1.5px #e5484d, 0 0 0 4px rgba(229, 72, 77, .14) !important;
+}
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) :is([data-ui="TextInput"] input, [data-ui="TextArea"] textarea):read-only + span {
+  --card-bg-color: #f1f4f8 !important;
+  --input-box-shadow: inset 0 0 0 1px transparent !important;
+}
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) :is(input, textarea)::placeholder {
+  color: var(--lo-faint) !important;
+  opacity: 1;
+}
+
+/* drop-downs (Sanity's own, and the category picker) */
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) select[data-ui="Select"] {
+  padding-top: 13px !important;
+  padding-bottom: 13px !important;
+  border-radius: 12px !important;
+  background-color: var(--lo-field) !important;
+  box-shadow: inset 0 0 0 1px var(--lo-edge) !important;
+  transition: box-shadow .3s ease, background-color .3s ease;
+}
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) select[data-ui="Select"]:not(:disabled):hover {
+  box-shadow: inset 0 0 0 1px var(--lo-edge-hover) !important;
+}
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) select[data-ui="Select"]:not(:disabled):focus {
+  background-color: #ffffff !important;
+  box-shadow: var(--lo-focus) !important;
+}
+html body .lo-native {
+  width: 100%;
+  min-height: 46px;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: 12px;
+  outline: none;
+  background-color: var(--lo-field);
+  box-shadow: inset 0 0 0 1px var(--lo-edge);
+  color: var(--lo-ink);
+  font: 400 15px/1.4 var(--lo-body);
+  transition: box-shadow .3s ease, background-color .3s ease;
+}
+html body .lo-native::placeholder { color: var(--lo-faint); }
+html body .lo-native:hover { box-shadow: inset 0 0 0 1px var(--lo-edge-hover); }
+html body .lo-native:focus { background-color: #ffffff; box-shadow: var(--lo-focus); }
+html body select.lo-native {
+  -webkit-appearance: none;
+  appearance: none;
+  padding-right: 44px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.6 6 7.6 9 4.6' fill='none' stroke='%235b6475' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 12px;
+}
+
+/* tag boxes (type and press Enter) */
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-ui="TagInput"] {
+  border-radius: 12px !important;
+  background-color: var(--lo-field) !important;
+  box-shadow: inset 0 0 0 1px var(--lo-edge) !important;
+  transition: box-shadow .3s ease, background-color .3s ease;
+}
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-ui="TagInput"]:focus-within {
+  background-color: #ffffff !important;
+  box-shadow: var(--lo-focus) !important;
+}
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-ui="Tag"] {
+  border-radius: 999px !important;
+  --card-bg-color: var(--lo-tint) !important;
+  --card-fg-color: var(--lo-blue) !important;
+  --card-border-color: transparent !important;
+  animation: loPop .4s var(--lo-spring) backwards;
+}
+
+/* ---------- switches, tick boxes and round choices in brand blue ---------- */
+html body [data-ui="Switch"] input:checked + [data-name="representation"] {
+  --switch-bg-color: var(--lo-blue) !important;
+}
+html body [data-ui="Switch"] [data-name="representation"] > * {
+  transition: background-color .3s ease, transform .35s var(--lo-ease) !important;
+}
+html body [data-ui="Checkbox"] input:checked + span {
+  background-color: var(--lo-blue) !important;
+  box-shadow: inset 0 0 0 1px var(--lo-blue) !important;
+}
+html body [data-ui="Radio"] input:checked + span {
+  box-shadow: inset 0 0 0 1.5px var(--lo-blue) !important;
+}
+html body [data-ui="Radio"] input:checked + span::after {
+  background: var(--lo-blue) !important;
+}
+
+/* on/off rows: soft cards that turn light blue when switched on */
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-testid="boolean-input"] {
+  border-radius: 16px !important;
+  --card-bg-color: var(--lo-field) !important;
+  --card-border-color: var(--lo-edge) !important;
+  transition: background-color .4s ease, border-color .4s ease;
+}
+@media (hover: hover) {
+  html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-testid="boolean-input"]:hover {
+    --card-border-color: var(--lo-edge-hover) !important;
+  }
+}
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-testid="boolean-input"]:has(input:checked) {
+  --card-bg-color: var(--lo-tint) !important;
+  --card-border-color: #c6d4fa !important;
+}
+
+/* pick-one lists (thumbnail shape, gallery columns, kit category…): pill choices */
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-ui="Card"]:has(> [role="group"] > label > [data-ui="Radio"]) {
+  padding: 0 !important;
+  --card-bg-color: transparent !important;
+  --card-border-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [role="group"]:has(> label > [data-ui="Radio"]) {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+}
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [role="group"] > label:has(> [data-ui="Radio"]) {
+  margin: 0 !important;
+  padding: 11px 17px 11px 13px;
+  border-radius: 999px;
+  background: var(--lo-field);
+  box-shadow: inset 0 0 0 1px var(--lo-edge);
+  cursor: pointer;
+  transition: background-color .35s ease, box-shadow .35s ease, transform .35s var(--lo-ease);
+}
+@media (hover: hover) {
+  html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [role="group"] > label:has(> [data-ui="Radio"]):hover {
+    box-shadow: inset 0 0 0 1px var(--lo-edge-hover);
+  }
+}
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [role="group"] > label:has(> [data-ui="Radio"]):active {
+  transform: scale(.96);
+}
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [role="group"] > label:has(> [data-ui="Radio"] input:checked) {
+  background: var(--lo-tint);
+  box-shadow: inset 0 0 0 1.5px var(--lo-blue);
+}
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [role="group"] > label:has(> [data-ui="Radio"] input:checked) [data-ui="Text"] {
+  color: var(--lo-blue) !important;
+}
+
+/* ---------- pictures: rounded, with a soft dashed drop zone when empty ---------- */
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-testid="image-input"] [data-ui="Card"] {
+  border-radius: 18px !important;
+}
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-testid="image-input"] [data-ui="Card"]:has([data-testid^="file-input-upload-button"]) {
+  padding: 16px 18px !important;
+  border: 1.5px dashed #cbd8f5 !important;
+  --card-bg-color: #f8faff !important;
+  transition: border-color .35s ease, background-color .35s ease;
+}
+@media (hover: hover) {
+  html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-testid="image-input"] [data-ui="Card"]:has([data-testid^="file-input-upload-button"]):hover {
+    border-color: #9db6f3 !important;
+    --card-bg-color: #f2f6ff !important;
+  }
+}
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-testid="image-input"] img {
+  border-radius: 14px;
+}
+
+/* ---------- lists of items (questions, services, stats, logos, page sections…) ---------- */
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-ui="ArrayInput__content"] [data-ui="Card"][aria-selected] {
+  border: 1px solid var(--lo-edge) !important;
+  border-radius: 16px !important;
+  --card-bg-color: #ffffff !important;
+  box-shadow: 0 1px 2px rgba(11, 18, 32, .04);
+  transition: border-color .3s ease, box-shadow .5s var(--lo-ease);
+  animation: loRise .55s var(--lo-ease) backwards;
+}
+@media (hover: hover) {
+  html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-ui="ArrayInput__content"] [data-ui="Card"][aria-selected]:hover {
+    border-color: var(--lo-edge-hover) !important;
+    box-shadow: 0 20px 36px -28px rgba(11, 18, 32, .4);
+  }
+}
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-ui="ArrayInput__content"] [data-ui="Card"][aria-selected="true"] {
+  border-color: var(--lo-blue) !important;
+}
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-ui="ArrayInput__content"] [data-ui="PreviewCard"] {
+  border-radius: 12px !important;
+}
+/* empty list: a friendly dashed box */
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) [data-ui="ArrayInput__content"] > [data-ui="Card"]:only-child:not([aria-selected]) {
+  padding: 22px 18px !important;
+  border: 1.5px dashed #cbd8f5 !important;
+  border-radius: 16px !important;
+  --card-bg-color: #f8faff !important;
+}
+/* "Add item" buttons: soft blue pills that fill on hover */
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) :is([data-testid="add-single-object-button"], [data-testid="add-multiple-object-button"], [data-testid="add-single-primitive-button"], [data-testid="add-multiple--primitive-button"]) {
+  --card-bg-color: var(--lo-tint) !important;
+  --card-fg-color: var(--lo-blue) !important;
+  --card-icon-color: var(--lo-blue) !important;
+  --card-border-color: transparent !important;
+  transition: background-color .35s ease, color .35s ease, box-shadow .5s var(--lo-ease), transform .35s var(--lo-ease);
+}
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) :is([data-testid="add-single-object-button"], [data-testid="add-multiple-object-button"], [data-testid="add-single-primitive-button"], [data-testid="add-multiple--primitive-button"]):not(:disabled):hover {
+  --card-bg-color: var(--lo-blue) !important;
+  --card-fg-color: #ffffff !important;
+  --card-icon-color: #ffffff !important;
+  box-shadow: 0 14px 26px -14px rgba(16, 77, 230, .75);
+}
+html body :is([data-testid="form-view"], [data-testid="edit-portal-dialog"]) :is([data-testid="add-single-object-button"], [data-testid="add-multiple-object-button"], [data-testid="add-single-primitive-button"], [data-testid="add-multiple--primitive-button"]):active {
+  transform: scale(.98);
+}
+
+/* ---------- equipment ticks on a shoot ---------- */
+html body .lo-ticks { display: flex; flex-direction: column; gap: 18px; }
+html body .lo-tick-group { display: flex; flex-direction: column; gap: 10px; }
+html body .lo-tick-label { font: 600 11px/1 var(--lo-body); letter-spacing: .14em; text-transform: uppercase; color: var(--lo-blue); }
+html body .lo-tick-row { display: flex; flex-wrap: wrap; gap: 8px; }
+html body .lo-tick {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 16px 9px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--lo-field);
+  box-shadow: inset 0 0 0 1px var(--lo-edge);
+  color: var(--lo-ink);
+  font: 500 13.5px/1.2 var(--lo-body);
+  cursor: pointer;
+  transition: background-color .35s ease, color .35s ease, box-shadow .4s var(--lo-ease), transform .35s var(--lo-ease);
+}
+@media (hover: hover) {
+  html body .lo-tick:not([data-on]):hover { box-shadow: inset 0 0 0 1px var(--lo-edge-hover); }
+}
+html body .lo-tick:active { transform: scale(.95); }
+html body .lo-tick[data-on] { background: var(--lo-blue); color: #ffffff; box-shadow: 0 12px 24px -16px rgba(16, 77, 230, .9); }
+html body .lo-tick:disabled { cursor: default; opacity: .7; }
+html body .lo-tick-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1.5px #c3cddd;
+  color: transparent;
+  transition: box-shadow .3s ease, color .3s ease;
+}
+html body .lo-tick[data-on] .lo-tick-box { box-shadow: none; color: var(--lo-blue); }
+html body .lo-tick[data-on] .lo-tick-box svg { animation: loPop .45s var(--lo-spring) backwards; }
+html body .lo-tick-spec { opacity: .72; }
+
+/* ---------- the Publish bar ---------- */
+html body [data-testid="document-pane"] [data-testid="pane-footer"] {
+  box-shadow: 0 -1px 0 #eef1f6;
+}
+/* unpublished changes: the Publish button breathes softly so you don't forget it */
+html body [data-testid="pane-footer"] [data-testid="action-publish"]:not([data-disabled="true"]):not(:disabled) {
+  animation: loGlow 2.8s ease-in-out infinite;
+}
+
+/* ---------- phones ---------- */
+@media (max-width: 600px) {
+  html body .lo-hero { padding: 22px 20px 20px; border-radius: 22px; }
+  html body [data-testid="form-view"] fieldset:not(.lo-field fieldset),
+  html body [data-testid="form-view"] .lo-field[data-lo-top]:not(fieldset .lo-field) {
+    padding: 20px 18px 22px !important;
+    border-radius: 20px !important;
+  }
+}
+
+/* ---------- for anyone who prefers less motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  html body :is(.lo-hero, .lo-hero *, [data-ui="PaneLayout"] *, [data-testid="edit-portal-dialog"] *) {
+    animation: none !important;
+    transition-duration: .01ms !important;
+  }
 }

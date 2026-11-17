@@ -59,54 +59,30 @@ export function EquipmentTickInput(props) {
   if (other.length) groups.push({ value: 'other', title: 'Other', items: other });
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <div className="lo-ticks">
       {groups.map((g) => (
-        <div key={g.value} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            {g.title}
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        <div key={g.value} className="lo-tick-group">
+          <div className="lo-tick-label">{g.title}</div>
+          <div className="lo-tick-row">
             {g.items.map((k) => {
               const on = selected.has(k._id);
               return (
                 <button
                   key={k._id}
                   type="button"
+                  className="lo-tick"
+                  data-on={on ? '' : undefined}
                   aria-pressed={on}
                   onClick={() => toggle(k._id)}
                   disabled={readOnly}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: '8px 14px 8px 10px',
-                    borderRadius: 999,
-                    border: `1.5px solid ${on ? '#104de6' : 'rgba(127,127,127,0.35)'}`,
-                    background: on ? '#104de6' : 'transparent',
-                    color: on ? '#fff' : 'inherit',
-                    fontSize: 13,
-                    fontWeight: 500,
-                    cursor: readOnly ? 'default' : 'pointer',
-                  }}
                 >
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      width: 16,
-                      height: 16,
-                      borderRadius: '50%',
-                      border: `1.5px solid ${on ? '#fff' : 'rgba(127,127,127,0.5)'}`,
-                      background: on ? '#fff' : 'transparent',
-                      color: '#104de6',
-                      fontSize: 11,
-                      lineHeight: '13px',
-                      textAlign: 'center',
-                    }}
-                  >
-                    {on ? '✓' : ''}
+                  <span className="lo-tick-box" aria-hidden="true">
+                    <svg viewBox="0 0 12 12" width="10" height="10">
+                      <path d="M2.5 6.2 5 8.6 9.6 3.6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
                   </span>
                   {k.name}
-                  {k.spec ? <span style={{ opacity: 0.75 }}>· {k.spec}</span> : null}
+                  {k.spec ? <span className="lo-tick-spec">· {k.spec}</span> : null}
                 </button>
               );
             })}

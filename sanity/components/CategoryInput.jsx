@@ -22,17 +22,12 @@ const CUSTOM = '__custom__';
 const norm = (v) => String(v || '').trim().replace(/\s+/g, ' ');
 const key = (v) => norm(v).toLowerCase();
 
+/* The look (soft box, blue focus ring) comes from .lo-native in app/studio/studio.css */
 const field = {
   width: '100%',
   boxSizing: 'border-box',
-  padding: '10px 12px',
-  borderRadius: 6,
-  border: '1px solid rgba(127,127,127,0.35)',
-  background: 'transparent',
-  color: 'inherit',
   font: 'inherit',
   fontSize: 15,
-  minHeight: 42,
 };
 
 /**
@@ -88,7 +83,7 @@ export function CategoryInput(props) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <select {...(showCustom ? {} : elementProps)} value={selectValue} onChange={onSelect} disabled={readOnly} style={{ ...field, cursor: readOnly ? 'default' : 'pointer' }}>
+      <select {...(showCustom ? {} : elementProps)} className="lo-native lo-native-select" value={selectValue} onChange={onSelect} disabled={readOnly} style={{ ...field, cursor: readOnly ? 'default' : 'pointer' }}>
         <option value="">Choose a category…</option>
         {usedList.length ? (
           <optgroup label="Used before">
@@ -110,6 +105,7 @@ export function CategoryInput(props) {
           placeholder="Type your category, e.g. Automotive"
           onChange={(e) => onChange(e.target.value ? set(e.target.value) : unset())}
           onBlur={(e) => { if (elementProps && elementProps.onBlur) elementProps.onBlur(e); if (value && value !== norm(value)) write(value); }}
+          className="lo-native"
           style={field}
         />
       ) : null}

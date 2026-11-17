@@ -8,6 +8,7 @@ import { theme } from './sanity/theme';
 import { Overview } from './sanity/components/Overview';
 import { ShootPreview } from './sanity/components/ShootPreview';
 import { StudioBrand, StudioLogo } from './sanity/components/StudioLogo';
+import { LoField, LoInput } from './sanity/components/FormChrome';
 import {
   CameraIcon,
   CheckIcon,
@@ -24,11 +25,15 @@ import {
   GridIcon,
 } from './sanity/components/DashIcons';
 
-/* a divider with a small blue label above the line (styled in app/studio/studio.css) */
+/* a divider with a small blue label beside its line (styled in app/studio/studio.css) */
 const labelledDivider = (S, title) => {
   const d = S.divider();
   return typeof d.title === 'function' ? d.title(title) : d;
 };
+
+/* Lists show text only: no icon placeholders. Shoots still show their thumbnail when they have one. */
+const textList = (S, title) => S.list().title(title).showIcons(false);
+const typeList = (S, type, title) => S.documentTypeList(type).title(title).showIcons(false);
 
 const singleton = (S, id, title, icon) =>
   S.listItem().title(title).id(id).icon(icon).child(S.document().schemaType(id).documentId(id).title(title));
@@ -44,58 +49,51 @@ const enquiryList = (S, title, filter, icon) =>
         .schemaType('enquiry')
         .filter(filter)
         .defaultOrdering([{ field: 'receivedAt', direction: 'desc' }])
+        .showIcons(false)
     );
 
 const structure = (S) =>
-  S.list()
-    .title('Louis Oliver')
-    .items([
-      S.listItem()
-        .title('Regular updates')
-        .id('regular')
-        .icon(CameraIcon)
-        .child(
-          S.list()
-            .title('Regular updates')
-            .items([
-              S.documentTypeListItem('shoot').id('shoot').title('Shoots & portfolio').icon(CameraIcon),
-              S.documentTypeListItem('equipment').id('equipment').title('Equipment list').icon(KitIcon),
-              labelledDivider(S, 'Inbox'),
-              S.listItem()
-                .id('enquiries')
-                .title('Enquiries')
-                .icon(InboxIcon)
-                .child(
-                  S.list()
-                    .title('Enquiries')
-                    .items([
-                      enquiryList(S, 'To reply', '_type == "enquiry" && replied != true', InboxIcon),
-                      enquiryList(S, 'Replied', '_type == "enquiry" && replied == true', CheckIcon),
-                      enquiryList(S, 'All enquiries', '_type == "enquiry"', MailIcon),
-                    ])
-                ),
-            ])
-        ),
-      S.listItem()
-        .title('Website pages & setup')
-        .id('website')
-        .icon(GridIcon)
-        .child(
-          S.list()
-            .title('Website pages & setup')
-            .items([
-              singleton(S, 'homePage', 'Home page', HomeIcon),
-              singleton(S, 'servicesPage', 'Services page', StarIcon),
-              singleton(S, 'aboutPage', 'About page', PageIcon),
-              singleton(S, 'processPage', 'Process page', StepsIcon),
-              S.documentTypeListItem('processStep').title('Process steps').icon(StepsIcon),
-              singleton(S, 'workPage', 'Work page layout', CameraIcon),
-              singleton(S, 'contactPage', 'Contact page', MailIcon),
-              labelledDivider(S, 'Brand'),
-              singleton(S, 'siteSettings', 'Logo & footer', SettingsIcon),
-            ])
-        ),
-    ]);
+  textList(S, 'Louis Oliver').items([
+    S.listItem()
+      .title('Regular updates')
+      .id('regular')
+      .icon(CameraIcon)
+      .child(
+        textList(S, 'Regular updates').items([
+          S.documentTypeListItem('shoot').id('shoot').title('Shoots & portfolio').icon(CameraIcon).child(typeList(S, 'shoot', 'Shoots & portfolio')),
+          S.documentTypeListItem('equipment').id('equipment').title('Equipment list').icon(KitIcon).child(typeList(S, 'equipment', 'Equipment list')),
+          labelledDivider(S, 'Inbox'),
+          S.listItem()
+            .id('enquiries')
+            .title('Enquiries')
+            .icon(InboxIcon)
+            .child(
+              textList(S, 'Enquiries').items([
+                enquiryList(S, 'To reply', '_type == "enquiry" && replied != true', InboxIcon),
+                enquiryList(S, 'Replied', '_type == "enquiry" && replied == true', CheckIcon),
+                enquiryList(S, 'All enquiries', '_type == "enquiry"', MailIcon),
+              ])
+            ),
+        ])
+      ),
+    S.listItem()
+      .title('Website pages & setup')
+      .id('website')
+      .icon(GridIcon)
+      .child(
+        textList(S, 'Website pages & setup').items([
+          singleton(S, 'homePage', 'Home page', HomeIcon),
+          singleton(S, 'servicesPage', 'Services page', StarIcon),
+          singleton(S, 'aboutPage', 'About page', PageIcon),
+          singleton(S, 'processPage', 'Process page', StepsIcon),
+          S.documentTypeListItem('processStep').title('Process steps').icon(StepsIcon).child(typeList(S, 'processStep', 'Process steps')),
+          singleton(S, 'workPage', 'Work page layout', CameraIcon),
+          singleton(S, 'contactPage', 'Contact page', MailIcon),
+          labelledDivider(S, 'Brand'),
+          singleton(S, 'siteSettings', 'Logo & footer', SettingsIcon),
+        ])
+      ),
+  ]);
 
 /* Shoots get a live "Preview" tab next to the editor */
 const defaultDocumentNode = (S, { schemaType }) => {
@@ -120,6 +118,8 @@ export default defineConfig({
     types: schemaTypes,
     templates: (templates) => templates.filter(({ schemaType }) => !SINGLETONS.includes(schemaType) && schemaType !== 'enquiry'),
   },
+  // the premium editing screens: a header card on every page, plus field hooks for the styles
+  form: { components: { input: LoInput, field: LoField } },
   document: {
     actions: (prev, { schemaType }) =>
       SINGLETONS.includes(schemaType)
