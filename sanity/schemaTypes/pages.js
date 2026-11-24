@@ -127,7 +127,6 @@ export const homePage = defineType({
     { name: 'rest', title: 'Other sections' },
   ],
   fieldsets: [
-    { name: 'banner', title: 'Banner', description: 'A photo across the full width of the page, above the headline. It shows whole, at its own shape, so nothing gets cut off. Leave it empty for no banner.' },
     { name: 'headline', title: 'Headline', description: 'The big text at the top of your homepage.' },
     { name: 'buttons', title: 'Buttons', description: 'The two buttons under the headline.', options: { columns: 2 } },
     { name: 'photo', title: 'Photo & stats', description: 'Your photo sits in the blue square on the right. The stats sit under the buttons.' },
@@ -140,8 +139,6 @@ export const homePage = defineType({
     { name: 'contact', title: 'Contact', description: 'The heading and text beside the enquiry form at the bottom.' },
   ],
   fields: [
-    img('bannerPhoto', 'Banner photo', { group: 'hero', fieldset: 'banner', description: 'Use a wide, large photo (at least 2000 pixels across) so it stays sharp on big screens.' }),
-    s('bannerAlt', 'What the banner shows', { group: 'hero', fieldset: 'banner', placeholder: 'e.g. Louis Jones, owner of Louis Oliver', description: 'Read out by screen readers and search engines.' }),
     s('heroTagline', 'Small tagline above the headline', { group: 'hero', fieldset: 'headline', placeholder: '[Short tagline, e.g. your category]' }),
     s('heroLine1', 'Headline line 1', { group: 'hero', fieldset: 'headline', placeholder: '[Your bold' }),
     s('heroLine2', 'Headline line 2', { group: 'hero', fieldset: 'headline', placeholder: 'headline goes' }),

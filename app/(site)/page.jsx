@@ -71,20 +71,6 @@ export default async function HomePage() {
 
   return (
     <>
-      {/* BANNER: full width, shown whole at the photo's own shape */}
-      {home.bannerUrl ? (
-        <div className="home-banner fade f1">
-          <img
-            src={img(home.bannerUrl, 2400)}
-            srcSet={[800, 1200, 1600, 2400].map((w) => `${img(home.bannerUrl, w)} ${w}w`).join(', ')}
-            sizes="100vw"
-            width={home.bannerSize ? home.bannerSize.width : undefined}
-            height={home.bannerSize ? home.bannerSize.height : undefined}
-            alt={home.bannerAlt || ''}
-          />
-        </div>
-      ) : null}
-
       {/* HERO */}
       <section className="container hero">
         <div className="hero-copy">
